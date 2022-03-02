@@ -1,0 +1,48 @@
+atomic_value = {hex|bin|oct|sci|float|int|string|identifier}
+    hex = @{(^"0x") ~ ('a'..'f' | 'A'..'F' | '0'..'9')+}
+    bin = @{(^"0b") ~ ('0'..'1')+}
+    oct = @{(^"0o" | "0") ~ ('0'..'7')+}
+    sci = @{((('0'..'9')+ ~ ("."~('0'..'9')+)?) | (('0'..'9')* ~ ("."~('0'..'9')+))) ~ ^"e" ~ ("+"|"-")? ~ ('0'..'9')+}
+    float = @{('0'..'9')* ~ "." ~ ('0'..'9')+}
+    int = @{('0'..'9')+}
+    string = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))* ~ "\"") | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))* ~ "\'")}
+    identifier = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
+
+plus = {"+"}
+minus = {"-"}
+multiply = {"*"}
+divide = {"/"}
+modulus = {"%"}
+power = {"**"}
+and = {"&"}
+or = {"|"}
+xor = {"^"}
+lshift = {"<"}
+rshift = {">"}
+factorial = {"!"}
+not = {"~"}
+comma = {","}
+decorator = {"@"}
+equal = {"="}
+lparen = {"("}
+rparen = {")"}
+
+expression_list = {or_expression ~ (comma ~ or_expression)+}
+
+or_expression = {xor_expression ~ (or ~ xor_expression)*}
+xor_expression = {and_expression ~ (xor ~ and_expression)*}
+and_expression = {sh_expression ~ (and ~ sh_expression)*}
+sh_expression = {as_expression ~ ((lshift|rshift) ~ as_expression)*}
+as_expression = {md_expression ~ ((plus|minus) ~ md_expression)*}
+md_expression = {power_expression ~ ((multiply|divide|modulus) ~ power_expression)*}
+power_expression = {call_expression ~ (power ~ call_expression)*}
+call_expression = {identifier ~ lparen ~ or_expression ~ rparen | identifier ~ lparen ~ expression_list? ~ rparen | prefix_unary_expression}
+prefix_unary_expression = {(not|minus)+ ~ postfix_unary_expression | postfix_unary_expression}
+postfix_unary_expression = {term ~ factorial+ | term}
+term = {lparen ~ or_expression ~ rparen | atomic_value}
+
+assignment_expression = {(identifier ~ equal)? ~ or_expression}
+line = {assignment_expression ~ (decorator ~ identifier)? ~ ("\n"|"\r\n"|EOI)}
+script = {line+}
+
+WHITESPACE = _{" " | "\t"}
