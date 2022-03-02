@@ -5,7 +5,6 @@ license = "MIT OR Apache-2.0"
 keywords = ["parser", "text", "math"]
 categories = ["parser-implementations", "development-tools", "command-line-utilities", "encoding"]
 version = "0.2.0"
-edition = "2022"
 
 [dependencies]
 pest = "2.1.3"
