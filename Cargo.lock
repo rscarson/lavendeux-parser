@@ -273,8 +273,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "lavendeux"
-version = "0.1.0"
+name = "lavendeux-parser"
+version = "0.2.0"
 dependencies = [
  "derive_more",
  "js-sandbox",
