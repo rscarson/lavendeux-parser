@@ -8,7 +8,7 @@ pub use functions::*;
 mod values;
 pub use values::*;
 
-#[derive(From, Debug)]
+#[derive(From, Debug, Clone)]
 pub enum ParserError {
     Pest(PestError),
     ParseInt(std::num::ParseIntError),
@@ -50,7 +50,7 @@ mod error_macro {
     pub(crate) use error_type;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Position{pub line: usize, pub col: usize}
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -58,7 +58,7 @@ impl fmt::Display for Position {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpectedTypes {Int, Float, IntOrFloat, String}
 impl fmt::Display for ExpectedTypes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -71,7 +71,7 @@ impl fmt::Display for ExpectedTypes {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PestError {pub cause: String}
 error_type!(PestError, {
     pub fn new (cause: &str) -> Self {

@@ -4,7 +4,7 @@ use std::fmt;
 use super::ExpectedTypes;
 use super::error_macro;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScriptError {pub error: String}
 error_macro::error_type!(ScriptError, {
     pub fn new (error: &str) -> Self {
@@ -15,7 +15,7 @@ error_macro::error_type!(ScriptError, {
     }
 });
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DecoratorNameError {pub name: String}
 error_macro::error_type!(DecoratorNameError, {
     pub fn new (name: &str) -> Self {
@@ -26,7 +26,7 @@ error_macro::error_type!(DecoratorNameError, {
     }
 });
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionNameError {pub name: String}
 error_macro::error_type!(FunctionNameError, {
     pub fn new (name: &str) -> Self {
@@ -37,7 +37,7 @@ error_macro::error_type!(FunctionNameError, {
     }
 });
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionArgTypeError {pub arg: usize, pub expected: ExpectedTypes, pub signature: String}
 error_macro::error_type!(FunctionArgTypeError, {
     pub fn new (signature: &str, arg: usize, expected: ExpectedTypes) -> Self {
@@ -48,7 +48,7 @@ error_macro::error_type!(FunctionArgTypeError, {
     }
 });
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionArgOverFlowError {pub arg: usize, pub signature: String}
 error_macro::error_type!(FunctionArgOverFlowError, {
     pub fn new (signature: &str, arg: usize) -> Self {
@@ -59,7 +59,7 @@ error_macro::error_type!(FunctionArgOverFlowError, {
     }
 });
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunctionNArgError {pub min: usize, pub max: usize, pub signature: String}
 error_macro::error_type!(FunctionNArgError, {
     pub fn new (signature: &str, min: usize, max: usize) -> Self {

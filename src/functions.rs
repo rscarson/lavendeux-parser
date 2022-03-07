@@ -3,6 +3,8 @@ use super::errors::*;
 use std::collections::HashMap;
 
 pub type FunctionHandler = fn(&[AtomicValue]) -> Result<AtomicValue, ParserError>;
+
+#[derive(Clone)]
 pub struct FunctionTable(HashMap<String, FunctionHandler>);
 impl FunctionTable {
     /// Initialize a new function table, complete with default builtin functions

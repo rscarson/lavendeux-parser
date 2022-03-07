@@ -5,7 +5,7 @@ use std::fmt;
 
 use super::ExpectedTypes;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UnderflowError {}
 impl fmt::Display for UnderflowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -18,7 +18,7 @@ impl Error for UnderflowError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OverflowError {}
 impl fmt::Display for OverflowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -31,7 +31,7 @@ impl Error for OverflowError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ValueTypeError {pub expected: ExpectedTypes}
 impl fmt::Display for ValueTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -44,7 +44,7 @@ impl Error for ValueTypeError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConstantValueError {pub name: String}
 impl fmt::Display for ConstantValueError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -58,7 +58,7 @@ impl Error for ConstantValueError {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VariableNameError {pub name: String}
 impl fmt::Display for VariableNameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

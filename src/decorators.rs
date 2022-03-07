@@ -5,6 +5,8 @@ use std::collections::HashMap;
 const MAX_FLOAT_PRECISION: i32 = 8;
 
 pub type DecoratorHandler = fn(&AtomicValue) -> Result<String, ParserError>;
+
+#[derive(Clone)]
 pub struct DecoratorTable(HashMap<String, DecoratorHandler>);
 impl DecoratorTable {
     /// Initialize a new decorator table, complete with default builtin decorators

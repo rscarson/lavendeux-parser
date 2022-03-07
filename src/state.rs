@@ -2,6 +2,7 @@ use super::value::AtomicValue;
 use super::{functions, decorators, extensions};
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct ParserState {
     pub variables: HashMap<String, AtomicValue>,
     pub constants: HashMap<String, AtomicValue>,
