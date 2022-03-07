@@ -8,8 +8,6 @@ pub struct ParserState {
     pub extensions: Vec<extensions::Extension>,
     pub functions: functions::FunctionTable,
     pub decorators: decorators::DecoratorTable,
-    pub settings: HashMap<String, AtomicValue>,
-    pub history: Vec<String>
 }
 
 impl ParserState {
@@ -21,9 +19,6 @@ impl ParserState {
             extensions: Vec::new(),
             functions: functions::FunctionTable::new(),
             decorators: decorators::DecoratorTable::new(),
-
-            settings: HashMap::new(),
-            history: Vec::new()
         };
 
         // Set up constants

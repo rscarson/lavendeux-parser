@@ -11,6 +11,7 @@ mod value;
 mod state;
 mod errors;
 
+pub use errors::ParserError;
 pub use token::Token;
 pub use state::ParserState;
 pub use value::AtomicValue;
