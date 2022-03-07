@@ -5,15 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
-fn default_script() -> Option<Script> {
-    None
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct Extension {
-    #[serde(skip_serializing, skip_deserializing, default = "default_script")]
-    pub script: Option<Script>,
-
     #[serde(default)]
     pub contents: String,
 
@@ -88,19 +81,11 @@ impl Extension {
         self.functions.contains_key(name)
     }
 
-    /// Deserialize the script, if need be
-    /// Needed because Script cannot be serialized, so we store it as a string
-    pub fn deserialize(&mut self) -> Option<ParserError> {
-        if self.script.is_none() {
-            match Script::from_string(&self.contents) {
-                Ok(s) => {
-                    self.script = Some(s);
-                    None
-                },
-                Err(e) => Some(ParserError::Script(ScriptError::new(&e.to_string())))
-            }
-        } else {
-            None
+    /// Load the script from string
+    pub fn load_script(&mut self) -> Result<Script, ParserError> {
+        match Script::from_string(&self.contents) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
         }
     }
 
@@ -110,17 +95,16 @@ impl Extension {
     /// * `name` - Function name
     /// * `args` - Values to pass in
     pub fn call_function(&mut self, name: &str, args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-        // Deserialize the script if we need to
-        match self.deserialize() {
-            None => {},
-            Some(e) => return Err(e)
-        };
-
-        let fname = self.functions.get(name).ok_or(ParserError::FunctionName(FunctionNameError::new(name)))?;
-        let result : Result<AtomicValue, AnyError> = self.script.as_mut().unwrap().call(fname, &args.to_vec());
-        match result {
-            Ok(v) => Ok(v.clone()),
-            Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+        match self.load_script() {
+            Ok(mut script) => {
+                let fname = self.functions.get(name).ok_or(ParserError::FunctionName(FunctionNameError::new(name)))?;
+                let result : Result<AtomicValue, AnyError> = script.call(fname, &args.to_vec());
+                match result {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+                }
+            },
+            Err(e) => Err(e)
         }
     }
 
@@ -138,17 +122,16 @@ impl Extension {
     /// * `name` - Decorator name
     /// * `arg` - Value to pass in
     pub fn call_decorator(&mut self, name: &str, arg: &AtomicValue) -> Result<String, ParserError> {
-        // Deserialize the script if we need to
-        match self.deserialize() {
-            None => {},
-            Some(e) => return Err(e)
-        };
-
-        let fname = self.decorators.get(name).ok_or(ParserError::DecoratorName(DecoratorNameError::new(name)))?;
-        let result : Result<String, AnyError> = self.script.as_mut().unwrap().call(fname, &arg);
-        match result {
-            Ok(v) => Ok(v),
-            Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+        match self.load_script() {
+            Ok(mut script) => {
+                let fname = self.decorators.get(name).ok_or(ParserError::DecoratorName(DecoratorNameError::new(name)))?;
+                let result : Result<String, AnyError> = script.call(fname, &arg);
+                match result {
+                    Ok(v) => Ok(v.clone()),
+                    Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+                }
+            },
+            Err(e) => Err(e)
         }
     }
 }
@@ -161,7 +144,6 @@ fn script_from_string(code: &str) -> Result<Extension, AnyError> {
     let mut script = Script::from_string(code)?;
     let mut e : Extension = script.call("extension", &())?;
     e.contents = code.to_string();
-    e.script = Some(script);
     Ok(e)
 }
 

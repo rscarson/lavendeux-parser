@@ -10,10 +10,8 @@
         version: "0.2.0",
 
         functions: {
+            "matches": "function_matches"
         },
-
-        decorators: {
-        }
     };
 }
 
