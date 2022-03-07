@@ -5,8 +5,18 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 
+fn default_script() -> Option<Script> {
+    None
+}
+
 #[derive(Deserialize, Serialize)]
-pub struct ExtensionSettings {
+pub struct Extension {
+    #[serde(skip_serializing, skip_deserializing, default = "default_script")]
+    pub script: Option<Script>,
+
+    #[serde(default)]
+    pub contents: String,
+
     #[serde(default)]
     pub name: String,
 
@@ -21,11 +31,6 @@ pub struct ExtensionSettings {
     
     #[serde(default)]
     pub decorators: HashMap<String, String>
-}
-
-pub struct Extension {
-    pub settings: ExtensionSettings,
-    pub script: Script
 }
 
 unsafe impl Send for Extension {}
@@ -48,7 +53,7 @@ impl Extension {
 
     /// Convert the extension to a string
     pub fn to_string(&self) -> String {
-        format!("{} v{}, by {}", self.settings.name, self.settings.version, self.settings.author)
+        format!("{} v{}, by {}", self.name, self.version, self.author)
     }
 
     /// Attempt to load all extensions in a directory
@@ -80,7 +85,23 @@ impl Extension {
     /// # Arguments
     /// * `name` - Function name
     pub fn has_function(&self, name: &str) -> bool {
-        self.settings.functions.contains_key(name)
+        self.functions.contains_key(name)
+    }
+
+    /// Deserialize the script, if need be
+    /// Needed because Script cannot be serialized, so we store it as a string
+    pub fn deserialize(&mut self) -> Option<ParserError> {
+        if self.script.is_none() {
+            match Script::from_string(&self.contents) {
+                Ok(s) => {
+                    self.script = Some(s);
+                    None
+                },
+                Err(e) => Some(ParserError::Script(ScriptError::new(&e.to_string())))
+            }
+        } else {
+            None
+        }
     }
 
     /// Call a function from the extension
@@ -89,8 +110,14 @@ impl Extension {
     /// * `name` - Function name
     /// * `args` - Values to pass in
     pub fn call_function(&mut self, name: &str, args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-        let fname = self.settings.functions.get(name).ok_or(ParserError::FunctionName(FunctionNameError::new(name)))?;
-        let result : Result<AtomicValue, AnyError> = self.script.call(fname, &args.to_vec());
+        // Deserialize the script if we need to
+        match self.deserialize() {
+            None => {},
+            Some(e) => return Err(e)
+        };
+
+        let fname = self.functions.get(name).ok_or(ParserError::FunctionName(FunctionNameError::new(name)))?;
+        let result : Result<AtomicValue, AnyError> = self.script.as_mut().unwrap().call(fname, &args.to_vec());
         match result {
             Ok(v) => Ok(v.clone()),
             Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
@@ -102,7 +129,7 @@ impl Extension {
     /// # Arguments
     /// * `name` - Decorator name
     pub fn has_decorator(&self, name: &str) -> bool {
-        self.settings.decorators.contains_key(name)
+        self.decorators.contains_key(name)
     }
 
     /// Call a decorator from the extension
@@ -111,8 +138,14 @@ impl Extension {
     /// * `name` - Decorator name
     /// * `arg` - Value to pass in
     pub fn call_decorator(&mut self, name: &str, arg: &AtomicValue) -> Result<String, ParserError> {
-        let fname = self.settings.decorators.get(name).ok_or(ParserError::DecoratorName(DecoratorNameError::new(name)))?;
-        let result : Result<String, AnyError> = self.script.call(fname, &arg);
+        // Deserialize the script if we need to
+        match self.deserialize() {
+            None => {},
+            Some(e) => return Err(e)
+        };
+
+        let fname = self.decorators.get(name).ok_or(ParserError::DecoratorName(DecoratorNameError::new(name)))?;
+        let result : Result<String, AnyError> = self.script.as_mut().unwrap().call(fname, &arg);
         match result {
             Ok(v) => Ok(v),
             Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
@@ -126,11 +159,10 @@ impl Extension {
 /// * `code` - JS source as string
 fn script_from_string(code: &str) -> Result<Extension, AnyError> {
     let mut script = Script::from_string(code)?;
-    let e = script.call("extension", &())?;
-    Ok(Extension {
-        settings: e,
-        script: script
-    })
+    let mut e : Extension = script.call("extension", &())?;
+    e.contents = code.to_string();
+    e.script = Some(script);
+    Ok(e)
 }
 
 #[cfg(test)]
@@ -140,7 +172,7 @@ mod test_extensions {
     #[test]
     fn test_new() {
         let e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!("HTML Colour Utilities", e.settings.name);
+        assert_eq!("HTML Colour Utilities", e.name);
     }
     
     #[test]
