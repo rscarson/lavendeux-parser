@@ -17,6 +17,7 @@ type TokenHandler = fn(&mut Token, &mut ParserState) -> Option<ParserError>;
 #[derive(Clone)]
 pub struct Token {
     pub rule: Rule,
+    pub input: String,
     pub text: String,
     pub value: AtomicValue,
     pub index: usize,
@@ -55,6 +56,7 @@ impl Token {
         // Create token
         let mut token = Token {
             rule: rule,
+            input: text.to_string(),
             text: text.to_string(),
             value: AtomicValue::None,
             index: span.start(),
@@ -81,6 +83,7 @@ impl Token {
                 match r.next() {
                     None => return Ok(Token {
                         text: "".to_string(),
+                        input: "".to_string(),
                         value: AtomicValue::None,
                         children: Vec::new(),
                         index: 0,
