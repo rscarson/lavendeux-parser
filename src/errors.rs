@@ -28,7 +28,24 @@ pub enum ParserError {
 }
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        match self {
+            Self::Pest(e) => write!(f, "{}", e.to_string()),
+            Self::ParseInt(e) => write!(f, "{}", e.to_string()),
+            Self::ParseFloat(e) => write!(f, "{}", e.to_string()),
+            Self::ValueType(e) => write!(f, "{}", e.to_string()),
+            Self::Overflow(e) => write!(f, "{}", e.to_string()),
+            Self::Underflow(e) => write!(f, "{}", e.to_string()),
+            Self::VariableName(e) => write!(f, "{}", e.to_string()),
+            Self::ContantValue(e) => write!(f, "{}", e.to_string()),
+        
+            Self::Script(e) => write!(f, "{}", e.to_string()),
+            Self::DecoratorName(e) => write!(f, "{}", e.to_string()),
+            Self::FunctionName(e) => write!(f, "{}", e.to_string()),
+            Self::FunctionArgType(e) => write!(f, "{}", e.to_string()),
+            Self::FunctionArgOverFlow(e) => write!(f, "{}", e.to_string()),
+            Self::FunctionNArg(e) => write!(f, "{}", e.to_string())
+        }
+        //write!(f, "{}", self.to_string())
     }
 }
 
@@ -81,3 +98,13 @@ error_type!(PestError, {
         write!(f, "{}", self.cause)
     }
 });
+
+#[cfg(test)]
+mod test_builtin_functions {
+    use super::*;
+    
+    #[test]
+    fn test_error_string() {
+        let error = ParserError::Pest(PestError::new("test")).to_string();
+    }
+}
