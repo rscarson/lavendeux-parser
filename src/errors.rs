@@ -95,7 +95,7 @@ error_type!(PestError, {
         Self { cause: cause.to_string() } }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.cause)
+        write!(f, "{}", "unable to parse expression")
     }
 });
 
@@ -105,6 +105,6 @@ mod test_builtin_functions {
     
     #[test]
     fn test_error_string() {
-        let error = ParserError::Pest(PestError::new("test")).to_string();
+        ParserError::Pest(PestError::new("test")).to_string();
     }
 }
