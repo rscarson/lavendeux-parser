@@ -59,7 +59,9 @@ impl Extension {
                     if let Ok(f) = file {
                         if let Some(filename) = f.path().to_str() {
                             if let Ok(extension) = Extension::new(filename) {
-                                extensions.push(extension);
+                                if filename.ends_with("js") {
+                                    extensions.push(extension);
+                                }
                             }
                         }
                     }
