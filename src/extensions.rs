@@ -8,6 +8,9 @@ use std::fs;
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Extension {
     #[serde(default)]
+    pub filename: String,
+    
+    #[serde(default)]
     pub contents: String,
 
     #[serde(default)]
@@ -35,7 +38,7 @@ impl Extension {
     pub fn new(filename: &str) -> Result<Extension, std::io::Error> {
         match fs::read_to_string(filename) {
             Ok(s) => {
-                match script_from_string(&s) {
+                match script_from_string(&filename, &s) {
                     Ok(v) => Ok(v),
                     Err(e) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
                 }
@@ -142,10 +145,11 @@ impl Extension {
 /// 
 /// # Arguments
 /// * `code` - JS source as string
-fn script_from_string(code: &str) -> Result<Extension, AnyError> {
+fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError> {
     let mut script = Script::from_string(code)?;
     let mut e : Extension = script.call("extension", &())?;
     e.contents = code.to_string();
+    e.filename = filename.to_string();
     Ok(e)
 }
 
