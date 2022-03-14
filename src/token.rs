@@ -197,6 +197,9 @@ mod test_token {
         token_does_value_equal("5", AtomicValue::Integer(5), &mut state);
         token_does_text_equal("5 @bin", "0b101", &mut state);
         token_does_text_equal("5 @int", "5", &mut state);
+
+        // Comments
+        token_does_value_equal("5 //test", AtomicValue::Integer(5), &mut state);
         
         // Assignment expression
         token_does_value_equal("x = 5", AtomicValue::Integer(5), &mut state);

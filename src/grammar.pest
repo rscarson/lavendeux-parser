@@ -42,7 +42,8 @@ postfix_unary_expression = {term ~ factorial+ | term}
 term = {lparen ~ or_expression ~ rparen | atomic_value}
 
 assignment_expression = {(identifier ~ equal)? ~ or_expression}
-line = {assignment_expression ~ (decorator ~ identifier)? ~ ("\n"|"\r\n"|EOI)}
+comment = _{"//" ~ ANY*}
+line = {assignment_expression ~ (decorator ~ identifier)? ~ comment? ~ ("\n"|"\r\n"|EOI)}
 script = {line+}
 
 WHITESPACE = _{" " | "\t"}
