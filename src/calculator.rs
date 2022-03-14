@@ -203,6 +203,10 @@ fn atomicvalue_handler(token: &mut Token, state: &mut ParserState) -> Option<Par
 
 fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
     match token.rule {
+        Rule::script => {
+            token.text = token.children.clone().into_iter().map(|t| t.text).collect::<Vec<String>>().join("\n");
+        },
+
         Rule::line => {
             token.value = token.children[0].value.clone();
 

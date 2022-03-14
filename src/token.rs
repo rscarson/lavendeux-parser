@@ -190,6 +190,9 @@ mod test_token {
     fn test_grammar_script() {
         let mut state: ParserState = ParserState::new();
 
+        let token = Token::from_input("5+5\n5+5", &mut state).unwrap();
+        assert_eq!("10\n10", token.text);
+
         // Line
         token_does_value_equal("5", AtomicValue::Integer(5), &mut state);
         token_does_text_equal("5 @bin", "0b101", &mut state);

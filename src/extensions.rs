@@ -139,7 +139,7 @@ impl Extension {
             Err(e) => Err(e)
         }
     }
-}
+} 
 
 /// Load a script from a string
 /// 
