@@ -103,13 +103,21 @@ fn decorator_float(input: &AtomicValue) -> Result<String, ParserError> {
     let multiplier = f64::powi(10.0, MAX_FLOAT_PRECISION);
 
     match input {
-        AtomicValue::Integer(n) => Ok(format!("{}", *n as FloatType)),
+        AtomicValue::Integer(n) => {
+            let mut f = format!("{:.}", *n as FloatType);
+            if !f.contains(".") {
+                f = f + ".0";
+            }
+            Ok(f)
+        },
         AtomicValue::Float(n) => {
             let mut v = (*n * multiplier).round() / multiplier;
-            if v == -0.0 {
-                v = 0.0;
+            if v == -0.0 { v = 0.0; }
+            let mut f = format!("{:.}", v);
+            if !f.contains(".") {
+                f = f + ".0";
             }
-            Ok(format!("{}", v))
+            Ok(f)
         },
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("@float", 1, ExpectedTypes::IntOrFloat)))
     }
@@ -158,8 +166,9 @@ mod test_builtin_functions {
 
     #[test]
     fn test_float() {
-        assert_eq!("8", decorator_float(&AtomicValue::Integer(8)).unwrap());
-        assert_eq!("81", decorator_float(&AtomicValue::Float(81.0)).unwrap());
+        assert_eq!("8.0", decorator_float(&AtomicValue::Integer(8)).unwrap());
+        assert_eq!("81.0", decorator_float(&AtomicValue::Float(81.0)).unwrap());
+        assert_eq!("0.0", decorator_float(&AtomicValue::Float(0.0000000001)).unwrap());
         assert_eq!("0.081", decorator_float(&AtomicValue::Float(0.081)).unwrap());
     }
 
