@@ -43,7 +43,7 @@ term = {lparen ~ or_expression ~ rparen | atomic_value}
 
 assignment_expression = {(identifier ~ equal)? ~ or_expression}
 comment = _{"//" ~ ANY*}
-line = {assignment_expression ~ (decorator ~ identifier)? ~ comment? ~ ("\n"|"\r\n"|EOI)}
+line = {(comment | (assignment_expression ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
 script = {line+}
 
 WHITESPACE = _{" " | "\t"}
