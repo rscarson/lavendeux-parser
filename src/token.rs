@@ -157,6 +157,7 @@ mod test_token {
         token_does_value_equal("0O777", AtomicValue::Integer(511), &mut state);
 
         // Sci
+        token_does_value_equal("1,000e5", AtomicValue::Float(100000000.0), &mut state);
         token_does_value_equal(".4e5", AtomicValue::Float(40000.0), &mut state);
         token_does_value_equal("5e5", AtomicValue::Float(500000.0), &mut state);
         token_does_value_equal("5E5", AtomicValue::Float(500000.0), &mut state);
@@ -164,10 +165,12 @@ mod test_token {
         token_does_value_equal("5e-5", AtomicValue::Float(5e-5), &mut state);
 
         // Float
+        token_does_value_equal("$10,000,000", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal(".4", AtomicValue::Float(0.4), &mut state);
         token_does_value_equal("4.4", AtomicValue::Float(4.4), &mut state);
 
         // Int
+        token_does_value_equal("1,000", AtomicValue::Integer(1000), &mut state);
         token_does_value_equal("999", AtomicValue::Integer(999), &mut state);
         token_does_value_equal("0", AtomicValue::Integer(0), &mut state);
 
@@ -200,6 +203,7 @@ mod test_token {
 
         // Comments
         token_does_value_equal("5 //test", AtomicValue::Integer(5), &mut state);
+        token_does_value_equal("//test", AtomicValue::None, &mut state);
         
         // Assignment expression
         token_does_value_equal("x = 5", AtomicValue::Integer(5), &mut state);

@@ -155,12 +155,12 @@ fn atomicvalue_handler(token: &mut Token, state: &mut ParserState) -> Option<Par
             }
         },
 
-        Rule::sci|Rule::float => match token.text.parse::<FloatType>() {
+        Rule::sci|Rule::float => match token.text.replace(",", "").parse::<FloatType>() {
             Ok(n) => token.value = AtomicValue::Float(n),
             Err(e) => return Some(ParserError::ParseFloat(e)),
         },
 
-        Rule::int => match token.text.parse::<IntegerType>() {
+        Rule::int => match token.text.replace(",", "").parse::<IntegerType>() {
             Ok(n) => token.value = AtomicValue::Integer(n),
             Err(e) => return Some(ParserError::ParseInt(e)),
         },

@@ -342,7 +342,7 @@ fn builtin_strlen(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
 
 fn builtin_substr(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     if args.len() != 2 && args.len() != 3 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("substr(s, start, [end])", 2, 3)));
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new("substr(s, start, [length])", 2, 3)));
     }
 
     let start = match args[1].as_int() {
