@@ -10,6 +10,7 @@ pub use values::*;
 
 #[derive(From, Debug, Clone)]
 pub enum ParserError {
+    General(String),
     Pest(PestError),
     ParseInt(std::num::ParseIntError),
     ParseFloat(std::num::ParseFloatError),
@@ -29,6 +30,7 @@ pub enum ParserError {
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::General(e) => write!(f, "{}", e.to_string()),
             Self::Pest(e) => write!(f, "{}", e.to_string()),
             Self::ParseInt(e) => write!(f, "{}", e.to_string()),
             Self::ParseFloat(e) => write!(f, "{}", e.to_string()),
@@ -46,6 +48,11 @@ impl fmt::Display for ParserError {
             Self::FunctionNArg(e) => write!(f, "{}", e.to_string())
         }
         //write!(f, "{}", self.to_string())
+    }
+}
+impl From<std::io::Error> for ParserError {
+    fn from(error: std::io::Error) -> Self {
+        Self::General(error.to_string())
     }
 }
 
