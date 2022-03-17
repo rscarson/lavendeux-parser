@@ -59,6 +59,7 @@ impl FunctionTable {
 
         // Networking functions
         table.register("get", builtin_get);
+        table.register("post", builtin_post);
         table.register("resolve", builtin_resolve);
 
         table
