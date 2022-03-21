@@ -12,6 +12,12 @@ use super::value::AtomicValue;
 #[grammar = "grammar.pest"]
 struct CalcParser;
 
+#[derive(Clone)]
+pub enum OutputFormat {
+    Default = 0,
+    Dollars = 10, Euros = 11, Pounds = 12, Yen = 13
+}
+
 type TokenHandler = fn(&mut Token, &mut ParserState) -> Option<ParserError>;
 
 #[derive(Clone)]
@@ -19,6 +25,7 @@ pub struct Token {
     pub rule: Rule,
     pub input: String,
     pub text: String,
+    pub format: OutputFormat,
     pub value: AtomicValue,
     pub index: usize,
     pub children: Vec<Token>
@@ -57,6 +64,7 @@ impl Token {
         let mut token = Token {
             rule: rule,
             input: text.to_string(),
+            format: OutputFormat::Default,
             text: text.to_string(),
             value: AtomicValue::None,
             index: span.start(),
@@ -82,6 +90,7 @@ impl Token {
             Ok(mut r) => {
                 match r.next() {
                     None => return Ok(Token {
+                        format: OutputFormat::Default,
                         text: "".to_string(),
                         input: "".to_string(),
                         value: AtomicValue::None,
@@ -165,6 +174,7 @@ mod test_token {
         token_does_value_equal("5e-5", AtomicValue::Float(5e-5), &mut state);
 
         // Float
+        token_does_value_equal("$10,000,000.00", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal("$10,000,000", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal(".4", AtomicValue::Float(0.4), &mut state);
         token_does_value_equal("4.4", AtomicValue::Float(4.4), &mut state);
@@ -245,6 +255,7 @@ mod test_token {
         token_does_value_equal("2*2/(2|2)", AtomicValue::Integer(2), &mut state);
 
         // add / sub expression
+        token_does_text_equal("2*$2", "$4.00", &mut state);
         token_does_value_equal("2+2", AtomicValue::Integer(4), &mut state);
         token_does_value_equal("2+2+2", AtomicValue::Integer(6), &mut state);
         token_does_value_equal("2+2-2/2", AtomicValue::Integer(3), &mut state);

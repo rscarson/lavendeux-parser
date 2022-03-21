@@ -1,4 +1,4 @@
-atomic_value = {hex|bin|oct|sci|float|int|boolean|string|identifier}
+atomic_value = {hex|bin|oct|currency|sci|float|int|boolean|string|identifier}
     hex = @{(^"0x") ~ ('a'..'f' | 'A'..'F' | '0'..'9')+}
     bin = @{(^"0b") ~ ('0'..'1')+}
     oct = @{(^"0o" | "0") ~ ('0'..'7')+}
@@ -8,6 +8,9 @@ atomic_value = {hex|bin|oct|sci|float|int|boolean|string|identifier}
     int = @{(('0'..'9'){1,3} ~ ("," ~ ('0'..'9'){3})*) | ('0'..'9')+}
     string = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))* ~ "\"") | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))* ~ "\'")}
     identifier = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
+
+currency_symbol = @{"$" | "€" | "£" | "¥"}
+currency = @{currency_symbol ~ int ~ ("." ~ ('0'..'9')+)?}
 
 plus = {"+"}
 minus = {"-"}
@@ -54,4 +57,4 @@ comment = _{"//" ~ ANY*}
 line = {(comment | (assignment_expression ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
 script = {line+}
 
-WHITESPACE = _{" " | "\t" | "$" | "€" | "£" | "¥"}
+WHITESPACE = _{" " | "\t"}

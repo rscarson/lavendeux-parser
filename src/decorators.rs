@@ -1,6 +1,7 @@
 use super::value::{AtomicValue, IntegerType, FloatType};
 use super::errors::*;
 use std::collections::HashMap;
+use chrono::prelude::*;
 
 const MAX_FLOAT_PRECISION: i32 = 8;
 
@@ -22,6 +23,22 @@ impl DecoratorTable {
         table.0.insert("float".to_string(), decorator_float);
         table.0.insert("int".to_string(), decorator_int);
         table.0.insert("bool".to_string(), decorator_bool);
+        
+        table.0.insert("utc".to_string(), decorator_utc);
+
+        table.0.insert("dollar".to_string(), decorator_dollars);
+        table.0.insert("dollars".to_string(), decorator_dollars);
+        table.0.insert("usd".to_string(), decorator_dollars);
+        table.0.insert("aud".to_string(), decorator_dollars);
+        table.0.insert("cad".to_string(), decorator_dollars);
+        
+        table.0.insert("euro".to_string(), decorator_euros);
+        table.0.insert("euros".to_string(), decorator_euros);
+        
+        table.0.insert("pound".to_string(), decorator_pounds);
+        table.0.insert("pounds".to_string(), decorator_pounds);
+        
+        table.0.insert("yen".to_string(), decorator_yen);
 
         table
     }
@@ -99,6 +116,52 @@ fn decorator_sci(input: &AtomicValue) -> Result<String, ParserError> {
         AtomicValue::Float(n) => Ok(format!("{:e}", *n)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("@sci", 1, ExpectedTypes::IntOrFloat)))
     }
+}
+
+fn decorator_utc(input: &AtomicValue) -> Result<String, ParserError> {
+    if matches!(input, AtomicValue::Integer(_)) {
+        let t = NaiveDateTime::from_timestamp(input.as_int().unwrap(), 0);
+        let datetime: DateTime<Utc> = DateTime::from_utc(t, Utc);
+        Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+    } else {
+        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("@utc", 1, ExpectedTypes::IntOrFloat)))
+    }
+}
+
+fn decorator_currency(input: &AtomicValue, symbol: &str) -> Result<String, ParserError> {
+    if matches!(input, AtomicValue::Integer(_)) || matches!(input, AtomicValue::Float(_)) {
+        let mut f = format!("{}{:.2}", symbol, input.as_float().unwrap());
+        if !f.contains(".") {
+            f = f + ".0";
+        }
+        f = f
+            .chars().rev().collect::<Vec<char>>()
+            .chunks(3).map(|c| c.iter().collect::<String>()).collect::<Vec<String>>().join(",")
+            .replacen(",", "", 1)
+            .chars().rev().collect::<String>();
+        if f.chars().nth(1).unwrap() == ',' {
+            f = f.replacen(",", "", 1);
+        }
+        Ok(f)
+    } else {
+        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("@dollars", 1, ExpectedTypes::IntOrFloat)))
+    }
+}
+
+fn decorator_dollars(input: &AtomicValue) -> Result<String, ParserError> {
+    decorator_currency(input, "$")
+}
+
+fn decorator_euros(input: &AtomicValue) -> Result<String, ParserError> {
+    decorator_currency(input, "€")
+}
+
+fn decorator_pounds(input: &AtomicValue) -> Result<String, ParserError> {
+    decorator_currency(input, "£")
+}
+
+fn decorator_yen(input: &AtomicValue) -> Result<String, ParserError> {
+    decorator_currency(input, "¥")
 }
 
 fn decorator_float(input: &AtomicValue) -> Result<String, ParserError> {
@@ -190,5 +253,19 @@ mod test_builtin_functions {
         assert_eq!("false", decorator_bool(&AtomicValue::Integer(0)).unwrap());
         assert_eq!("true", decorator_bool(&AtomicValue::Integer(81)).unwrap());
         assert_eq!("true", decorator_bool(&AtomicValue::Float(0.081)).unwrap());
+    }
+
+    #[test]
+    fn test_dollars() {
+        assert_eq!("¥100.00", decorator_yen(&AtomicValue::Integer(100)).unwrap());
+        assert_eq!("$1,000.00", decorator_dollars(&AtomicValue::Integer(1000)).unwrap());
+        assert_eq!("€10,000.00", decorator_euros(&AtomicValue::Integer(10000)).unwrap());
+        assert_eq!("£100,000.00", decorator_pounds(&AtomicValue::Integer(100000)).unwrap());
+        assert_eq!("£1,000,000.00", decorator_pounds(&AtomicValue::Integer(1000000)).unwrap());
+    }
+
+    #[test]
+    fn utc() {
+        assert_eq!("2022-03-20 14:05:33", decorator_utc(&AtomicValue::Integer(1647785133)).unwrap());
     }
 }
