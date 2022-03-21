@@ -250,14 +250,24 @@ mod test_token {
         token_does_value_equal("2+2-2/2", AtomicValue::Integer(3), &mut state);
 
         // shift expression
-        token_does_value_equal("2<2", AtomicValue::Integer(8), &mut state);
-        token_does_value_equal("2<2>2", AtomicValue::Integer(2), &mut state);
-        token_does_value_equal("2<2>(2+1)", AtomicValue::Integer(1), &mut state);
+        token_does_value_equal("2<<2", AtomicValue::Integer(8), &mut state);
+        token_does_value_equal("2<<2>>2", AtomicValue::Integer(2), &mut state);
+        token_does_value_equal("2<<2>>(2+1)", AtomicValue::Integer(1), &mut state);
 
-        // boolean expressions
+        // bitwise expressions
         token_does_value_equal("0b1100 & 0b0011", AtomicValue::Integer(0), &mut state);
         token_does_value_equal("0b1100 | 0b0011", AtomicValue::Integer(15), &mut state);
         token_does_value_equal("0b1110 ^ 0b0011", AtomicValue::Integer(13), &mut state);
         token_does_value_equal("0b0001 | 0b0011 ^ 0b1111", AtomicValue::Integer(13), &mut state);
+
+        // boolean expressions
+        token_does_value_equal("2 < 3", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("5.0 < 3", AtomicValue::Boolean(false), &mut state);
+        token_does_value_equal("'test' > 'a'", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("'test' && 'a'", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("1 && 1", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("1 && 0", AtomicValue::Boolean(false), &mut state);
+        token_does_value_equal("1 || 0", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("true || false", AtomicValue::Boolean(true), &mut state);
     }
 }

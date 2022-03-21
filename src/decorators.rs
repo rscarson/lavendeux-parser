@@ -21,6 +21,7 @@ impl DecoratorTable {
         table.0.insert("sci".to_string(), decorator_sci);
         table.0.insert("float".to_string(), decorator_float);
         table.0.insert("int".to_string(), decorator_int);
+        table.0.insert("bool".to_string(), decorator_bool);
 
         table
     }
@@ -60,6 +61,7 @@ impl DecoratorTable {
 
 pub fn decorator_default(input: &AtomicValue) -> Result<String, ParserError> {
     match input {
+        AtomicValue::Boolean(_) => decorator_bool(input),
         AtomicValue::Integer(_) => decorator_int(input),
         AtomicValue::Float(_) => decorator_float(input),
         AtomicValue::String(s) => Ok(format!("{}", s)),
@@ -131,6 +133,10 @@ fn decorator_int(input: &AtomicValue) -> Result<String, ParserError> {
     }
 }
 
+fn decorator_bool(input: &AtomicValue) -> Result<String, ParserError> {
+    Ok(AtomicValue::Boolean(input.as_bool()).as_string())
+}
+
 #[cfg(test)]
 mod test_builtin_functions {
     use super::*;
@@ -177,5 +183,12 @@ mod test_builtin_functions {
         assert_eq!("-8", decorator_int(&AtomicValue::Integer(-8)).unwrap());
         assert_eq!("81", decorator_int(&AtomicValue::Float(81.0)).unwrap());
         assert_eq!("0", decorator_int(&AtomicValue::Float(0.081)).unwrap());
+    }
+
+    #[test]
+    fn test_bool() {
+        assert_eq!("false", decorator_bool(&AtomicValue::Integer(0)).unwrap());
+        assert_eq!("true", decorator_bool(&AtomicValue::Integer(81)).unwrap());
+        assert_eq!("true", decorator_bool(&AtomicValue::Float(0.081)).unwrap());
     }
 }
