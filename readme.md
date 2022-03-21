@@ -16,7 +16,9 @@ let lines = Token::from_input(input, &mut state)?;
 **hex:** Base 16 hexadecimal, prefixed with 0x, such as 0xFE
 **sci:** Scientific notation floating point numbers, such as .3E+5, 2.5E3, or 5E-6
 **float:** 64bit floating point number, such as 3.56, or .8
-**int:** 64bit integer, such as 956, or 2
+**int:** 64bit integer, such as 956, or 2,
+**boolean:** true or false,
+**currency:** Currency value - currently dollars, pounds, euros, and yen are supported
 **string:** Quoted string, with single or double quotes. Supports a variety of escape sequences
 
 ## Variables
@@ -24,6 +26,12 @@ Expression values can be assigned to a variable. That variable can then be used 
 ```
 i = sqrt(9)
 i**2
+```
+
+Functions can also be defined:
+```
+f(x) = 2*x**2 + 3*x + 5
+f(2)
 ```
 
 Values for **pi**, **tau** and **e** are defined as constants, and can be used in expressions.
@@ -42,6 +50,9 @@ Values for **pi**, **tau** and **e** are defined as constants, and can be used i
 | Bitwise XOR | *int* **^** *int* |
 | Bitwise Shift | *int* **(<<, >>)** *int* |
 | Bitwise NOT | **~** *int* |
+| Boolean AND | *boolean* **&&** *boolean* |
+| Boolean OR | *boolean* **||** *boolean* |
+| less/greater than | *value* **<** *boolean*, *boolean* **>** *value* |
 
 ## Functions
 | Function | Usage |
@@ -76,3 +87,5 @@ sqrt(9) @bin   ->    0b11
 | @int | Format a number as an integer - rounding down floats if needed |
 | @sci | Format a number in scientific notation |
 | @float | Format a number as floating point |
+| @dollar, @usd, @cad, @aud, @euro, @pound, @yen | Format a number as a currency amount |
+| @utc | Format an integer as a UTC timestamp |

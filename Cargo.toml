@@ -4,7 +4,7 @@ readme = "readme.md"
 license = "MIT OR Apache-2.0"
 keywords = ["parser", "text", "math"]
 categories = ["parser-implementations", "development-tools", "command-line-utilities", "encoding"]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 [dependencies]

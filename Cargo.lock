@@ -500,7 +500,7 @@ dependencies = [
 
 [[package]]
 name = "lavendeux-parser"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "derive_more",
