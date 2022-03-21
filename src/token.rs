@@ -5,7 +5,7 @@ use pest_derive::Parser;
 
 use super::errors::*;
 use super::calculator;
-use super::state::ParserState;
+use super::state::{ParserState, UserFunction};
 use super::value::AtomicValue;
 
 #[derive(Parser)]
@@ -37,22 +37,56 @@ impl Token {
     /// # Arguments
     /// * `pair` - A pair object returned by pest
     /// * `handler` - The handler function that receives the token
-    pub fn new(pair: pest::iterators::Pair<Rule>, handler: TokenHandler, state: &mut ParserState) -> Result<Token, ParserError> {
+    pub fn new(pair: pest::iterators::Pair<Rule>, handler: TokenHandler, state: &mut ParserState, do_not_parse: bool) -> Result<Token, ParserError> {
         // Collect basic properties
         let rule = pair.as_rule();
-        let text = pair.as_str();
+        let input = pair.as_str();
         let span = pair.as_span();
+        let text = pair.as_str();
+        let value = AtomicValue::None;
 
         // Process token children
         let mut children : Vec<Token> = Vec::new();
+        let mut do_not_parse_ = do_not_parse;
         for child in pair.into_inner() {
-            let child_token = Token::new(child, handler, state);
+            let mut value = AtomicValue::None;
+            // Function assignment bypass
+            if child.clone().as_rule() == Rule::function_assignment {
+                do_not_parse_ = true;
+                let mut children: Vec<_> = child.clone().into_inner().into_iter().collect();
+                let name = children.first().unwrap().as_str().clone();
+                let definition = children.last().unwrap().as_str().clone();
+
+                let mut args : Vec<String> = Vec::new();
+                children.remove(0); children.remove(0);
+                for argument in children {
+                    let s = argument.as_str();
+                    if s == ")" { break; }
+                    if s == "," { continue; }
+                    args.push(s.to_string());
+                }
+
+                state.user_functions.insert(name.to_string(), UserFunction {
+                    name: name.to_string(),
+                    arguments: args,
+                    definition: definition.to_string()
+                });
+                value = AtomicValue::String(definition.to_string());
+            } else {
+                do_not_parse_ = do_not_parse;
+            }
+
+            let child_token = Token::new(child, handler, state, do_not_parse_);
             match child_token {
                 Err(e) => return Err(e),
                 Ok(mut c) => {
-                    match handler(&mut c, state) {
-                        Some(e) => return Err(e),
-                        None => {}
+                    if !do_not_parse_{
+                        match handler(&mut c, state) {
+                            Some(e) => return Err(e),
+                            None => {}
+                        }
+                    } else {
+                        c.value = value.clone();
                     }
 
                     children.push(c);
@@ -63,19 +97,23 @@ impl Token {
         // Create token
         let mut token = Token {
             rule: rule,
-            input: text.to_string(),
+            input: input.to_string(),
             format: OutputFormat::Default,
             text: text.to_string(),
-            value: AtomicValue::None,
+            value: value,
             index: span.start(),
             children: children
         };
 
         // Handle token
-        match handler(&mut token, state) {
-            Some(e) => return Err(e),
-            None => return Ok(token)
+        if !do_not_parse_{
+            match handler(&mut token, state) {
+                Some(e) => return Err(e),
+                None => return Ok(token)
+            }
         }
+
+        Ok(token)
     }
 
     /// Parses an input string, and returns the resulting token
@@ -98,7 +136,7 @@ impl Token {
                         index: 0,
                         rule: Rule::script
                     }),
-                    Some(p) => return Token::new(p, handler, state)
+                    Some(p) => return Token::new(p, handler, state, false)
                 }
             }
             
@@ -124,11 +162,13 @@ mod test_token {
     use super::*;
 
     fn token_does_value_equal(input: &str, expected: AtomicValue, state: &mut ParserState) {
-        assert_eq!(expected, Token::from_input(input, state).unwrap().children[0].value);
+        let t = Token::from_input(input, state).unwrap();
+        assert_eq!(expected, t.children[0].value);
     }
 
     fn token_does_text_equal(input: &str, expected: &str, state: &mut ParserState) {
-        assert_eq!(expected, Token::from_input(input, state).unwrap().children[0].text);
+        let t = Token::from_input(input, state).unwrap();
+        assert_eq!(expected, t.children[0].text);
     }
 
     #[test]
@@ -146,6 +186,10 @@ mod test_token {
     #[test]
     fn test_grammar_atomic_value() {
         let mut state: ParserState = ParserState::new();
+
+        let t = Token::from_input("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
+        assert_eq!("10\nx * y\n10", t.text);
+        token_does_value_equal("fn(5,5)", AtomicValue::Integer(25), &mut state);
 
         // Hex
         token_does_value_equal("0x0F", AtomicValue::Integer(15), &mut state);

@@ -3,11 +3,19 @@ use super::{functions, decorators, extensions};
 use std::collections::HashMap;
 
 #[derive(Clone)]
+pub struct UserFunction {
+    pub name: String,
+    pub arguments: Vec<String>,
+    pub definition: String
+}
+
+#[derive(Clone)]
 pub struct ParserState {
     pub variables: HashMap<String, AtomicValue>,
     pub constants: HashMap<String, AtomicValue>,
     pub extensions: Vec<extensions::Extension>,
     pub functions: functions::FunctionTable,
+    pub user_functions: HashMap<String, UserFunction>,
     pub decorators: decorators::DecoratorTable,
 }
 
@@ -19,6 +27,7 @@ impl ParserState {
 
             extensions: Vec::new(),
             functions: functions::FunctionTable::new(),
+            user_functions: HashMap::new(),
             decorators: decorators::DecoratorTable::new(),
         };
 

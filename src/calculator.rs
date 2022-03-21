@@ -533,24 +533,57 @@ fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Option
                     _ => {}
                 }
 
-                match state.functions.call(&name, &args[..]) {
-                    Ok(v) => token.value = v,
-                    Err(e) => {
-                        for extension in &mut state.extensions {
-                            if extension.has_function(&name) {
-                                match extension.call_function(&name, &args[..]) {
-                                    Ok(v) => {
-                                        token.value = v;
-                                        return None;
-                                    },
-                                    Err(e) => return Some(e)
-                                }
+                if state.functions.has(&name) {
+                    // Builtin functions
+                    match state.functions.call(&name, &args[..]) {
+                        Ok(v) => {
+                            token.value = v;
+                            return None;
+                        },
+                        Err(e) => { return Some(e); }
+                    }
+                } else {
+                    // Extension functions
+                    for extension in &mut state.extensions {
+                        if extension.has_function(&name) {
+                            match extension.call_function(&name, &args[..]) {
+                                Ok(v) => {
+                                    token.value = v;
+                                    return None;
+                                },
+                                Err(e) => return Some(e)
                             }
                         }
+                    }
 
-                        return Some(e);
+                    // User-defined functions
+                    match state.user_functions.get(&name) {
+                        Some(f) => {
+                            let mut inner_state = state.clone();
+                            if args.len() != f.arguments.len() {
+                                return Some(ParserError::FunctionNArg(FunctionNArgError::new(&f.name, f.arguments.len(), f.arguments.len())));
+                            }
+
+                            let mut i = 0;
+                            for arg in f.arguments.clone() {
+                                inner_state.variables.insert(arg, args[i].clone());
+                                i += 0;
+                            }
+
+                            match Token::from_input(&f.definition, &mut inner_state) {
+                                Ok(t) => {
+                                    token.value = t.children[0].value.clone();
+                                    token.text = t.text;
+                                    return None;
+                                },
+                                Err(e) => { return Some(e); }
+                            }
+                        },
+                        None => {}
                     }
                 }
+
+                return Some(ParserError::FunctionName(FunctionNameError::new(&name)));
             }
         }
 

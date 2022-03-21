@@ -35,6 +35,8 @@ equal = {"="}
 lparen = {"("}
 rparen = {")"}
 
+function_assignment = {((identifier ~ lparen ~ rparen) | identifier ~ lparen ~ identifier ~ (comma ~ identifier)* ~ rparen) ~ equal ~ bool_or_expression}
+
 expression_list = {bool_or_expression ~ (comma ~ bool_or_expression)+}
 
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
@@ -54,7 +56,7 @@ term = {lparen ~ bool_or_expression ~ rparen | atomic_value}
 
 assignment_expression = {(identifier ~ equal)? ~ bool_or_expression}
 comment = _{"//" ~ ANY*}
-line = {(comment | (assignment_expression ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
+line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
 script = {line+}
 
 WHITESPACE = _{" " | "\t"}
