@@ -2,6 +2,8 @@ use super::value::AtomicValue;
 use super::{functions, decorators, extensions};
 use std::collections::HashMap;
 
+const MAX_STACK_DEPTH: usize = 32;
+
 #[derive(Clone)]
 pub struct UserFunction {
     pub name: String,
@@ -11,6 +13,7 @@ pub struct UserFunction {
 
 #[derive(Clone)]
 pub struct ParserState {
+    pub depth : usize,
     pub variables: HashMap<String, AtomicValue>,
     pub constants: HashMap<String, AtomicValue>,
     pub extensions: Vec<extensions::Extension>,
@@ -22,6 +25,7 @@ pub struct ParserState {
 impl ParserState {
     pub fn new() -> ParserState {
         let mut state = ParserState {
+            depth: 0,
             variables: HashMap::new(),
             constants: HashMap::new(),
 
@@ -37,5 +41,9 @@ impl ParserState {
         state.constants.insert("tau".to_string(), AtomicValue::Float(std::f64::consts::TAU));
 
         return state;
+    }
+
+    pub fn is_depth_ok(&self) -> bool {
+        return self.depth < MAX_STACK_DEPTH;
     }
 }

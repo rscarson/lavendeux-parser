@@ -45,6 +45,10 @@ impl Token {
         let text = pair.as_str();
         let value = AtomicValue::None;
 
+        if !state.is_depth_ok() {
+            return Err(ParserError::Stack);
+        }
+
         // Process token children
         let mut children : Vec<Token> = Vec::new();
         let mut do_not_parse_ = do_not_parse;
@@ -187,9 +191,17 @@ mod test_token {
     fn test_grammar_atomic_value() {
         let mut state: ParserState = ParserState::new();
 
+        // Function
         let t = Token::from_input("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
         assert_eq!("10\nx * y\n10", t.text);
         token_does_value_equal("fn(5,5)", AtomicValue::Integer(25), &mut state);
+
+        assert_eq!(true, Token::from_input("f(x) = f(x)\nf(0)", &mut state).is_err());
+
+        // Ternary
+        token_does_value_equal("true ? 5 : 4", AtomicValue::Integer(5), &mut state);
+        token_does_value_equal("false ? 5 : 4", AtomicValue::Integer(4), &mut state);
+        token_does_value_equal("false ? 5 : 4 ? 6 : 7", AtomicValue::Integer(6), &mut state);
 
         // Hex
         token_does_value_equal("0x0F", AtomicValue::Integer(15), &mut state);

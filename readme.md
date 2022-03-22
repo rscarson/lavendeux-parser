@@ -52,7 +52,9 @@ Values for **pi**, **tau** and **e** are defined as constants, and can be used i
 | Bitwise NOT | **~** *int* |
 | Boolean AND | *boolean* **&&** *boolean* |
 | Boolean OR | *boolean* **||** *boolean* |
+| Boolean EQ | *boolean* **==** *boolean* |
 | less/greater than | *value* **<** *boolean*, *boolean* **>** *value* |
+| ternary | *condition* ? *value* : *value* |
 
 ## Functions
 | Function | Usage |

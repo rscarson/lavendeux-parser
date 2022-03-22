@@ -31,14 +31,18 @@ factorial = {"!"}
 not = {"~"}
 comma = {","}
 decorator = {"@"}
+bool_equal = {"="}
 equal = {"="}
 lparen = {"("}
 rparen = {")"}
 
-function_assignment = {((identifier ~ lparen ~ rparen) | identifier ~ lparen ~ identifier ~ (comma ~ identifier)* ~ rparen) ~ equal ~ bool_or_expression}
+function_assignment = {((identifier ~ lparen ~ rparen) | identifier ~ lparen ~ identifier ~ (comma ~ identifier)* ~ rparen) ~ equal ~ toplevel_expression}
 
-expression_list = {bool_or_expression ~ (comma ~ bool_or_expression)+}
+expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
 
+toplevel_expression = {ternary_expression}
+
+ternary_expression = {bool_or_expression ~("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
 bool_cmp_expression = {or_expression ~ ((lt|gt) ~ or_expression)*}
@@ -49,12 +53,12 @@ sh_expression = {as_expression ~ ((lshift|rshift) ~ as_expression)*}
 as_expression = {md_expression ~ ((plus|minus) ~ md_expression)*}
 md_expression = {power_expression ~ ((multiply|divide|modulus) ~ power_expression)*}
 power_expression = {call_expression ~ (power ~ call_expression)*}
-call_expression = {identifier ~ lparen ~ bool_or_expression ~ rparen | identifier ~ lparen ~ expression_list? ~ rparen | prefix_unary_expression}
+call_expression = {identifier ~ lparen ~ toplevel_expression ~ rparen | identifier ~ lparen ~ expression_list? ~ rparen | prefix_unary_expression}
 prefix_unary_expression = {(not|minus)+ ~ postfix_unary_expression | postfix_unary_expression}
 postfix_unary_expression = {term ~ factorial+ | term}
-term = {lparen ~ bool_or_expression ~ rparen | atomic_value}
+term = {lparen ~ toplevel_expression ~ rparen | atomic_value}
 
-assignment_expression = {(identifier ~ equal)? ~ bool_or_expression}
+assignment_expression = {(identifier ~ equal)? ~ toplevel_expression}
 comment = _{"//" ~ ANY*}
 line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
 script = {line+}

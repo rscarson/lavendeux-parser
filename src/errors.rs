@@ -11,6 +11,7 @@ pub use values::*;
 #[derive(From, Debug, Clone)]
 pub enum ParserError {
     General(String),
+    Stack,
     Pest(PestError),
     ParseInt(std::num::ParseIntError),
     ParseFloat(std::num::ParseFloatError),
@@ -31,6 +32,7 @@ impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::General(e) => write!(f, "{}", e.to_string()),
+            Self::Stack => write!(f, "Stack overflow during function call"),
             Self::Pest(e) => write!(f, "{}", e.to_string()),
             Self::ParseInt(e) => write!(f, "{}", e.to_string()),
             Self::ParseFloat(e) => write!(f, "{}", e.to_string()),

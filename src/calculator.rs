@@ -228,6 +228,21 @@ fn atomicvalue_handler(token: &mut Token, state: &mut ParserState) -> Option<Par
 
 fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
     match token.rule {
+        Rule::ternary_expression => {
+            if token.children.len() == 1 {
+                token.value = token.children[0].value.clone();
+            } else {
+                let mut conditional = token.children[0].value.clone();
+                let mut i = 1;
+                while i < token.children.len() {
+                    conditional = if conditional.as_bool() { token.children[i].value.clone() } else { token.children[i+1].value.clone() };
+                    i += 2;
+                }
+
+                token.value = conditional;
+            }
+        },
+
         Rule::bool_cmp_expression => {
             if token.children.len() == 1 {
                 token.value = token.children[0].value.clone();
@@ -341,6 +356,10 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
                 }
             }
         },
+
+        Rule::toplevel_expression => {
+            token.value = token.children[0].value.clone();
+        }
 
         Rule::term => {
             if token.children.len() == 3 {
@@ -522,7 +541,7 @@ fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Option
                 let name = token.children[0].text.to_string();
                 let mut args : Vec<AtomicValue> = Vec::new();
                 match token.children[2].rule {
-                    Rule::bool_or_expression => args.push(token.children[2].value.clone()),
+                    Rule::toplevel_expression => args.push(token.children[2].value.clone()),
                     Rule::expression_list => {
                         let mut i = 0;
                         while i < token.children[2].children.len() {
@@ -560,6 +579,7 @@ fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Option
                     match state.user_functions.get(&name) {
                         Some(f) => {
                             let mut inner_state = state.clone();
+                            inner_state.depth = state.depth + 1;
                             if args.len() != f.arguments.len() {
                                 return Some(ParserError::FunctionNArg(FunctionNArgError::new(&f.name, f.arguments.len(), f.arguments.len())));
                             }
