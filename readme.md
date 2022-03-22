@@ -1,93 +1,174 @@
+
 # Lavendeux Parser - Extensible inline parser engine
-Backend parsing engine for Lavendeux.
 
-```
-let input = "x=9\nsqrt(x) @bin
-let mut state : ParserState = ParserState::new()
-let lines = Token::from_input(input, &mut state)?;
-// lines will contain the result of the input, as an array of string:
-//    9
-//    0b11
-```
+Extensible parsing library for expression evaluation.
+Acts as the engine for [Lavendeux](https://rscarson.github.io/Lavendeux/)
 
-## Data types
-**bin:** Base 2 binary, prefixed by 0b, such as 0b11
-**oct:** Base 8 octal, prefixed with 0o, or any number begining with 0, such as 0o7, or 07
-**hex:** Base 16 hexadecimal, prefixed with 0x, such as 0xFE
-**sci:** Scientific notation floating point numbers, such as .3E+5, 2.5E3, or 5E-6
-**float:** 64bit floating point number, such as 3.56, or .8
-**int:** 64bit integer, such as 956, or 2,
-**boolean:** true or false,
-**currency:** Currency value - currently dollars, pounds, euros, and yen are supported
-**string:** Quoted string, with single or double quotes. Supports a variety of escape sequences
+## Syntax
+For detailed syntax documentation, visit https://rscarson.github.io/Lavendeux/
 
-## Variables
-Expression values can be assigned to a variable. That variable can then be used in expressions:
-```
-i = sqrt(9)
-i**2
+## How to use it
+Simple example below:
+
+```rust
+let mut state : ParserState = ParserState::new();
+let lines = Token::from_input("x=9\nsqrt(x) @bin", &mut state)?;
+
+// The resulting token contains the resulting values and text
+assert_eq!(lines.text, "9\n0b11");
+assert_eq!(lines.children[1].value, AtomicValue::Integer(3));
 ```
 
-Functions can also be defined:
+Extensions can be loaded as follows:
+```rust
+// Load one extension
+let extension = Extension::new("filename.js")?;
+state.extensions.push(extension);
+
+// Load a whole directory
+extensions = Extension::load_all("./directory")?;
+state.extensions = extensions;
+
+// Once loaded, functions and @decorators decribed in the extensions
+// can be called in expressions being parsed
 ```
+
+## Syntax
+Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
+```javascript
+// Integer, floating point or scientific notation numbers
+5 + 5.56 + .2e+3
+
+// Currency values
+// Note that no exchange rate is being applied automatically
+$1,000.00 == ¥1,000.00
+
+// Scientific numbers can be represented a number of ways
+5.6e+7 - .6E7 + .2e-3
+
+// Booleans
+in_range = 5 > 3 && 5 < 10
+true || false
+
+// Integers can also be represented in base 2, 8 or 16
+0xFFA & 0b110 & 0777
+
+// Strings are also supported
+concat("foo", "bar")
+```
+
+Beyond the simpler operators, the following operations are supported:
+```javascript
+5 ** 2 // Exponentiation
+6 % 2 // Modulo
+3! // Factorial
+
+// Bitwise operators AND, OR, and XOR:
+0xF & 0xA | 0x2 ^ 0xF
+
+// Bitwise SHIFT, and NOT
+0xF << 1
+0x1 >> 2
+~0xA
+
+// Boolean operators
+true || false && true
+1 < 2 > 5 // true
+```
+
+You can also assign values to variables to be used later:  
+They are case sensitive, and can be composed of underscores or alphanumeric characters
+```javascript
+// You can also assign values to variables to be used later
+x = 0xFFA & 0xFF0
+x - 55 // The result will be 200
+
+// A few constants are also pre-defined
+value = pi * e * tau
+
+// You can also define functions
 f(x) = 2*x**2 + 3*x + 5
-f(2)
+f(2.3)
 ```
 
-Values for **pi**, **tau** and **e** are defined as constants, and can be used in expressions.
-
-## Operators
-|Operation| Format |
-|--|--|
-| Concatenation | *string* **+** *string* |
-| Addition/Substraction | *number* **(+, -)** *number* |
-| Multiplication/Division | *number* **(\*, /)** *number* |
-| Modulo | *number* **%** *number* |
-| Exponentiation | *number* **\*\*** *number* |
-| Factorial | *number* **!** |
-| Bitwise AND | *int* **&** *int* |
-| Bitwise OR | *int* **|** *int* |
-| Bitwise XOR | *int* **^** *int* |
-| Bitwise Shift | *int* **(<<, >>)** *int* |
-| Bitwise NOT | **~** *int* |
-| Boolean AND | *boolean* **&&** *boolean* |
-| Boolean OR | *boolean* **||** *boolean* |
-| Boolean EQ | *boolean* **==** *boolean* |
-| less/greater than | *value* **<** *boolean*, *boolean* **>** *value* |
-| ternary | *condition* ? *value* : *value* |
-
-## Functions
-| Function | Usage |
-|--|--|
-| ceil(n) | Round n up to the nearest whole integer |
-| floor(n) | Round n down to the nearest whole integer |
-| round(n, precision=0) | Round n to a given precision |
-| abs(n) | Return the absolute value of n |
-| to_radians(n) | Convert integer n from degrees to radians |
-| tan(n), atan(n), tanh(n) | Calculate the tangent, arctangent or hyperbolic tangent of radian value n |
-| cos(n), acos(n), cosh(n) | Calculate the cosine, arccosine or hyperbolic cosine of radian value n |
-| sin(n), asin(n), sinh(n) | Calculate the sine, arcsine or hyperbolic sine of radian value n |
-| log10(n) | Calculate the base 10 logarithm of n |
-| ln(n) | Calculate the base e logarithm of n |
-| log(n, base) | Calculate the base 'base' 10 logarithm of n |
-| sqrt(n) | Calculate the square root of n |
-| root(n, k) | Calculate the Kth root of n |
-| strlen(s) | Return the length of string s |
-| substr(s, start, [end]) | Return the substring of string s, from start to end. If end is omited, return until end of string |
-
-## Decorators
-Decorators can be added to the end of an expression to modify how the resulting value is formatted:
+Decorators can be put at the end of a line to change the output format. Valid decorators include:  
+**@bin, @oct, @hex, @int, @float, or @sci**
+```javascript
+255 @hex // The result will be 0xFF
+8 @oct // The result will be 0o10
+5 @float // The result will be 5.0
+5 @usd // Also works with @dollars @cad, @aud, @yen, @pounds, or @euros
+1647950086 @utc // 2022-03-22 11:54:46
 ```
-16 @hex        ->    0xF
-sqrt(9) @bin   ->    0b11
+
+The following functions are supported by default:
+```javascript
+// String functions
+concat("s1", "s2", ...) | strlen("string") | substr("string", start, [length])
+
+// Rounding functions
+ceil(n) | floor(n) | round(n, precision)
+
+// Trigonometric functions
+tan(r), cos(r), sin(r), atan(r), acos(r), asin(r), tanh(r), cosh(r), sinh(r)
+
+// Rounding functions
+ln(n) | log10(n) | log(n, base)
+sqrt(n) | root(n, base)
+
+// RNG functions
+choose("argument 1", 2, 3.0, ...) | rand() | rand(min, max)
+
+// Networking functions
+get(url, ["header-name=value", ...]) | post(url, ["header-name=value", ...]) | resolve(hostname)
+
+// Misc. functions
+to_radians(degree_value) | abs(n) | tail(filename, [lines]) | time()
 ```
-| Decorator | Usage |
-|--|--|
-| @hex | Format a number as hexadecimal - rounding down floats if needed |
-| @oct | Format a number as octal - rounding down floats if needed |
-| @bin | Format a number as binary - rounding down floats if needed |
-| @int | Format a number as an integer - rounding down floats if needed |
-| @sci | Format a number in scientific notation |
-| @float | Format a number as floating point |
-| @dollar, @usd, @cad, @aud, @euro, @pound, @yen | Format a number as a currency amount |
-| @utc | Format an integer as a UTC timestamp |
+
+Lavendeux can be extended with javascript. Extensions are run in a sandboxed environment, with no network or host access.  
+Below is an example of a simple extension:
+```javascript
+/**
+* This function tells Lavendeux about this extension.
+* It must return an object similar to the one below.
+* @returns Object
+*/
+function extension() }
+    return {
+        name: "Extension Name",
+        author: "Author's name",
+        version: "0.0.0",
+        
+        functions: {,
+            "callable_name": "js_function_name"
+        },
+        
+        decorator: {,
+            "callable_name": "js_decorator_name"
+        },
+    }
+}
+
+/**
+* This function can be called from Lavendeux as callable_name(...)
+* args is an array of value objects with either the key Integer, Float or String
+* It must also return an object of that kind, or throw an exception
+* @returns Object
+*/
+function js_function_name(args) }
+    return {
+        "Integer": 5,
+    };
+}
+
+/**
+* This decorator can be called from Lavendeux as @callable_name
+* arg is a value object with either the key Integer, Float or String
+* It must return a string, or throw an exception
+* @returns String
+*/
+function js_decorator_name(arg) {
+    return "formatted value";
+}
+```
