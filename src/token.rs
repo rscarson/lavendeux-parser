@@ -54,6 +54,7 @@ impl Token {
         let mut do_not_parse_ = do_not_parse;
         for child in pair.into_inner() {
             let mut value = AtomicValue::None;
+            
             // Function assignment bypass
             if child.clone().as_rule() == Rule::function_assignment {
                 do_not_parse_ = true;
@@ -61,6 +62,7 @@ impl Token {
                 let name = children.first().unwrap().as_str().clone();
                 let definition = children.last().unwrap().as_str().clone();
 
+                // Compile arguments
                 let mut args : Vec<String> = Vec::new();
                 children.remove(0); children.remove(0);
                 for argument in children {
@@ -70,6 +72,7 @@ impl Token {
                     args.push(s.to_string());
                 }
 
+                // Store new function
                 state.user_functions.insert(name.to_string(), UserFunction {
                     name: name.to_string(),
                     arguments: args,
@@ -195,7 +198,6 @@ mod test_token {
         let t = Token::from_input("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
         assert_eq!("10\nx * y\n10", t.text);
         token_does_value_equal("fn(5,5)", AtomicValue::Integer(25), &mut state);
-
         assert_eq!(true, Token::from_input("f(x) = f(x)\nf(0)", &mut state).is_err());
 
         // Ternary
@@ -329,12 +331,16 @@ mod test_token {
 
         // boolean expressions
         token_does_value_equal("2 < 3", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("1 > 2 < true", AtomicValue::Boolean(true), &mut state);
         token_does_value_equal("5.0 < 3", AtomicValue::Boolean(false), &mut state);
         token_does_value_equal("'test' > 'a'", AtomicValue::Boolean(true), &mut state);
         token_does_value_equal("'test' && 'a'", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("true && true && false", AtomicValue::Boolean(false), &mut state);
         token_does_value_equal("1 && 1", AtomicValue::Boolean(true), &mut state);
         token_does_value_equal("1 && 0", AtomicValue::Boolean(false), &mut state);
-        token_does_value_equal("1 || 0", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("false || false || true", AtomicValue::Boolean(true), &mut state);
         token_does_value_equal("true || false", AtomicValue::Boolean(true), &mut state);
+        // token_does_value_equal("true == false", AtomicValue::Boolean(false), &mut state);
+        // token_does_value_equal("true == false == false", AtomicValue::Boolean(true), &mut state);
     }
 }

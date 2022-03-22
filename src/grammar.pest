@@ -19,19 +19,20 @@ divide = {"/"}
 modulus = {"%"}
 power = {"**"}
 bool_and = {"&&"}
-and = {"&"}
 bool_or = {"||"}
+and = {"&"}
 or = {"|"}
 xor = {"^"}
 lshift = {"<<"}
 rshift = {">>"}
 lt = {"<"}
 gt = {">"}
+eq = {"=="}
+ne = {"!="}
 factorial = {"!"}
 not = {"~"}
 comma = {","}
 decorator = {"@"}
-bool_equal = {"="}
 equal = {"="}
 lparen = {"("}
 rparen = {")"}
@@ -42,7 +43,7 @@ expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
 
 toplevel_expression = {ternary_expression}
 
-ternary_expression = {bool_or_expression ~("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
+ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
 bool_cmp_expression = {or_expression ~ ((lt|gt) ~ or_expression)*}

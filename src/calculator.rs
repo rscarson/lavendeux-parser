@@ -247,45 +247,64 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
             if token.children.len() == 1 {
                 token.value = token.children[0].value.clone();
             } else {
-                let l = token.children[0].value.clone();
-                let r = token.children[2].value.clone();
 
-                if matches!(l, AtomicValue::String(_)) && matches!(r, AtomicValue::String(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_string() < r.as_string()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_string() > r.as_string()),
-                        _ => {}
+                let mut i = 0;
+                token.value = token.children[i].value.clone();
+                while i < token.children.len() - 2 {
+                    let l = token.value.clone();
+                    let r = token.children[i+2].value.clone();
+
+                    if matches!(l, AtomicValue::String(_)) && matches!(r, AtomicValue::String(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_string() < r.as_string()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_string() > r.as_string()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
+                    } else if matches!(l, AtomicValue::Boolean(_)) && matches!(r, AtomicValue::Boolean(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_string() < r.as_string()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_string() > r.as_string()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
+                    } else if matches!(l, AtomicValue::Integer(_)) && matches!(r, AtomicValue::Integer(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_int().unwrap() < r.as_int().unwrap()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_int().unwrap() > r.as_int().unwrap()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
+                    } else if matches!(l, AtomicValue::Float(_)) && matches!(r, AtomicValue::Float(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
+                    } else if matches!(l, AtomicValue::Integer(_)) && matches!(r, AtomicValue::Float(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
+                    } else if matches!(l, AtomicValue::Float(_)) && matches!(r, AtomicValue::Integer(_)) {
+                        match token.children[i+1].rule {
+                            Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
+                            Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
+                            Rule::eq => token.value = AtomicValue::Boolean(l.as_string() == r.as_string()),
+                            Rule::ne => token.value = AtomicValue::Boolean(l.as_string() != r.as_string()),
+                            _ => {}
+                        }
                     }
-                } else if matches!(l, AtomicValue::Boolean(_)) && matches!(r, AtomicValue::Boolean(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_string() < r.as_string()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_string() > r.as_string()),
-                        _ => {}
-                    }
-                } else if matches!(l, AtomicValue::Integer(_)) && matches!(r, AtomicValue::Integer(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_int().unwrap() < r.as_int().unwrap()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_int().unwrap() > r.as_int().unwrap()),
-                        _ => {}
-                    }
-                } else if matches!(l, AtomicValue::Float(_)) && matches!(r, AtomicValue::Float(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
-                        _ => {}
-                    }
-                } else if matches!(l, AtomicValue::Integer(_)) && matches!(r, AtomicValue::Float(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
-                        _ => {}
-                    }
-                } else if matches!(l, AtomicValue::Float(_)) && matches!(r, AtomicValue::Integer(_)) {
-                    match token.children[1].rule {
-                        Rule::lt => token.value = AtomicValue::Boolean(l.as_float().unwrap() < r.as_float().unwrap()),
-                        Rule::gt => token.value = AtomicValue::Boolean(l.as_float().unwrap() > r.as_float().unwrap()),
-                        _ => {}
-                    }
+
+                    i += 2;
                 }
             }
         },
@@ -294,7 +313,12 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
             if token.children.len() == 1 {
                 token.value = token.children[0].value.clone();
             } else {
-                token.value = AtomicValue::Boolean(token.children[0].value.as_bool() && token.children[2].value.as_bool());
+                let mut i = 0;
+                token.value = token.children[i].value.clone();
+                while i < token.children.len() - 2 {
+                    token.value = AtomicValue::Boolean(token.value.as_bool() && token.children[i+2].value.as_bool());
+                    i += 2
+                }
             }
         },
         
@@ -302,7 +326,12 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
             if token.children.len() == 1 {
                 token.value = token.children[0].value.clone();
             } else {
-                token.value = AtomicValue::Boolean(token.children[0].value.as_bool() || token.children[2].value.as_bool());
+                let mut i = 0;
+                token.value = token.children[i].value.clone();
+                while i < token.children.len() - 2 {
+                    token.value = AtomicValue::Boolean(token.value.as_bool() || token.children[i+2].value.as_bool());
+                    i += 2
+                }
             }
         },
 
