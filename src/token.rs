@@ -194,12 +194,6 @@ mod test_token {
     fn test_grammar_atomic_value() {
         let mut state: ParserState = ParserState::new();
 
-        // Function
-        let t = Token::from_input("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
-        assert_eq!("10\nx * y\n10", t.text);
-        token_does_value_equal("fn(5,5)", AtomicValue::Integer(25), &mut state);
-        assert_eq!(true, Token::from_input("f(x) = f(x)\nf(0)", &mut state).is_err());
-
         // Ternary
         token_does_value_equal("true ? 5 : 4", AtomicValue::Integer(5), &mut state);
         token_does_value_equal("false ? 5 : 4", AtomicValue::Integer(4), &mut state);
@@ -232,6 +226,7 @@ mod test_token {
         token_does_value_equal("5e-5", AtomicValue::Float(5e-5), &mut state);
 
         // Float
+        token_does_value_equal("10000000.00", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal("$10,000,000.00", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal("$10,000,000", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal(".4", AtomicValue::Float(0.4), &mut state);
@@ -340,7 +335,13 @@ mod test_token {
         token_does_value_equal("1 && 0", AtomicValue::Boolean(false), &mut state);
         token_does_value_equal("false || false || true", AtomicValue::Boolean(true), &mut state);
         token_does_value_equal("true || false", AtomicValue::Boolean(true), &mut state);
-        // token_does_value_equal("true == false", AtomicValue::Boolean(false), &mut state);
-        // token_does_value_equal("true == false == false", AtomicValue::Boolean(true), &mut state);
+        token_does_value_equal("true == false", AtomicValue::Boolean(false), &mut state);
+        token_does_value_equal("true == false != true", AtomicValue::Boolean(true), &mut state);
+
+        // Function
+        let t = Token::from_input("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
+        assert_eq!("10\nx * y\n10", t.text);
+        token_does_value_equal("fn(5,5)", AtomicValue::Integer(25), &mut state);
+        assert_eq!(true, Token::from_input("f(x) = f(x)\nf(0)", &mut state).is_err());
     }
 }

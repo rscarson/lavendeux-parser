@@ -437,6 +437,9 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
                                     }))
                                 }
                             },
+                            AtomicValue::Boolean(n) => {
+                                token.value = AtomicValue::Boolean(!n);
+                            },
                             _ => return Some(ParserError::ValueType(ValueTypeError {
                                 expected: ExpectedTypes::Int
                             }))
