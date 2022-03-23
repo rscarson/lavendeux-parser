@@ -149,12 +149,12 @@ mod test_token {
 
     fn token_does_value_equal(input: &str, expected: AtomicValue, state: &mut ParserState) {
         let t = Token::new(input, state).unwrap();
-        assert_eq!(expected, t.children[0].value);
+        assert_eq!(expected, t.value);
     }
 
     fn token_does_text_equal(input: &str, expected: &str, state: &mut ParserState) {
         let t = Token::new(input, state).unwrap();
-        assert_eq!(expected, t.children[0].text);
+        assert_eq!(expected, t.text);
     }
 
     #[test]
@@ -166,7 +166,7 @@ mod test_token {
     #[test]
     fn test_from_input() {
         let mut state: ParserState = ParserState::new();
-        assert_eq!(AtomicValue::Integer(10), Token::new("5+5", &mut state).unwrap().children[0].value);
+        assert_eq!(AtomicValue::Integer(10), Token::new("5+5", &mut state).unwrap().value);
     }
 
     #[test]
@@ -230,8 +230,7 @@ mod test_token {
     fn test_grammar_script() {
         let mut state: ParserState = ParserState::new();
 
-        let token = Token::new("5+5\n5+5", &mut state).unwrap();
-        assert_eq!("10\n10", token.text);
+        token_does_text_equal("5+5\n5+5", "10\n10", &mut state);
 
         // Line
         token_does_value_equal("5", AtomicValue::Integer(5), &mut state);
