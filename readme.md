@@ -12,7 +12,7 @@ Simple example below:
 
 ```rust
 let mut state : ParserState = ParserState::new();
-let lines = Token::from_input("x=9\nsqrt(x) @bin", &mut state)?;
+let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
 
 // The resulting token contains the resulting values and text
 assert_eq!(lines.text, "9\n0b11");

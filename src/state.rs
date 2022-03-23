@@ -2,7 +2,7 @@ use super::value::AtomicValue;
 use super::{functions, decorators, extensions};
 use std::collections::HashMap;
 
-const MAX_STACK_DEPTH: usize = 32;
+const MAX_STACK_DEPTH: usize = 100;
 
 #[derive(Clone)]
 pub struct UserFunction {
