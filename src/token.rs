@@ -123,8 +123,9 @@ impl Token {
                 definition: definition.to_string()
             });
 
-            token.value = AtomicValue::String(definition.to_string());
-            token.text = definition.to_string();
+            let eol = children.last().unwrap().as_str();
+            token.text = definition.to_string() + eol;
+            token.value = AtomicValue::String(token.text.clone());
         } else {
             // Default token handler
             for child in children {
@@ -231,6 +232,9 @@ mod test_token {
         let mut state: ParserState = ParserState::new();
 
         token_does_text_equal("5+5\n5+5", "10\n10", &mut state);
+
+        // Empty lines and comments
+        token_does_text_equal("5+5\n\n\n// Test\n5+5 // test", "10\n\n\n\n10", &mut state);
 
         // Line
         token_does_value_equal("5", AtomicValue::Integer(5), &mut state);

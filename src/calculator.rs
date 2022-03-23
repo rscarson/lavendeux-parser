@@ -327,7 +327,8 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
 fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
     match token.rule {
         Rule::script => {
-            token.text = token.children.clone().into_iter().map(|t| t.text).collect::<Vec<String>>().join("\n");
+            token.text = token.children.clone().into_iter().map(|t| t.text).collect::<Vec<String>>().join("");
+
             if token.children.len() == 1 {
                 token.value = token.children[0].value.clone();
             }
@@ -336,7 +337,7 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
         Rule::line => {
             token.value = token.children[0].value.clone();
             token.format = token.children[0].format.clone();
-
+            
             if token.children.len() > 2 {
                 let name = &token.children[2].text;
                 match state.decorators.call(&name, &token.value) {
@@ -371,6 +372,8 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
                     }
                 }
             }
+
+            token.text = token.text.clone() + &token.children.last().unwrap().text;
         },
 
         Rule::toplevel_expression => {
@@ -548,76 +551,74 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
     match token.rule {
         Rule::call_expression => {
-            {
-                let name = token.children[0].text.to_string();
-                let mut args : Vec<AtomicValue> = Vec::new();
-                match token.children[2].rule {
-                    Rule::rparen => { },
-                    Rule::expression_list => {
+            let name = token.children[0].text.to_string();
+            let mut args : Vec<AtomicValue> = Vec::new();
+            match token.children[2].rule {
+                Rule::rparen => { },
+                Rule::expression_list => {
+                    let mut i = 0;
+                    while i < token.children[2].children.len() {
+                        args.push(token.children[2].children[i].value.clone());
+                        i += 2;
+                    }
+                },
+                _ => args.push(token.children[2].value.clone())
+            }
+
+            if state.functions.has(&name) {
+                // Builtin functions
+                match state.functions.call(&name, &args[..]) {
+                    Ok(v) => {
+                        token.value = v;
+                        return None;
+                    },
+                    Err(e) => { return Some(e); }
+                }
+            } else {
+                // Extension functions
+                for extension in &mut state.extensions {
+                    if extension.has_function(&name) {
+                        match extension.call_function(&name, &args[..]) {
+                            Ok(v) => {
+                                token.value = v;
+                                return None;
+                            },
+                            Err(e) => return Some(e)
+                        }
+                    }
+                }
+
+                // User-defined functions
+                match state.user_functions.get(&name) {
+                    Some(f) => {
+                        let mut inner_state = state.clone();
+                        inner_state.depth = state.depth + 1;
+                        if args.len() != f.arguments.len() {
+                            return Some(ParserError::FunctionNArg(FunctionNArgError::new(&f.name, f.arguments.len(), f.arguments.len())));
+                        } else if !inner_state.is_depth_ok() {
+                            return Some(ParserError::Stack);
+                        }
+
                         let mut i = 0;
-                        while i < token.children[2].children.len() {
-                            args.push(token.children[2].children[i].value.clone());
-                            i += 2;
+                        for arg in f.arguments.clone() {
+                            inner_state.variables.insert(arg, args[i].clone());
+                            i += 0;
+                        }
+
+                        match Token::new(&f.definition, &mut inner_state) {
+                            Ok(t) => {
+                                token.value = t.children[0].value.clone();
+                                token.text = t.text;
+                                return None;
+                            },
+                            Err(e) => { return Some(e); }
                         }
                     },
-                    _ => args.push(token.children[2].value.clone())
+                    None => {}
                 }
-
-                if state.functions.has(&name) {
-                    // Builtin functions
-                    match state.functions.call(&name, &args[..]) {
-                        Ok(v) => {
-                            token.value = v;
-                            return None;
-                        },
-                        Err(e) => { return Some(e); }
-                    }
-                } else {
-                    // Extension functions
-                    for extension in &mut state.extensions {
-                        if extension.has_function(&name) {
-                            match extension.call_function(&name, &args[..]) {
-                                Ok(v) => {
-                                    token.value = v;
-                                    return None;
-                                },
-                                Err(e) => return Some(e)
-                            }
-                        }
-                    }
-
-                    // User-defined functions
-                    match state.user_functions.get(&name) {
-                        Some(f) => {
-                            let mut inner_state = state.clone();
-                            inner_state.depth = state.depth + 1;
-                            if args.len() != f.arguments.len() {
-                                return Some(ParserError::FunctionNArg(FunctionNArgError::new(&f.name, f.arguments.len(), f.arguments.len())));
-                            } else if !inner_state.is_depth_ok() {
-                                return Some(ParserError::Stack);
-                            }
-
-                            let mut i = 0;
-                            for arg in f.arguments.clone() {
-                                inner_state.variables.insert(arg, args[i].clone());
-                                i += 0;
-                            }
-
-                            match Token::new(&f.definition, &mut inner_state) {
-                                Ok(t) => {
-                                    token.value = t.children[0].value.clone();
-                                    token.text = t.text;
-                                    return None;
-                                },
-                                Err(e) => { return Some(e); }
-                            }
-                        },
-                        None => {}
-                    }
-                }
-
-                return Some(ParserError::FunctionName(FunctionNameError::new(&name)));
             }
+
+            return Some(ParserError::FunctionName(FunctionNameError::new(&name)));
         }
 
         _ => { }
