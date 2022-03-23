@@ -202,6 +202,7 @@ mod test_token {
 
         // Float
         token_does_value_equal("10000000.00", AtomicValue::Float(10000000.0), &mut state);
+        token_does_value_equal("¥10,000,000.00", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal("$10,000,000.00", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal("$10,000,000", AtomicValue::Float(10000000.0), &mut state);
         token_does_value_equal(".4", AtomicValue::Float(0.4), &mut state);

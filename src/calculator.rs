@@ -168,10 +168,9 @@ fn atomicvalue_handler(token: &mut Token, state: &mut ParserState) -> Option<Par
             }
         },
 
-        Rule::currency => match token.text[1..].replace(",", "").parse::<FloatType>() {
+        Rule::currency => match token.text.chars().skip(1).take(token.text.len()-1).collect::<String>().replace(",", "").parse::<FloatType>() {
             Ok(n) => {
                 token.value = AtomicValue::Float(n);
-            //    "$" | "€" | "£" | "¥"
                 if token.text.starts_with("$") {
                     token.format = OutputFormat::Dollars;
                 } else if token.text.starts_with("€") {
