@@ -102,6 +102,7 @@ mod test_builtin_table {
     
     #[test]
     fn test_resolve() {
-        assert_eq!("127.0.0.1", builtin_resolve(&[AtomicValue::String("localhost".to_string())]).unwrap().as_string());
+        let result = builtin_resolve(&[AtomicValue::String("localhost".to_string())]).unwrap().as_string();
+        assert_eq!(true, result == "127.0.0.1" || result == "[::1]");
     }
 }
