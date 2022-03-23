@@ -14,8 +14,9 @@ struct CalcParser;
 
 #[derive(Clone, Debug)]
 pub enum OutputFormat {
-    Default = 0,
-    Dollars = 10, Euros = 11, Pounds = 12, Yen = 13
+    Unknown = 0,
+    Default = 10,
+    Dollars = 20, Euros = 21, Pounds = 22, Yen = 23
 }
 
 type TokenHandler = fn(&mut Token, &mut ParserState) -> Option<ParserError>;
@@ -70,6 +71,16 @@ impl Token {
             Err(e) => return Err(ParserError::Pest(PestError::new(&e.to_string())))
         }
     }
+    
+    /// Parses an input string, and returns the resulting token tree
+    /// 
+    /// # Arguments
+    /// * `input` - Source string
+    /// * `state` - The current parser state
+    #[deprecated]
+    pub fn from_input(input: &str, state: &mut ParserState) -> Result<Token, ParserError> {
+        Self::new(input, state)
+    }
 
     /// Converts a pest pair object into a token tree, and returns it
     /// 
@@ -90,7 +101,7 @@ impl Token {
             rule: next_pair.as_rule(),
             input: next_pair.as_str().to_string(),
             text: next_pair.as_str().to_string(),
-            format: OutputFormat::Default,
+            format: OutputFormat::Unknown,
             value: AtomicValue::None,
             index: next_pair.as_span().start(),
             children: Vec::new()
@@ -233,6 +244,7 @@ mod test_token {
         let mut state: ParserState = ParserState::new();
 
         token_does_text_equal("5+5\n5+5", "10\n10", &mut state);
+        token_does_value_equal("$1,000.00 == ¥1,000.00", AtomicValue::Boolean(true), &mut state);
 
         // Empty lines and comments
         token_does_text_equal("5+5\n\n\n// Test\n5+5 // test", "10\n\n\n\n10", &mut state);

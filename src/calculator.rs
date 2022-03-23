@@ -227,17 +227,6 @@ fn atomicvalue_handler(token: &mut Token, state: &mut ParserState) -> Option<Par
 
 fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
     match token.rule {
-        Rule::ternary_expression => {
-            let mut conditional = token.children[0].value.clone();
-            let mut i = 1;
-            while i < token.children.len() {
-                conditional = if conditional.as_bool() { token.children[i].value.clone() } else { token.children[i+1].value.clone() };
-                i += 2;
-            }
-
-            token.value = conditional;
-        },
-
         Rule::bool_cmp_expression => {
             let mut i = 0;
             token.value = token.children[i].value.clone();
@@ -297,6 +286,8 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
 
                 i += 2;
             }
+
+            token.format = OutputFormat::Default; // Revert to boolean type
         },
         
         Rule::bool_and_expression => {
@@ -306,6 +297,8 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
                 token.value = AtomicValue::Boolean(token.value.as_bool() && token.children[i+2].value.as_bool());
                 i += 2
             }
+
+            token.format = OutputFormat::Default; // Revert to boolean type
         },
         
         Rule::bool_or_expression => {
@@ -315,6 +308,8 @@ fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> Optio
                 token.value = AtomicValue::Boolean(token.value.as_bool() || token.children[i+2].value.as_bool());
                 i += 2
             }
+
+            token.format = OutputFormat::Default; // Revert to boolean type
         },
 
         _ => { }
@@ -335,7 +330,9 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 
         Rule::line => {
             token.value = token.children[0].value.clone();
-            token.format = token.children[0].format.clone();
+            if matches!(token.format, OutputFormat::Unknown) {
+                token.format = token.children[0].format.clone();
+            }
             
             if token.children.len() > 2 {
                 let name = &token.children[2].text;
@@ -374,10 +371,6 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 
             token.text = token.text.clone() + &token.children.last().unwrap().text;
         },
-
-        Rule::toplevel_expression => {
-            token.value = token.children[0].value.clone();
-        }
 
         Rule::term => {
             if token.children.len() == 3 {
@@ -737,6 +730,13 @@ fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -> Op
 }
 
 pub fn handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
+    // Bubble up output format
+    for child in token.children.clone() {
+        if child.format.clone() as i32 / 10 > token.format.clone() as i32 / 10 {
+            token.format = child.format.clone();
+        }
+    }
+
     match atomicvalue_handler(token, state) {
         Some(e) => return Some(e),
         _ => { }
@@ -760,13 +760,6 @@ pub fn handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError
     match bitwise_expression_handler(token, state) {
         Some(e) => return Some(e),
         _ => { }
-    }
-
-    // Recalculate output format
-    for child in token.children.clone() {
-        if child.format.clone() as usize / 10 > token.format.clone() as usize / 10 {
-            token.format = child.format;
-        }
     }
 
     return None;
