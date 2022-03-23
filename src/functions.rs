@@ -48,6 +48,7 @@ impl FunctionTable {
         table.register("root", builtin_root);
         
         // String functions
+        table.register("concat", builtin_concat);
         table.register("strlen", builtin_strlen);
         table.register("substr", builtin_substr);
 
@@ -240,6 +241,14 @@ fn builtin_strlen(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     }
 }
 
+fn builtin_concat(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+    if args.len() == 0 {
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new("strlen(s)", 1, 1)));
+    }
+
+    Ok(AtomicValue::String(args.iter().map(|v|v.as_string()).collect::<String>()))
+}
+
 fn builtin_substr(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     if args.len() != 2 && args.len() != 3 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("substr(s, start, [length])", 2, 3)));
@@ -349,6 +358,19 @@ mod test_builtin_functions {
     fn test_strlen() {
         assert_eq!(AtomicValue::Integer(0), builtin_strlen(&[AtomicValue::String("".to_string())]).unwrap());
         assert_eq!(AtomicValue::Integer(3), builtin_strlen(&[AtomicValue::String("   ".to_string())]).unwrap());
+    }
+
+    #[test]
+    fn test_concat() {
+        assert_eq!(AtomicValue::String(" ".to_string()), builtin_concat(
+            &[AtomicValue::String("".to_string()), 
+            AtomicValue::String(" ".to_string())
+        ]).unwrap());
+        assert_eq!(AtomicValue::String("test4false".to_string()), builtin_concat(
+            &[AtomicValue::String("test".to_string()), 
+            AtomicValue::Integer(4),
+            AtomicValue::Boolean(false)
+        ]).unwrap());
     }
     
     #[test]
