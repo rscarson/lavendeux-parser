@@ -9,7 +9,7 @@ pub enum AtomicValue {
 
 impl std::fmt::Display for AtomicValue {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.as_string())
     }
 }
 
@@ -17,53 +17,68 @@ impl AtomicValue {
     /// Return the value as an integer, if possible
     pub fn as_string(&self) -> String {
         match self {
-            AtomicValue::Boolean(v) => return format!("{}", if *v {"true"} else {"false"}),
-            AtomicValue::Integer(n) => return format!("{}", *n),
-            AtomicValue::Float(n) => return format!("{}", *n),
-            AtomicValue::String(s) => return s.to_string(),
-            AtomicValue::None => return "".to_string(),
+            AtomicValue::Boolean(v) => (if *v {"true"} else {"false"}).to_string(),
+            AtomicValue::Integer(n) => format!("{}", *n),
+            AtomicValue::Float(n) => format!("{}", *n),
+            AtomicValue::String(s) => s.to_string(),
+            AtomicValue::None => "".to_string(),
         }
     }
     
     pub fn as_bool(&self) -> bool {
         match self {
-            AtomicValue::None => return false,
-            AtomicValue::Boolean(v) => return *v,
-            AtomicValue::Integer(n) => return *n != 0,
-            AtomicValue::Float(n) => return *n != 0.0,
-            AtomicValue::String(s) => return s.len() > 0,
+            AtomicValue::None => false,
+            AtomicValue::Boolean(v) => *v,
+            AtomicValue::Integer(n) => *n != 0,
+            AtomicValue::Float(n) => *n != 0.0,
+            AtomicValue::String(s) => !s.is_empty(),
         }
     }
     
     pub fn as_int(&self) -> Option<IntegerType> {
         match self {
-            AtomicValue::None => return None,
-            AtomicValue::Boolean(v) => return Some(*v as IntegerType),
-            AtomicValue::Integer(n) => return Some(*n),
-            AtomicValue::Float(n) => return Some(*n as IntegerType),
-            AtomicValue::String(_) => return None,
+            AtomicValue::None => None,
+            AtomicValue::Boolean(v) => Some(*v as IntegerType),
+            AtomicValue::Integer(n) => Some(*n),
+            AtomicValue::Float(n) => Some(*n as IntegerType),
+            AtomicValue::String(_) => None,
         }
     }
     
     /// Return the value as a float, if possible
     pub fn as_float(&self) -> Option<FloatType> {
         match self {
-            AtomicValue::None => return None,
-            AtomicValue::Boolean(v) => return Some((*v as IntegerType) as FloatType),
-            AtomicValue::Integer(n) => return Some(*n as FloatType),
-            AtomicValue::Float(n) => return Some(*n),
-            AtomicValue::String(_) => return None,
+            AtomicValue::None => None,
+            AtomicValue::Boolean(v) => Some((*v as IntegerType) as FloatType),
+            AtomicValue::Integer(n) => Some(*n as FloatType),
+            AtomicValue::Float(n) => Some(*n),
+            AtomicValue::String(_) => None,
         }
+    }
+
+    /// Determine if the value is a boolean
+    pub fn is_bool(&self) -> bool {
+        matches!(self, AtomicValue::Boolean(_))
+    }
+
+    /// Determine if the value is an int
+    pub fn is_int(&self) -> bool {
+        matches!(self, AtomicValue::Integer(_))
     }
 
     /// Determine if the value is a float
     pub fn is_float(&self) -> bool {
-        return matches!(self, AtomicValue::Float(_));
+        matches!(self, AtomicValue::Float(_))
+    }
+
+    /// Determine if the value is a float or int
+    pub fn is_numeric(&self) -> bool {
+        self.is_float() || self.is_int()
     }
 
     /// Determine if the value is a string
     pub fn is_string(&self) -> bool {
-        return matches!(self, AtomicValue::String(_));
+        matches!(self, AtomicValue::String(_))
     }
 }
 

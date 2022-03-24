@@ -12,7 +12,7 @@ pub struct DecoratorTable(HashMap<String, DecoratorHandler>);
 impl DecoratorTable {
     /// Initialize a new decorator table, complete with default builtin decorators
     pub fn new() -> DecoratorTable {
-        let mut table : DecoratorTable = DecoratorTable{0: HashMap::new()};
+        let mut table : DecoratorTable = DecoratorTable(HashMap::new());
 
         table.0.insert("default".to_string(), decorator_default);
         table.0.insert("hex".to_string(), decorator_hex);
@@ -57,7 +57,7 @@ impl DecoratorTable {
     /// # Arguments
     /// * `name` - Decorator name
     pub fn has(&self, name: &str) -> bool {
-        return self.0.contains_key(name)
+        self.0.contains_key(name)
     }
 
     /// Call a decorator
@@ -67,12 +67,15 @@ impl DecoratorTable {
     /// * `args` - Decorator arguments
     pub fn call(&self, name: &str, arg: &AtomicValue) -> Result<String, ParserError> {
         match self.0.get(name) {
-            Some(f) => match f(&arg) {
-                Ok(v) => Ok(v),
-                Err(e) => Err(e)
-            },
+            Some(f) => f(arg),
             None => Err(ParserError::DecoratorName(DecoratorNameError::new(name)))
         }
+    }
+}
+
+impl Default for DecoratorTable {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -81,7 +84,7 @@ pub fn decorator_default(input: &AtomicValue) -> Result<String, ParserError> {
         AtomicValue::Boolean(_) => decorator_bool(input),
         AtomicValue::Integer(_) => decorator_int(input),
         AtomicValue::Float(_) => decorator_float(input),
-        AtomicValue::String(s) => Ok(format!("{}", s)),
+        AtomicValue::String(s) => Ok(s.to_string()),
         AtomicValue::None => Ok("".to_string())
     }
 }
@@ -131,16 +134,16 @@ fn decorator_utc(input: &AtomicValue) -> Result<String, ParserError> {
 fn decorator_currency(input: &AtomicValue, symbol: &str) -> Result<String, ParserError> {
     if matches!(input, AtomicValue::Integer(_)) || matches!(input, AtomicValue::Float(_)) {
         let mut f = format!("{}{:.2}", symbol, input.as_float().unwrap());
-        if !f.contains(".") {
-            f = f + ".0";
+        if !f.contains('.') {
+            f += ".0";
         }
         f = f
             .chars().rev().collect::<Vec<char>>()
             .chunks(3).map(|c| c.iter().collect::<String>()).collect::<Vec<String>>().join(",")
-            .replacen(",", "", 1)
+            .replacen(',', "", 1)
             .chars().rev().collect::<String>();
         if f.chars().nth(1).unwrap() == ',' {
-            f = f.replacen(",", "", 1);
+            f = f.replacen(',', "", 1);
         }
         Ok(f)
     } else {
@@ -170,8 +173,8 @@ fn decorator_float(input: &AtomicValue) -> Result<String, ParserError> {
     match input {
         AtomicValue::Integer(n) => {
             let mut f = format!("{:.}", *n as FloatType);
-            if !f.contains(".") {
-                f = f + ".0";
+            if !f.contains('.') {
+                f += ".0";
             }
             Ok(f)
         },
@@ -179,8 +182,8 @@ fn decorator_float(input: &AtomicValue) -> Result<String, ParserError> {
             let mut v = (*n * multiplier).round() / multiplier;
             if v == -0.0 { v = 0.0; }
             let mut f = format!("{:.}", v);
-            if !f.contains(".") {
-                f = f + ".0";
+            if !f.contains('.') {
+                f += ".0";
             }
             Ok(f)
         },

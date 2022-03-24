@@ -4,7 +4,7 @@ use pest::Parser;
 use pest_derive::Parser;
 
 use super::errors::*;
-use super::calculator;
+use super::handlers;
 use super::state::{ParserState, UserFunction};
 use super::value::AtomicValue;
 
@@ -33,7 +33,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub const DEFAULT_HANDLER : TokenHandler = calculator::handler;
+    pub const DEFAULT_HANDLER : TokenHandler = handlers::handler;
 
     /// Parses an input string, and returns the resulting token tree
     /// 
@@ -55,7 +55,7 @@ impl Token {
         match pairs {
             Ok(mut r) => {
                 match r.next() {
-                    None => return Ok(Token {
+                    None => Ok(Token {
                         format: OutputFormat::Default,
                         text: "".to_string(),
                         input: "".to_string(),
@@ -64,11 +64,11 @@ impl Token {
                         index: 0,
                         rule: Rule::script
                     }),
-                    Some(p) => return Token::from_pair(p, handler, state)
+                    Some(p) => Token::from_pair(p, handler, state)
                 }
             }
             
-            Err(e) => return Err(ParserError::Pest(PestError::new(&e.to_string())))
+            Err(e) => Err(ParserError::Pest(PestError::new(&e.to_string())))
         }
     }
     
@@ -111,31 +111,30 @@ impl Token {
             // Ternary expression handler - enables short-circuit interpretation
             let condition = Self::from_pair(children[0].clone(), handler, state)?;
             token = Self::from_pair(if condition.value.as_bool() { children[1].clone() } else { children[2].clone() }, handler, state)?;
-        } else if children.len() > 0 && children[0].clone().as_rule() == Rule::function_assignment {
+        } else if !children.is_empty() && children[0].clone().as_rule() == Rule::function_assignment {
             // Function assignment handler - prevents prematurely executing the new function
             let mut function_children: Vec<_> = children[0].clone().into_inner().into_iter().collect();
-            let name = function_children.first().unwrap().as_str().clone();
-            let definition = function_children.last().unwrap().as_str().clone();
+            let name = function_children.first().unwrap().as_str().to_string();
+            let definition = function_children.last().unwrap().as_str().to_string();
 
             // Compile arguments
-            let mut args : Vec<String> = Vec::new();
+            let mut arguments : Vec<String> = Vec::new();
             function_children.remove(0); function_children.remove(0);
             for argument in function_children {
                 let s = argument.as_str();
                 if s == ")" { break; }
                 if s == "," { continue; }
-                args.push(s.to_string());
+                arguments.push(s.to_string());
             }
 
             // Store new function
             state.user_functions.insert(name.to_string(), UserFunction {
-                name: name.to_string(),
-                arguments: args,
+                name, arguments,
                 definition: definition.to_string()
             });
 
             let eol = children.last().unwrap().as_str();
-            token.text = definition.to_string() + eol;
+            token.text = definition + eol;
             token.value = AtomicValue::String(token.text.clone());
         } else {
             // Default token handler
@@ -145,9 +144,8 @@ impl Token {
             }
 
             // Run token handler to get value
-            match handler(&mut token, state) {
-                Some(e) => return Err(e),
-                None => {}
+            if let Some(e) = handler(&mut token, state) {
+                return Err(e);
             }
         }
 

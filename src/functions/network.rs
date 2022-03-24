@@ -9,14 +9,14 @@ pub fn builtin_resolve(args: &[AtomicValue]) -> Result<AtomicValue, ParserError>
     }
 
     let mut hostname = args[0].as_string();
-    if !hostname.contains(":") {
-        hostname = hostname + ":80";
+    if !hostname.contains(':') {
+        hostname += ":80";
     }
 
     match hostname.to_socket_addrs() {
         Ok(mut addresses) => {
             let address = addresses.next().unwrap().to_string();
-            let suffix = ":".to_string() + address.split(":").last().unwrap();
+            let suffix = ":".to_string() + address.split(':').last().unwrap();
 
             Ok(AtomicValue::String(address.replace(&suffix, "")))
         },
@@ -25,15 +25,15 @@ pub fn builtin_resolve(args: &[AtomicValue]) -> Result<AtomicValue, ParserError>
 }
 
 pub fn builtin_get(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() < 1 {
+    if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("get(url, [\"header-name=value\", ...])", 1, 1)));
     }
 
     match reqwest::blocking::Client::builder().timeout(Duration::from_millis(500)).build() {
         Ok(client) => {
             let mut request = client.get(args[0].as_string());
-            for i in 1..args.len() {
-                let header = args[i].as_string().split("=").map(|e|e.to_string()).collect::<Vec<String>>();
+            for arg in args.iter().skip(1) {
+                let header = arg.as_string().split('=').map(|e|e.to_string()).collect::<Vec<String>>();
                 if header.len() < 2 { return Err(ParserError::General("malformed header".to_string())); }
                 request = request.header(header[0].clone(), header[1..].join("="));
             }
@@ -62,8 +62,8 @@ pub fn builtin_post(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     match reqwest::blocking::Client::builder().timeout(Duration::from_millis(500)).build() {
         Ok(client) => {
             let mut request = client.post(args[0].as_string()).body(args[1].as_string());
-            for i in 2..args.len() {
-                let header = args[i].as_string().split("=").map(|e|e.to_string()).collect::<Vec<String>>();
+            for arg in args.iter().skip(2) {
+                let header = arg.as_string().split('=').map(|e|e.to_string()).collect::<Vec<String>>();
                 if header.len() < 2 { return Err(ParserError::General("malformed header".to_string())); }
                 request = request.header(header[0].clone(), header[1..].join("="));
             }

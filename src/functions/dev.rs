@@ -8,7 +8,7 @@ use crate::errors::*;
 pub fn builtin_choose(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     let mut rng = rand::thread_rng();
 
-    if args.len() == 0 {
+    if args.is_empty() {
         Err(ParserError::FunctionNArg(FunctionNArgError::new("choose(..)", 1, 100)))
     } else {
         let arg = rng.gen_range(0..(args.len() - 1));
@@ -18,7 +18,7 @@ pub fn builtin_choose(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> 
 
 pub fn builtin_rand(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     let mut rng = rand::thread_rng();
-    if args.len() == 0 {
+    if args.is_empty() {
         // Generate a float between 0 and 1
         Ok(AtomicValue::Float(rng.gen()))
     } else if args.len() == 2 {
@@ -61,7 +61,7 @@ pub fn builtin_tail(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
         }
     }
 
-    return Ok(AtomicValue::String(lines.join("\n")));
+    Ok(AtomicValue::String(lines.join("\n")))
 }
 
 #[cfg(test)]

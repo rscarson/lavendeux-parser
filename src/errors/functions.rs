@@ -41,7 +41,7 @@ error_macro::error_type!(FunctionNameError, {
 pub struct FunctionArgTypeError {pub arg: usize, pub expected: ExpectedTypes, pub signature: String}
 error_macro::error_type!(FunctionArgTypeError, {
     pub fn new (signature: &str, arg: usize, expected: ExpectedTypes) -> Self {
-        Self { arg: arg, expected: expected, signature: signature.to_string() } }
+        Self { arg, expected, signature: signature.to_string() } }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: invalid type for argument {} (expected {})", self.signature, self.arg, self.expected)
@@ -52,7 +52,7 @@ error_macro::error_type!(FunctionArgTypeError, {
 pub struct FunctionArgOverFlowError {pub arg: usize, pub signature: String}
 error_macro::error_type!(FunctionArgOverFlowError, {
     pub fn new (signature: &str, arg: usize) -> Self {
-        Self { arg: arg, signature: signature.to_string() } }
+        Self { arg, signature: signature.to_string() } }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: overflow in argument {}", self.signature, self.arg)
@@ -63,7 +63,7 @@ error_macro::error_type!(FunctionArgOverFlowError, {
 pub struct FunctionNArgError {pub min: usize, pub max: usize, pub signature: String}
 error_macro::error_type!(FunctionNArgError, {
     pub fn new (signature: &str, min: usize, max: usize) -> Self {
-        Self { min: min, max: max, signature: signature.to_string() } }
+        Self { min, max, signature: signature.to_string() } }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.min == self.max {

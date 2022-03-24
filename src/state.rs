@@ -22,6 +22,12 @@ pub struct ParserState {
     pub decorators: decorators::DecoratorTable,
 }
 
+impl Default for ParserState {
+    fn default() -> Self {
+        Self::new()
+    }
+} 
+
 impl ParserState {
     pub fn new() -> ParserState {
         let mut state = ParserState {
@@ -40,10 +46,10 @@ impl ParserState {
         state.constants.insert("e".to_string(), AtomicValue::Float(std::f64::consts::E));
         state.constants.insert("tau".to_string(), AtomicValue::Float(std::f64::consts::TAU));
 
-        return state;
+        state
     }
 
     pub fn is_depth_ok(&self) -> bool {
-        return self.depth < MAX_STACK_DEPTH;
+        self.depth < MAX_STACK_DEPTH
     }
 }
