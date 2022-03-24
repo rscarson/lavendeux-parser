@@ -162,6 +162,10 @@ mod test_token {
         assert_eq!(expected, t.value);
     }
 
+    fn token_does_error(input: &str, state: &mut ParserState) {
+        assert_eq!(true, Token::new(input, state).is_err());
+    }
+
     fn token_does_text_equal(input: &str, expected: &str, state: &mut ParserState) {
         let t = Token::new(input, state).unwrap();
         assert_eq!(expected, t.text);
@@ -279,6 +283,12 @@ mod test_token {
         token_does_value_equal("5!", AtomicValue::Integer(120), &mut state);
         token_does_value_equal("-5!", AtomicValue::Integer(-120), &mut state);
         token_does_value_equal("-~3!!", AtomicValue::Integer(-303), &mut state);
+
+        // Overflows
+        token_does_error("99999999999999999999999999999999999999999", &mut state);
+        token_does_error("1+99999999999999999999999999999999999999999", &mut state);
+        token_does_error("999999999999999999*999999999999999999", &mut state);
+        token_does_error("999!", &mut state);
 
         // Ternary expression
         token_does_value_equal("true ? 1 : 2", AtomicValue::Integer(1), &mut state);

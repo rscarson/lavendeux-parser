@@ -2,6 +2,7 @@ use crate::token::{Rule, Token};
 use crate::value::{AtomicValue, IntegerType, FloatType};
 use crate::state::ParserState;
 use crate::errors::*;
+use std::panic;
 
 type IntHandler = fn(l:IntegerType, r:IntegerType) -> Option<IntegerType>;
 type FloatHandler = fn(l:FloatType, r:FloatType) -> FloatType;
@@ -101,7 +102,14 @@ pub fn factorial(input: AtomicValue) -> Option<AtomicValue> {
         Some(n) => {
             match n {
                 0  => Some(AtomicValue::Integer(1)),
-                1.. => Some(AtomicValue::Integer((1..n+1).product())),
+                1.. => {
+                    match panic::catch_unwind(|| {
+                        (1..n+1).product()
+                    }) {
+                        Ok(p) => Some(AtomicValue::Integer(p)),
+                        Err(_) => None
+                    }
+                },
                 _ => factorial(AtomicValue::Integer(-n))
             }
         },
