@@ -31,25 +31,25 @@ pub enum ParserError {
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::General(e) => write!(f, "{}", e.to_string()),
+            Self::General(e) => write!(f, "{}", e),
             Self::Stack => write!(f, "Stack overflow during function call"),
-            Self::Pest(e) => write!(f, "{}", e.to_string()),
-            Self::ParseInt(e) => write!(f, "{}", e.to_string()),
-            Self::ParseFloat(e) => write!(f, "{}", e.to_string()),
-            Self::ValueType(e) => write!(f, "{}", e.to_string()),
-            Self::Overflow(e) => write!(f, "{}", e.to_string()),
-            Self::Underflow(e) => write!(f, "{}", e.to_string()),
-            Self::VariableName(e) => write!(f, "{}", e.to_string()),
-            Self::ContantValue(e) => write!(f, "{}", e.to_string()),
+            Self::Pest(e) => write!(f, "{}", e),
+            Self::ParseInt(e) => write!(f, "{}", e),
+            Self::ParseFloat(e) => write!(f, "{}", e),
+            Self::ValueType(e) => write!(f, "{}", e),
+            Self::Overflow(e) => write!(f, "{}", e),
+            Self::Underflow(e) => write!(f, "{}", e),
+            Self::VariableName(e) => write!(f, "{}", e),
+            Self::ContantValue(e) => write!(f, "{}", e),
         
-            Self::Script(e) => write!(f, "{}", e.to_string()),
-            Self::DecoratorName(e) => write!(f, "{}", e.to_string()),
-            Self::FunctionName(e) => write!(f, "{}", e.to_string()),
-            Self::FunctionArgType(e) => write!(f, "{}", e.to_string()),
-            Self::FunctionArgOverFlow(e) => write!(f, "{}", e.to_string()),
-            Self::FunctionNArg(e) => write!(f, "{}", e.to_string())
+            Self::Script(e) => write!(f, "{}", e),
+            Self::DecoratorName(e) => write!(f, "{}", e),
+            Self::FunctionName(e) => write!(f, "{}", e),
+            Self::FunctionArgType(e) => write!(f, "{}", e),
+            Self::FunctionArgOverFlow(e) => write!(f, "{}", e),
+            Self::FunctionNArg(e) => write!(f, "{}", e)
         }
-        //write!(f, "{}", self.to_string())
+        //write!(f, "{}", self)
     }
 }
 impl From<std::io::Error> for ParserError {

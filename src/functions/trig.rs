@@ -9,116 +9,56 @@ pub fn builtin_to_radians(args: &[AtomicValue]) -> Result<AtomicValue, ParserErr
     match args[0] {
         AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType) * (std::f64::consts::PI / 180.0))),
         AtomicValue::Float(n) => Ok(AtomicValue::Float(n * (std::f64::consts::PI / 180.0))),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_radians(n)", 1, ExpectedTypes::IntOrFloat)))
+        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_radians(n)", 1, ExpectedTypes::IntOrFloat)))
+    }
+}
+
+fn builtin_trig(sig: &str, method: fn(FloatType) -> FloatType, args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+    if args.len() != 1 {
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new(sig, 1, 1)));
+    }
+
+    match args[0] {
+        AtomicValue::Integer(n) => Ok(AtomicValue::Float(method(n as FloatType))),
+        AtomicValue::Float(n) => Ok(AtomicValue::Float(method(n))),
+        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new(sig, 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
 pub fn builtin_tan(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("tan(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).tan())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.tan())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("tan(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("tan(n)", FloatType::tan, args)
 }
 
 pub fn builtin_cos(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("cos(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).cos())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.cos())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("cos(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("cos(n)", FloatType::cos, args)
 }
 
 pub fn builtin_sin(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("sin(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).sin())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.sin())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("sin(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("sin(n)", FloatType::sin, args)
 }
 
 pub fn builtin_atan(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("atan(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).atan())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.atan())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("atan(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("atan(n)", FloatType::atan, args)
 }
 
 pub fn builtin_acos(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("acos(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).acos())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.acos())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("acos(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("acos(n)", FloatType::acos, args)
 }
 
 pub fn builtin_asin(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("asin(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).asin())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.asin())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("asin(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("asin(n)", FloatType::asin, args)
 }
 
 pub fn builtin_tanh(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("tanh(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).tanh())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.tanh())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("tanh(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("tanh(n)", FloatType::tanh, args)
 }
 
 pub fn builtin_cosh(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("cosh(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).cosh())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.cosh())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("cosh(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("cosh(n)", FloatType::cosh, args)
 }
 
 pub fn builtin_sinh(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("sinh(n)", 1, 1)));
-    }
-
-    match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).sinh())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.sinh())),
-        _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("sinh(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
+    builtin_trig("sinh(n)", FloatType::sinh, args)
 }
 
 #[cfg(test)]

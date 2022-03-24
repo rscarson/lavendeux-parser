@@ -12,7 +12,7 @@ Simple example below:
 
 ```rust
 let mut state : ParserState = ParserState::new();
-let lines = Token::from_input("x=9\nsqrt(x) @bin", &mut state)?;
+let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
 
 // The resulting token contains the resulting values and text
 assert_eq!(lines.text, "9\n0b11");
@@ -89,6 +89,10 @@ value = pi * e * tau
 // You can also define functions
 f(x) = 2*x**2 + 3*x + 5
 f(2.3)
+
+// Recursive functions work too!
+factorial(x) = x==1 ? x : (x * factorial(x - 1) )
+factorial(5)
 ```
 
 Decorators can be put at the end of a line to change the output format. Valid decorators include:  

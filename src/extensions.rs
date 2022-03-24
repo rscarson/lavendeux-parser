@@ -29,6 +29,12 @@ pub struct Extension {
     pub decorators: HashMap<String, String>
 }
 
+impl std::fmt::Display for Extension {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{} v{}, by {}", self.name, self.version, self.author)
+    }
+}
+
 unsafe impl Send for Extension {}
 impl Extension {
     /// Load an extension from a filename
@@ -38,7 +44,7 @@ impl Extension {
     pub fn new(filename: &str) -> Result<Extension, std::io::Error> {
         match fs::read_to_string(filename) {
             Ok(s) => {
-                match script_from_string(&filename, &s) {
+                match script_from_string(filename, &s) {
                     Ok(v) => Ok(v),
                     Err(e) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
                 }
@@ -47,24 +53,17 @@ impl Extension {
         }
     }
 
-    /// Convert the extension to a string
-    pub fn to_string(&self) -> String {
-        format!("{} v{}, by {}", self.name, self.version, self.author)
-    }
-
     /// Attempt to load all extensions in a directory
     pub fn load_all(directory: &str) -> Result<Vec<Extension>, std::io::Error> {
         let mut extensions : Vec<Extension> = Vec::new();
 
         match fs::read_dir(directory) {
             Ok(entries) => {
-                for file in entries {
-                    if let Ok(f) = file {
-                        if let Some(filename) = f.path().to_str() {
-                            if let Ok(extension) = Extension::new(filename) {
-                                if filename.ends_with("js") {
-                                    extensions.push(extension);
-                                }
+                for file in entries.flatten() {
+                    if let Some(filename) = file.path().to_str() {
+                        if let Ok(extension) = Extension::new(filename) {
+                            if filename.ends_with("js") {
+                                extensions.push(extension);
                             }
                         }
                     }
@@ -102,7 +101,7 @@ impl Extension {
     pub fn call_function(&mut self, name: &str, args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
         match self.load_script() {
             Ok(mut script) => {
-                let fname = self.functions.get(name).ok_or(ParserError::FunctionName(FunctionNameError::new(name)))?;
+                let fname = self.functions.get(name).ok_or_else(|| ParserError::FunctionName(FunctionNameError::new(name)))?;
                 let result : Result<AtomicValue, AnyError> = script.call(fname, &args.to_vec());
                 match result {
                     Ok(v) => Ok(v),
@@ -129,10 +128,10 @@ impl Extension {
     pub fn call_decorator(&mut self, name: &str, arg: &AtomicValue) -> Result<String, ParserError> {
         match self.load_script() {
             Ok(mut script) => {
-                let fname = self.decorators.get(name).ok_or(ParserError::DecoratorName(DecoratorNameError::new(name)))?;
+                let fname = self.decorators.get(name).ok_or_else(|| ParserError::DecoratorName(DecoratorNameError::new(name)))?;
                 let result : Result<String, AnyError> = script.call(fname, &arg);
                 match result {
-                    Ok(v) => Ok(v.clone()),
+                    Ok(v) => Ok(v),
                     Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
                 }
             },

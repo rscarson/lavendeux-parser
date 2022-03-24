@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate derive_more;
 
-mod calculator;
+mod handlers;
 mod functions;
 mod decorators;
 mod extensions;
