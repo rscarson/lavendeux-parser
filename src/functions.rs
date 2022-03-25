@@ -51,7 +51,8 @@ impl FunctionTable {
         table.register("concat", builtin_concat);
         table.register("strlen", builtin_strlen);
         table.register("substr", builtin_substr);
-
+        table.register("contains", builtin_contains);
+        
         // Developper functions
         table.register("choose", builtin_choose);
         table.register("rand", builtin_rand);
@@ -233,6 +234,14 @@ fn builtin_root(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     }
 }
 
+fn builtin_contains(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+    if args.len() != 2 {
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new("contains(source, s)", 1, 1)));
+    }
+
+    Ok(AtomicValue::Boolean(args[0].as_string().contains(&args[1].as_string())))
+}
+
 fn builtin_strlen(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("strlen(s)", 1, 1)));
@@ -384,6 +393,18 @@ mod test_builtin_functions {
         ).unwrap());
         assert_eq!(AtomicValue::String("tes".to_string()), builtin_substr(
             &[AtomicValue::String("test".to_string()), AtomicValue::Integer(0), AtomicValue::Integer(3)], 
+        ).unwrap());
+    }
+    
+    #[test]
+    fn test_contains() {
+        assert_eq!(AtomicValue::Boolean(true), builtin_contains(
+            &[AtomicValue::String("test".to_string()), AtomicValue::String("e".to_string())]
+            
+        ).unwrap());
+        assert_eq!(AtomicValue::Boolean(false), builtin_contains(
+            &[AtomicValue::String("test".to_string()), AtomicValue::String("fff".to_string())]
+            
         ).unwrap());
     }
 }
