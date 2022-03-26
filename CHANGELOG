@@ -1,0 +1,9 @@
+0.5.1
+-----
+Change to how errors are exported
+Add a few new callable functions
+
+0.5.0
+-----
+Massive overhaul to api
+Enhance documentation
