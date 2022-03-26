@@ -60,8 +60,9 @@ postfix_unary_expression = {term ~ (factorial ~ !"=")+ | term}
 term = {lparen ~ toplevel_expression ~ rparen | atomic_value}
 
 assignment_expression = {(identifier ~ equal ~ !"=")? ~ toplevel_expression}
-comment = _{"//" ~ ANY*}
-line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?) ) ~ ("\n"|"\r\n"|EOI)}
-script = {line+}
+comment = _{"//" ~ (!eol ~ ANY)*}
+eol = {NEWLINE+|EOI}
+line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?)) ~ eol }
+script = {eol? ~ line+ | eol}
 
 WHITESPACE = _{" " | "\t"}
