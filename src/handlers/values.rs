@@ -101,9 +101,7 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
         Rule::atomic_value => {
             token.set_value(token.child(0).unwrap().value());
             if matches!(token.value(), Value::None) {
-                return Some(ParserError::VariableName(VariableNameError {
-                    name: token.text().to_string()
-                }));
+                return Some(ParserError::VariableName(VariableNameError::new(token.text().to_string())));
             }
         },
 

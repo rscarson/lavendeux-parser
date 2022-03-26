@@ -107,16 +107,21 @@ mod error_macro {
     pub(crate) use error_type;
 }
 
+/// Represents a type of value that was expected
 #[derive(Debug, Clone)]
-pub struct Position{pub line: usize, pub col: usize}
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "line {}, col {}", self.line, self.col)
-    }
-}
+pub enum ExpectedTypes {
+    /// Integer value
+    Int, 
 
-#[derive(Debug, Clone)]
-pub enum ExpectedTypes {Int, Float, IntOrFloat, String}
+    /// Floating point value
+    Float, 
+
+    /// Any numeric value
+    IntOrFloat, 
+    
+    /// String value
+    String
+}
 impl fmt::Display for ExpectedTypes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -128,11 +133,21 @@ impl fmt::Display for ExpectedTypes {
     }
 }
 
+/// Occurs when parsing the grammar of an expression fails
 #[derive(Debug, Clone)]
-pub struct PestError {pub cause: String}
+pub struct PestError {cause: String}
 error_type!(PestError, {
+    /// Create a new instance of the error
+    /// 
+    /// # Arguments
+    /// * `cause` - Underlying parsing error
     pub fn new (cause: &str) -> Self {
         Self { cause: cause.to_string() }
+    }
+
+    /// Return the cause of the error
+    pub fn cause(&self) -> &str {
+        &self.cause
     }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -140,9 +155,11 @@ error_type!(PestError, {
     }
 });
 
+/// Occurs when a recursive function goes too deep
 #[derive(Debug, Clone)]
 pub struct StackError {}
 error_type!(StackError, {
+    /// Create a new instance of the error
     pub fn new() -> Self {
         Self { }
     }

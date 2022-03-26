@@ -33,9 +33,7 @@ fn perform_int_calculation(l: Value, r: Value, handler: IntHandler) -> Result<Va
     // Perform datatype conversions
     let lv = l.as_int(); let rv = r.as_int();
     if matches!(lv, None) || matches!(rv, None) {
-        return Err(ParserError::ValueType(ValueTypeError {
-            expected: ExpectedTypes::IntOrFloat
-        }))
+        return Err(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
     }
     
     // Detect overflow and return resulting value
@@ -55,9 +53,7 @@ fn perform_float_calculation(l: Value, r: Value, handler: FloatHandler) -> Resul
     // Perform datatype conversions
     let lv = l.as_float(); let rv = r.as_float();
     if matches!(lv, None) || matches!(rv, None) { 
-        return Err(ParserError::ValueType(ValueTypeError {
-            expected: ExpectedTypes::IntOrFloat
-        }))
+        return Err(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
     }
     
     // Detect overflow
@@ -114,9 +110,7 @@ pub fn factorial(input: Value) -> Result<Value, ParserError> {
             _ => factorial(Value::Integer(-n))
         }
     } else {
-        Err(ParserError::ValueType(ValueTypeError {
-            expected: ExpectedTypes::IntOrFloat
-        }))
+        Err(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
     }
 }
 
@@ -148,26 +142,20 @@ pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         match token.value() {
                             Value::Integer(n) => token.set_value(Value::Integer(-n)),
                             Value::Float(n) => token.set_value(Value::Float(-n)),
-                            _ => return Some(ParserError::ValueType(ValueTypeError {
-                                expected: ExpectedTypes::IntOrFloat
-                            }))
+                            _ => return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
                         }
                     } else if token.child(idx).unwrap().rule() == Rule::not {
                         match token.value() {
                             Value::Integer(n) => {
                                 match trim_binary(Value::Integer(!n), n) {
                                     Some(v) => token.set_value(v),
-                                    None => return Some(ParserError::ValueType(ValueTypeError {
-                                        expected: ExpectedTypes::Int
-                                    }))
+                                    None => return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
                                 }
                             },
                             Value::Boolean(n) => {
                                 token.set_value(Value::Boolean(!n));
                             },
-                            _ => return Some(ParserError::ValueType(ValueTypeError {
-                                expected: ExpectedTypes::Int
-                            }))
+                            _ => return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)))
                         }
                     }
                 }
@@ -302,9 +290,7 @@ pub fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -
                     };
 
                     if token.value().is_float() || token.child(i).unwrap().value().is_float() {
-                        return Some(ParserError::ValueType(ValueTypeError {
-                            expected: ExpectedTypes::Int
-                        }));
+                        return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)));
                     }
 
                     match perform_int_calculation(token.value(), token.child(i).unwrap().value(), ih) {
@@ -326,9 +312,7 @@ pub fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -
                 let mut i = 2;
                 while i < token.children().len() {
                     if token.value().is_float() || token.child(i).unwrap().value().is_float() {
-                        return Some(ParserError::ValueType(ValueTypeError {
-                            expected: ExpectedTypes::Int
-                        }));
+                        return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::IntOrFloat)));
                     }
 
                     match perform_int_calculation(token.value(), token.child(i).unwrap().value(), |l:IntegerType, r:IntegerType| Some(l & r)) {
@@ -350,9 +334,7 @@ pub fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -
                 let mut i = 2;
                 while i < token.children().len() {
                     if token.value().is_float() || token.child(i).unwrap().value().is_float() {
-                        return Some(ParserError::ValueType(ValueTypeError {
-                            expected: ExpectedTypes::Int
-                        }));
+                        return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::Int)));
                     }
 
                     match perform_int_calculation(token.value(), token.child(i).unwrap().value(), |l:IntegerType, r:IntegerType| Some(l ^ r)) {
@@ -374,9 +356,7 @@ pub fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -
                 let mut i = 2;
                 while i < token.children().len() {
                     if token.value().is_float() || token.child(i).unwrap().value().is_float() {
-                        return Some(ParserError::ValueType(ValueTypeError {
-                            expected: ExpectedTypes::Int
-                        }));
+                        return Some(ParserError::ValueType(ValueTypeError::new(ExpectedTypes::Int)));
                     }
 
                     match perform_int_calculation(token.value(), token.child(i).unwrap().value(), |l:IntegerType, r:IntegerType| Some(l | r)) {

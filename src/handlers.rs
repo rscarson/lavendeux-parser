@@ -18,7 +18,11 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
     match token.rule() {
         Rule::script => {
             token.set_text(
-                &token.children().iter().map(|t| t.text().to_string() + t.children().last().unwrap().text()).collect::<Vec<String>>().join("")
+                &token.children().iter().map(|t| {
+                    t.text().to_string() + if !t.children().is_empty() {
+                        t.children().last().unwrap().text()
+                    } else { "" }
+                }).collect::<Vec<String>>().join("")
             );
 
             if token.children().len() == 1 {
@@ -77,9 +81,7 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 
         Rule::assignment_expression => {
             if state.constants.contains_key(token.child(0).unwrap().text()) {
-                return Some(ParserError::ContantValue(ConstantValueError {
-                    name: token.child(0).unwrap().text().to_string()
-                }))
+                return Some(ParserError::ContantValue(ConstantValueError::new(token.child(0).unwrap().text().to_string())))
             } else {
                 state.variables.insert(token.child(0).unwrap().text().to_string(), token.child(2).unwrap().value());
                 token.set_value(token.child(2).unwrap().value());

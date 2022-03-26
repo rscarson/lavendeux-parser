@@ -32,7 +32,7 @@ type TokenHandler = fn(&mut Token, &mut ParserState) -> Option<ParserError>;
 /// ```
 /// 
 /// The token tree would look like this:
-/// ```ignore
+/// ```text
 /// script: 5 + 5\nsqrt(5!)
 ///     line: 5 + 5
 ///         as_expression: 5 + 5
@@ -63,6 +63,22 @@ impl Token {
 
     /// Parses an input string, and returns the resulting token tree
     /// 
+    /// ```rust
+    /// use lavendeux_parser::{ParserState, ParserError, Token, Value};
+    /// 
+    /// fn main() -> Result<(), ParserError> {
+    ///     // Create a new parser, and tokenize 2 lines
+    ///     let mut state : ParserState = ParserState::new();
+    ///     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
+    /// 
+    ///     // The resulting token contains the resulting values and text
+    ///     assert_eq!(lines.text(), "9\n0b11");
+    ///     assert_eq!(lines.child(1).unwrap().value(), Value::Integer(3));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
     /// # Arguments
     /// * `input` - Source string
     /// * `state` - The current parser state
@@ -71,6 +87,23 @@ impl Token {
     }
 
     /// Parses an input string, and returns the resulting token tree
+    /// Allows a custom handler function
+    /// 
+    /// ```rust
+    /// use lavendeux_parser::{ParserState, ParserError, Token, Value};
+    /// 
+    /// fn main() -> Result<(), ParserError> {
+    ///     // Create a new parser, and tokenize 2 lines
+    ///     let mut state : ParserState = ParserState::new();
+    ///     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
+    /// 
+    ///     // The resulting token contains the resulting values and text
+    ///     assert_eq!(lines.text(), "9\n0b11");
+    ///     assert_eq!(lines.child(1).unwrap().value(), Value::Integer(3));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     /// 
     /// # Arguments
     /// * `input` - Source string
@@ -228,7 +261,7 @@ impl Token {
         self.format
     }
 
-    /// Get the nth child token
+    /// Get the nth child token, if possible
     pub fn child(&self, n: usize) -> Option<&Token> {
         if n < self.children.len() {
             Some(&self.children[n])
@@ -350,6 +383,8 @@ mod test_token {
     fn test_grammar_script() {
         let mut state: ParserState = ParserState::new();
 
+        token_does_text_equal("\n\n", "\n\n", &mut state);
+        token_does_text_equal("\n\n5", "\n\n5", &mut state);
         token_does_text_equal("5+5\n5+5", "10\n10", &mut state);
         token_does_value_equal("$1,000.00 == ¥1,000.00", Value::Boolean(true), &mut state);
 

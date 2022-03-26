@@ -5,7 +5,7 @@
 //! Extensions  are  run  in  a  sandboxed  environment  with  no  host  or  network  access.
 //! This  project  is  the  engine  behind [Lavendeux](https://rscarson.github.io/lavendeux/).
 //! 
-//! For help on the syntax of expressions, visit https://rscarson.github.io/lavendeux
+//! For help on the syntax of expressions, visit <https://rscarson.github.io/lavendeux>
 //! 
 //! ## Getting  Started
 //! To  use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
@@ -71,18 +71,27 @@
 //! 
 //! ## Using Extensions
 //! Extensions can be loaded as follows:
-//! ```ignore
-//! // Load one extension
-//! state.extensions.load("filename.js")?;
+//! ```rust
+//! use lavendeux_parser::{ParserState, ParserError, Value, Token};
 //! 
-//! // Load a whole directory
-//! state.extensions.load_all("./directory")?;
+//! fn main() -> Result<(), ParserError> {
+//!     let mut state : ParserState = ParserState::new();
 //! 
-//! // Once loaded, functions and @decorators decribed in the extensions
-//! // can be called in expressions being parsed
+//!     // Load one extension
+//!     state.extensions.load("example_extensions/colour_utils.js")?;
+//! 
+//!     // Load a whole directory
+//!     state.extensions.load_all("./example_extensions")?;
+//! 
+//!     // Once loaded, functions and @decorators decribed in the extensions
+//!     // can be called in expressions being parsed
+//!     let token = Token::new("complement(0xFF0000) @colour", &mut state)?;
+//!     assert_eq!(token.text(), "#ffff00");
+//!     Ok(())
+//! }
 //! ```
 //! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.0")]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
@@ -99,7 +108,7 @@ mod value;
 mod state;
 mod errors;
 
-pub use errors::ParserError;
+pub use errors::*;
 pub use token::Token;
 pub use state::ParserState;
 pub use value::Value;
