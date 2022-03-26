@@ -1,5 +1,6 @@
 
 # Lavendeux Parser - Extensible inline parser engine
+[![Crates.io](https://img.shields.io/crates/v/lavendeux-parser.svg)](https://crates.io/crates/lavendeux-parser)
 
 lavendeux-parser  is  an  exensible  parsing  engine  for  mathematical  expressions.
 It  supports  variable  and  function  assignments, a  variety  of  datatypes, and  can
