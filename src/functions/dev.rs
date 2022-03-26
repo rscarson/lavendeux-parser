@@ -92,7 +92,7 @@ mod test_builtin_table {
     
     #[test]
     fn test_tail() {
-        let result = builtin_tail(&[Value::String("readme.md".to_string()), Value::Integer(5)]).unwrap();
+        let result = builtin_tail(&[Value::String("README.md".to_string()), Value::Integer(5)]).unwrap();
         assert_eq!(4, result.as_string().matches("\n").count());
     }
 }
