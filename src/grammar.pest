@@ -63,6 +63,6 @@ assignment_expression = {(identifier ~ equal ~ !"=")? ~ toplevel_expression}
 comment = _{"//" ~ (!eol ~ ANY)*}
 eol = {NEWLINE+|EOI}
 line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?)) ~ eol }
-script = {line+}
+script = {eol? ~ line+ | eol}
 
 WHITESPACE = _{" " | "\t"}

@@ -15,35 +15,41 @@ mod values;
 pub use values::*;
 
 fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
-    match token.rule {
+    match token.rule() {
         Rule::script => {
-            token.text = token.children.clone().into_iter().map(|t| t.text).collect::<Vec<String>>().join("");
+            token.set_text(
+                &token.children().iter().map(|t| {
+                    t.text().to_string() + if !t.children().is_empty() {
+                        t.children().last().unwrap().text()
+                    } else { "" }
+                }).collect::<Vec<String>>().join("")
+            );
 
-            if token.children.len() == 1 {
-                token.value = token.children[0].value.clone();
+            if token.children().len() == 1 {
+                token.set_value(token.child(0).unwrap().value());
             }
         },
 
         Rule::line => {
-            token.value = token.children[0].value.clone();
-            if matches!(token.format, OutputFormat::Unknown) {
-                token.format = token.children[0].format.clone();
+            // Bubble up child parameters
+            token.set_value(token.child(0).unwrap().value());
+            if matches!(token.format(), OutputFormat::Unknown) {
+                token.set_format(token.child(0).unwrap().format());
             }
             
-            if token.children.len() > 2 {
-                let name = &token.children[2].text;
-                match state.decorators.call(name, &token.value) {
-                    Ok(s) => token.text = s,
+            if token.children().len() > 2 {
+                // Run specified decorators
+                let name = &token.child(2).unwrap().text();
+                match state.decorators.call(name, &token.value()) {
+                    Ok(s) => token.set_text(&s),
                     Err(e) => {
-                        for extension in &mut state.extensions {
-                            if extension.has_decorator(name) {
-                                match extension.call_decorator(name, &token.value) {
-                                    Ok(s) => {
-                                        token.text = s;
-                                        return None;
-                                    },
-                                    Err(e) => return Some(e)
-                                }
+                        if state.extensions.has_decorator(name) {
+                            match state.extensions.call_decorator(name, &token.value()) {
+                                Ok(s) => {
+                                    token.set_text(&s);
+                                    return None;
+                                },
+                                Err(e) => return Some(e)
                             }
                         }
 
@@ -51,37 +57,34 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
                     }
                 }
             } else {
-                match token.format {
-                    OutputFormat::Dollars => match state.decorators.call("dollars", &token.value) {
-                        Ok(s) => token.text = s,
+                // Run default decorator
+                match token.format() {
+                    OutputFormat::Dollars => match state.decorators.call("dollars", &token.value()) {
+                        Ok(s) => token.set_text(&s),
                         Err(e) => return Some(e)
                     },
                     _ => {
-                        match state.decorators.call("default", &token.value) {
-                            Ok(s) => token.text = s,
+                        match state.decorators.call("default", &token.value()) {
+                            Ok(s) => token.set_text(&s),
                             Err(e) => return Some(e)
                         }
                     }
                 }
             }
-
-            token.text = token.text.clone() + &token.children.last().unwrap().text;
         },
 
         Rule::term => {
-            if token.children.len() == 3 {
-                token.value = token.children[1].value.clone();
+            if token.children().len() == 3 {
+                token.set_value(token.child(1).unwrap().value());
             }
         },
 
         Rule::assignment_expression => {
-            if state.constants.contains_key(&token.children[0].text.to_string()) {
-                return Some(ParserError::ContantValue(ConstantValueError {
-                    name: token.children[0].text.clone()
-                }))
+            if state.constants.contains_key(token.child(0).unwrap().text()) {
+                return Some(ParserError::ContantValue(ConstantValueError::new(token.child(0).unwrap().text().to_string())))
             } else {
-                state.variables.insert(token.children[0].text.to_string(), token.children[2].value.clone());
-                token.value = token.children[2].value.clone();
+                state.variables.insert(token.child(0).unwrap().text().to_string(), token.child(2).unwrap().value());
+                token.set_value(token.child(2).unwrap().value());
             }
         },
 
@@ -94,34 +97,31 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 
 pub fn handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
     // Bubble up output format
-    for child in token.children.clone() {
-        if child.format.clone() as i32 / 10 > token.format.clone() as i32 / 10 {
-            token.format = child.format.clone();
-        }
-    }
+    let format = token.children().iter().fold(OutputFormat::Default, |a,f| if f.format() as i32 / 10 > a as i32 / 10 {f.format()} else {a});
+    token.set_format(format);
 
-    if let Some(e) = atomicvalue_handler(token, state) {
-       return Some(e);
+    if let Some(e) = value_handler(token, state) {
+        return Some(e);
     }
 
     if let Some(e) = expression_handler(token, state) {
-       return Some(e);
+        return Some(e);
     }
 
     if let Some(e) = bool_expression_handler(token, state) {
-       return Some(e);
+        return Some(e);
     }
 
     if let Some(e) = call_expression_handler(token, state) {
-       return Some(e);
+        return Some(e);
     }
 
     if let Some(e) = bitwise_expression_handler(token, state) {
-       return Some(e);
+        return Some(e);
     }
 
     if let Some(e) = math_expression_handler(token, state) {
-       return Some(e);
+        return Some(e);
     }
 
     None

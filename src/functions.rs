@@ -1,8 +1,8 @@
-use super::value::{AtomicValue, IntegerType, FloatType};
+use super::value::{Value, IntegerType, FloatType};
 use super::errors::*;
 use std::collections::HashMap;
 
-pub type FunctionHandler = fn(&[AtomicValue]) -> Result<AtomicValue, ParserError>;
+pub type FunctionHandler = fn(&[Value]) -> Result<Value, ParserError>;
 
 mod trig;
 use trig::*;
@@ -51,7 +51,8 @@ impl FunctionTable {
         table.register("concat", builtin_concat);
         table.register("strlen", builtin_strlen);
         table.register("substr", builtin_substr);
-
+        table.register("contains", builtin_contains);
+        
         // Developper functions
         table.register("choose", builtin_choose);
         table.register("rand", builtin_rand);
@@ -75,6 +76,14 @@ impl FunctionTable {
         self.0.insert(name.to_string(), handler);
     }
 
+    /// Remove a function from the table
+    /// 
+    /// # Arguments
+    /// * `name` - Function name
+    pub fn remove(&mut self, name: &str) {
+        self.0.remove(&name.to_string());
+    }
+
     /// Check if the table contains a function by the given name
     /// 
     /// # Arguments
@@ -88,7 +97,7 @@ impl FunctionTable {
     /// # Arguments
     /// * `name` - Function name
     /// * `args` - Function arguments
-    pub fn call(&self, name: &str, args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+    pub fn call(&self, name: &str, args: &[Value]) -> Result<Value, ParserError> {
         match self.0.get(name) {
             Some(f) => f(args),
             None => Err(ParserError::FunctionName(FunctionNameError::new(name)))
@@ -102,38 +111,38 @@ impl Default for FunctionTable {
     }
 }
 
-fn builtin_ceil(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_ceil(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("ceil(n)", 1, 1)))
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Integer(n)),
-        AtomicValue::Float(n) => Ok(AtomicValue::Integer(n.ceil() as IntegerType)),
+        Value::Integer(n) => Ok(Value::Integer(n)),
+        Value::Float(n) => Ok(Value::Integer(n.ceil() as IntegerType)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("ceil(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_floor(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_floor(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("floor(n)", 1, 1)))
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Integer(n)),
-        AtomicValue::Float(n) => Ok(AtomicValue::Integer(n.floor() as IntegerType)),
+        Value::Integer(n) => Ok(Value::Integer(n)),
+        Value::Float(n) => Ok(Value::Integer(n.floor() as IntegerType)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("floor(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_round(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_round(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 && args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("round(n, precision=0)", 1, 2)));
     }
 
     let precision = if args.len()== 1 {0} else {
         match args[1] {
-            AtomicValue::Integer(n) => n,
+            Value::Integer(n) => n,
             _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("round(n, precision=0)", 2, ExpectedTypes::Int)))
         }
     };
@@ -145,49 +154,49 @@ fn builtin_round(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     let multiplier = f64::powi(10.0, precision as i32);
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Integer(n)),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float((n * multiplier).round() / multiplier)),
+        Value::Integer(n) => Ok(Value::Integer(n)),
+        Value::Float(n) => Ok(Value::Float((n * multiplier).round() / multiplier)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("round(n, precision=0)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_abs(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_abs(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("abs(n)", 1, 1)));
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Integer(n.abs())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Integer(n.abs() as IntegerType)),
+        Value::Integer(n) => Ok(Value::Integer(n.abs())),
+        Value::Float(n) => Ok(Value::Integer(n.abs() as IntegerType)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("abs(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_log10(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_log10(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("log10(n)", 1, 1)));
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).log10())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.log10())),
+        Value::Integer(n) => Ok(Value::Float((n as FloatType).log10())),
+        Value::Float(n) => Ok(Value::Float(n.log10())),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("log10(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_ln(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_ln(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("ln(n)", 1, 1)));
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).ln())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.ln())),
+        Value::Integer(n) => Ok(Value::Float((n as FloatType).ln())),
+        Value::Float(n) => Ok(Value::Float(n.ln())),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("ln(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_log(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_log(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("log(n, base)", 2, 2)));
     }
@@ -198,25 +207,25 @@ fn builtin_log(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     };
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).log(base))),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.log(base))),
+        Value::Integer(n) => Ok(Value::Float((n as FloatType).log(base))),
+        Value::Float(n) => Ok(Value::Float(n.log(base))),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("log(n, base)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_sqrt(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_sqrt(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("sqrt(n)", 1, 1)));
     }
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).sqrt())),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.sqrt())),
+        Value::Integer(n) => Ok(Value::Float((n as FloatType).sqrt())),
+        Value::Float(n) => Ok(Value::Float(n.sqrt())),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("sqrt(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_root(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_root(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("root(n, base)", 2, 2)));
     }
@@ -227,32 +236,40 @@ fn builtin_root(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     };
 
     match args[0] {
-        AtomicValue::Integer(n) => Ok(AtomicValue::Float((n as FloatType).powf(1.0 / base))),
-        AtomicValue::Float(n) => Ok(AtomicValue::Float(n.powf(1.0 / base))),
+        Value::Integer(n) => Ok(Value::Float((n as FloatType).powf(1.0 / base))),
+        Value::Float(n) => Ok(Value::Float(n.powf(1.0 / base))),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("root(n, base)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
-fn builtin_strlen(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_contains(args: &[Value]) -> Result<Value, ParserError> {
+    if args.len() != 2 {
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new("contains(source, s)", 1, 1)));
+    }
+
+    Ok(Value::Boolean(args[0].as_string().contains(&args[1].as_string())))
+}
+
+fn builtin_strlen(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("strlen(s)", 1, 1)));
     }
 
     match &args[0] {
-        AtomicValue::String(s) => Ok(AtomicValue::Integer(s.len() as IntegerType)),
+        Value::String(s) => Ok(Value::Integer(s.len() as IntegerType)),
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("strlen(s)", 1, ExpectedTypes::String)))
     }
 }
 
-fn builtin_concat(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_concat(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("strlen(s)", 1, 1)));
     }
 
-    Ok(AtomicValue::String(args.iter().map(|v|v.as_string()).collect::<String>()))
+    Ok(Value::String(args.iter().map(|v|v.as_string()).collect::<String>()))
 }
 
-fn builtin_substr(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
+fn builtin_substr(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 && args.len() != 3 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("substr(s, start, [length])", 2, 3)));
     }
@@ -263,7 +280,7 @@ fn builtin_substr(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
     };
 
     match &args[0] {
-        AtomicValue::String(s) => {
+        Value::String(s) => {
             let length = if args.len() == 3 { match args[2].as_int() {
                 Some(n) => n,
                 None => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("substr(s, start, [length])", 3, ExpectedTypes::IntOrFloat)))
@@ -274,7 +291,7 @@ fn builtin_substr(args: &[AtomicValue]) -> Result<AtomicValue, ParserError> {
                 return Err(ParserError::FunctionArgOverFlow(FunctionArgOverFlowError::new("substr(s, start, [length])", 3)));
             }
 
-            Ok(AtomicValue::String(s.chars().skip(start as usize).take(length as usize).collect()))
+            Ok(Value::String(s.chars().skip(start as usize).take(length as usize).collect()))
         },
         _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("substr(s, start, [length])", 1, ExpectedTypes::String)))
     }
@@ -286,20 +303,20 @@ mod test_builtin_table {
     
     #[test]
     fn test_register() {
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Float(3.5)]).unwrap());
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Integer(4)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
     }
     
     #[test]
     fn test_has() {
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Float(3.5)]).unwrap());
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Integer(4)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
     }
     
     #[test]
     fn test_run() {
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Float(3.5)]).unwrap());
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Integer(4)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
     }
 }
 
@@ -309,81 +326,93 @@ mod test_builtin_functions {
     
     #[test]
     fn test_ceil() {
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Float(3.5)]).unwrap());
-        assert_eq!(AtomicValue::Integer(4), builtin_ceil(&[AtomicValue::Integer(4)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
     }
     
     #[test]
     fn test_floor() {
-        assert_eq!(AtomicValue::Integer(3), builtin_floor(&[AtomicValue::Float(3.5)]).unwrap());
-        assert_eq!(AtomicValue::Integer(4), builtin_floor(&[AtomicValue::Integer(4)]).unwrap());
+        assert_eq!(Value::Integer(3), builtin_floor(&[Value::Float(3.5)]).unwrap());
+        assert_eq!(Value::Integer(4), builtin_floor(&[Value::Integer(4)]).unwrap());
     }
     
     #[test]
     fn test_round() {
-        assert_eq!(AtomicValue::Float(3.56), builtin_round(&[AtomicValue::Float(3.555), AtomicValue::Integer(2)]).unwrap());
-        assert_eq!(AtomicValue::Float(4.0), builtin_round(&[AtomicValue::Integer(4), AtomicValue::Integer(2)]).unwrap());
+        assert_eq!(Value::Float(3.56), builtin_round(&[Value::Float(3.555), Value::Integer(2)]).unwrap());
+        assert_eq!(Value::Float(4.0), builtin_round(&[Value::Integer(4), Value::Integer(2)]).unwrap());
     }
     
     #[test]
     fn test_abs() {
-        assert_eq!(AtomicValue::Integer(3), builtin_abs(&[AtomicValue::Integer(3)]).unwrap());
-        assert_eq!(AtomicValue::Integer(3), builtin_abs(&[AtomicValue::Integer(-3)]).unwrap());
-        assert_eq!(AtomicValue::Float(4.0), builtin_abs(&[AtomicValue::Float(-4.0)]).unwrap());
+        assert_eq!(Value::Integer(3), builtin_abs(&[Value::Integer(3)]).unwrap());
+        assert_eq!(Value::Integer(3), builtin_abs(&[Value::Integer(-3)]).unwrap());
+        assert_eq!(Value::Float(4.0), builtin_abs(&[Value::Float(-4.0)]).unwrap());
     }
     
     #[test]
     fn test_ln() {
-        assert_eq!(AtomicValue::Float(1.0), builtin_ln(&[AtomicValue::Float(std::f64::consts::E)]).unwrap());
+        assert_eq!(Value::Float(1.0), builtin_ln(&[Value::Float(std::f64::consts::E)]).unwrap());
     }
     
     #[test]
     fn test_log10() {
-        assert_eq!(AtomicValue::Float(2.0), builtin_log10(&[AtomicValue::Float(100.0)]).unwrap());
+        assert_eq!(Value::Float(2.0), builtin_log10(&[Value::Float(100.0)]).unwrap());
     }
     
     #[test]
     fn test_log() {
-        assert_eq!(AtomicValue::Float(2.0), builtin_log(&[AtomicValue::Float(100.0), AtomicValue::Integer(10)]).unwrap());
+        assert_eq!(Value::Float(2.0), builtin_log(&[Value::Float(100.0), Value::Integer(10)]).unwrap());
     }
     
     #[test]
     fn test_sqrt() {
-        assert_eq!(AtomicValue::Float(3.0), builtin_sqrt(&[AtomicValue::Float(9.0)]).unwrap());
+        assert_eq!(Value::Float(3.0), builtin_sqrt(&[Value::Float(9.0)]).unwrap());
     }
     
     #[test]
     fn test_root() {
-        assert_eq!(AtomicValue::Float(3.0), builtin_root(&[AtomicValue::Float(27.0), AtomicValue::Integer(3)]).unwrap());
+        assert_eq!(Value::Float(3.0), builtin_root(&[Value::Float(27.0), Value::Integer(3)]).unwrap());
     }
 
     #[test]
     fn test_strlen() {
-        assert_eq!(AtomicValue::Integer(0), builtin_strlen(&[AtomicValue::String("".to_string())]).unwrap());
-        assert_eq!(AtomicValue::Integer(3), builtin_strlen(&[AtomicValue::String("   ".to_string())]).unwrap());
+        assert_eq!(Value::Integer(0), builtin_strlen(&[Value::String("".to_string())]).unwrap());
+        assert_eq!(Value::Integer(3), builtin_strlen(&[Value::String("   ".to_string())]).unwrap());
     }
 
     #[test]
     fn test_concat() {
-        assert_eq!(AtomicValue::String(" ".to_string()), builtin_concat(
-            &[AtomicValue::String("".to_string()), 
-            AtomicValue::String(" ".to_string())
+        assert_eq!(Value::String(" ".to_string()), builtin_concat(
+            &[Value::String("".to_string()), 
+            Value::String(" ".to_string())
         ]).unwrap());
-        assert_eq!(AtomicValue::String("test4false".to_string()), builtin_concat(
-            &[AtomicValue::String("test".to_string()), 
-            AtomicValue::Integer(4),
-            AtomicValue::Boolean(false)
+        assert_eq!(Value::String("test4false".to_string()), builtin_concat(
+            &[Value::String("test".to_string()), 
+            Value::Integer(4),
+            Value::Boolean(false)
         ]).unwrap());
     }
     
     #[test]
     fn test_substr() {
-        assert_eq!(AtomicValue::String("t".to_string()), builtin_substr(
-            &[AtomicValue::String("test".to_string()), AtomicValue::Integer(3)]
+        assert_eq!(Value::String("t".to_string()), builtin_substr(
+            &[Value::String("test".to_string()), Value::Integer(3)]
             
         ).unwrap());
-        assert_eq!(AtomicValue::String("tes".to_string()), builtin_substr(
-            &[AtomicValue::String("test".to_string()), AtomicValue::Integer(0), AtomicValue::Integer(3)], 
+        assert_eq!(Value::String("tes".to_string()), builtin_substr(
+            &[Value::String("test".to_string()), Value::Integer(0), Value::Integer(3)], 
+        ).unwrap());
+    }
+    
+    #[test]
+    fn test_contains() {
+        assert_eq!(Value::Boolean(true), builtin_contains(
+            &[Value::String("test".to_string()), Value::String("e".to_string())]
+            
+        ).unwrap());
+        assert_eq!(Value::Boolean(false), builtin_contains(
+            &[Value::String("test".to_string()), Value::String("fff".to_string())]
+            
         ).unwrap());
     }
 }
