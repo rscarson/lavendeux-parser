@@ -8,31 +8,62 @@ pub use functions::*;
 mod values;
 pub use values::*;
 
+/// Represents all possible errors during expression handling
 #[derive(From, Debug, Clone)]
 pub enum ParserError {
+    /// An error with an unknown cause
     General(String),
-    Stack,
+    
+    /// An error caused by a recursive function going too deep
+    Stack(StackError),
+    
+    /// An error caused by a problem in parsing the grammar of an expression
     Pest(PestError),
+    
+    /// An error caused by attempting to parse an invalid integer value
     ParseInt(std::num::ParseIntError),
+    
+    /// An error caused by attempting to parse an invalid floating point value
     ParseFloat(std::num::ParseFloatError),
+    
+    /// An error caused by attempting to use a value of the wrong type in a calculation
     ValueType(ValueTypeError),
+    
+    /// An error caused by a calculation that resulted in an overflow
     Overflow(OverflowError),
+    
+    /// An error caused by a calculation that resulted in an underflow
     Underflow(UnderflowError),
+    
+    /// An error caused by attempting to use an unassigned variable
     VariableName(VariableNameError),
+
+    /// An error caused by attempting to overwrite a constant
     ContantValue(ConstantValueError),
 
+    /// An error caused by an unknown exception in a javascript extension
     Script(ScriptError),
+
+    /// An error caused by calling a decorator that does not exist
     DecoratorName(DecoratorNameError),
+
+    /// An error caused by calling a function that does not exist
     FunctionName(FunctionNameError),
+
+    /// An error caused by calling a function using an argument of the wrong type
     FunctionArgType(FunctionArgTypeError),
+
+    /// An error caused by a function argument overflowing a pre-determined limit
     FunctionArgOverFlow(FunctionArgOverFlowError),
+
+    /// An error caused by calling a function using the wrong number of arguments
     FunctionNArg(FunctionNArgError)
 }
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::General(e) => write!(f, "{}", e),
-            Self::Stack => write!(f, "Stack overflow during function call"),
+            Self::Stack(e) => write!(f, "{}", e),
             Self::Pest(e) => write!(f, "{}", e),
             Self::ParseInt(e) => write!(f, "{}", e),
             Self::ParseFloat(e) => write!(f, "{}", e),
@@ -101,12 +132,30 @@ impl fmt::Display for ExpectedTypes {
 pub struct PestError {pub cause: String}
 error_type!(PestError, {
     pub fn new (cause: &str) -> Self {
-        Self { cause: cause.to_string() } }
+        Self { cause: cause.to_string() }
+    }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", "unable to parse expression")
     }
 });
+
+#[derive(Debug, Clone)]
+pub struct StackError {}
+error_type!(StackError, {
+    pub fn new() -> Self {
+        Self { }
+    }
+}, {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", "recursive function went too deep")
+    }
+});
+impl Default for StackError {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod test_builtin_functions {

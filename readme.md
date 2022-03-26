@@ -1,28 +1,65 @@
 
 # Lavendeux Parser - Extensible inline parser engine
 
-Extensible parsing library for expression evaluation.
-Acts as the engine for [Lavendeux](https://rscarson.github.io/Lavendeux/)
+lavendeux-parser  is  an  exensible  parsing  engine  for  mathematical  expressions.
+It  supports  variable  and  function  assignments, a  variety  of  datatypes, and  can
+be  extended  easily  at  runtime  through  extensions  written  in  javascript.
 
-## Syntax
-For detailed syntax documentation, visit https://rscarson.github.io/Lavendeux/
+Extensions  are  run  in  a  sandboxed  environment  with  no  host  or  network  access.
+This  project  is  the  engine  behind [Lavendeux](https://rscarson.github.io/lavendeux/).
 
-## How to use it
-Simple example below:
-
+## Getting  Started
+To  use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 ```rust
-let mut state : ParserState = ParserState::new();
-let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
+// Create a new parser, and tokenize 2 lines
+let  mut state : ParserState = ParserState::new();
+let  lines = Token::new("x=9\nsqrt(x) @bin", &mut  state)?;
 
 // The resulting token contains the resulting values and text
-assert_eq!(lines.text, "9\n0b11");
-assert_eq!(lines.children[1].value, AtomicValue::Integer(3));
+assert_eq!(lines.text(), "9\n0b11");
+assert_eq!(lines.child(1).unwrap().value(), Value::Integer(3));
+```
+The result will be a `Token` object:
+```rust
+let  lines = Token::new("x=9\nsqrt(x) @bin", &mut  state)?;
+
+// String representation of the full result
+assert_eq!(lines.text(), "9\n0b11"); 
+
+// String representation of the first line's result
+assert_eq!(lines.child(0).unwrap().text(), "9");
+
+// Actual value of the first line's result
+// Values are integers, floats, booleans or strings
+let value = lines.child(0).unwrap().value();
+assert_eq!(value.as_int().unwrap(), 9);
+assert_eq!(true, matches!(value, Value::Integer(_));
 ```
 
+A number of functions and @decorators are available for expressions to use - add more using the state:
+```rust
+// Functions take in an array of values, and return a single value
+fn new_function_handler(args: &[Value]) -> Result<Value, ParserError> {
+    Ok(Value::Integer(0))
+}
+[...]
+state.functions().register("new_function", new_function_handler);
+
+// Decorators take in a single value, and return a string representation
+fn new_decorator_handler(arg: &Value) -> Result<String, ParserError> {
+    Ok(arg.as_string())
+}
+[...]
+state.decorators().register("new_decorator", new_decorator_handler);
+
+// Expressions being parsed can now call new_function(), and use the @new_decorator
+```
+
+## Using Extensions
 Extensions can be loaded as follows:
 ```rust
 // Load one extension
-let extension = Extension::new("filename.js")?;
+let  extension = Extension::new("filename.js")?;
 state.extensions.push(extension);
 
 // Load a whole directory
@@ -32,6 +69,7 @@ state.extensions = extensions;
 // Once loaded, functions and @decorators decribed in the extensions
 // can be called in expressions being parsed
 ```
+Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
 
 ## Syntax
 Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
