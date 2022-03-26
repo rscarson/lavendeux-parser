@@ -6,10 +6,22 @@ pub fn builtin_to_radians(args: &[Value]) -> Result<Value, ParserError> {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_radians(n)", 1, 1)));
     }
 
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType) * (std::f64::consts::PI / 180.0))),
-        Value::Float(n) => Ok(Value::Float(n * (std::f64::consts::PI / 180.0))),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_radians(n)", 1, ExpectedTypes::IntOrFloat)))
+    if let Some(n) = args[0].as_float() {
+        Ok(Value::Float(n * (std::f64::consts::PI / 180.0)))
+    } else {
+        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_radians(n)", 1, ExpectedTypes::IntOrFloat)))
+    }
+}
+
+pub fn builtin_to_degrees(args: &[Value]) -> Result<Value, ParserError> {
+    if args.len() != 1 {
+        return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_degrees(n)", 1, 1)));
+    }
+
+    if let Some(n) = args[0].as_float() {
+        Ok(Value::Float(n * 180.0 / std::f64::consts::PI))
+    } else {
+        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_degrees(n)", 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
@@ -18,10 +30,10 @@ fn builtin_trig(sig: &str, method: fn(FloatType) -> FloatType, args: &[Value]) -
         return Err(ParserError::FunctionNArg(FunctionNArgError::new(sig, 1, 1)));
     }
 
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float(method(n as FloatType))),
-        Value::Float(n) => Ok(Value::Float(method(n))),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new(sig, 1, ExpectedTypes::IntOrFloat)))
+    if let Some(n) = args[0].as_float() {
+        Ok(Value::Float(method(n)))
+    } else {
+        Err(ParserError::FunctionArgType(FunctionArgTypeError::new(sig, 1, ExpectedTypes::IntOrFloat)))
     }
 }
 
@@ -69,6 +81,12 @@ mod test_builtin_functions {
     fn test_to_radians() {
         assert_eq!(Value::Float(std::f64::consts::PI), builtin_to_radians(&[Value::Integer(180)]).unwrap());
         assert_eq!(Value::Float(std::f64::consts::PI * 4.0), builtin_to_radians(&[Value::Integer(720)]).unwrap());
+    }
+        
+    #[test]
+    fn test_to_degrees() {
+        assert_eq!(Value::Float(180.0), builtin_to_degrees(&[Value::Float(std::f64::consts::PI)]).unwrap());
+        assert_eq!(Value::Float(90.0), builtin_to_degrees(&[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
     }
     
     #[test]

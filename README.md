@@ -168,11 +168,12 @@ The following functions are supported by default:
 ```javascript
 // String functions
 concat("s1", "s2", ...) | strlen("string") | substr("string", start, [length])
+uppercase("s1") | lowercase("S1") | trim("    s1    ")
 
 // Rounding functions
 ceil(n) | floor(n) | round(n, precision)
 
-// Trigonometric functions
+// Trigonometric functions - values are in radians, use to_radians to convert
 tan(r), cos(r), sin(r), atan(r), acos(r), asin(r), tanh(r), cosh(r), sinh(r)
 
 // Rounding functions
@@ -186,7 +187,7 @@ choose("argument 1", 2, 3.0, ...) | rand() | rand(min, max)
 get(url, ["header-name=value", ...]) | post(url, ["header-name=value", ...]) | resolve(hostname)
 
 // Misc. functions
-to_radians(degree_value) | abs(n) | tail(filename, [lines]) | time()
+to_radians(degree_value) | to_degrees(radian_value) | abs(n) | tail(filename, [lines]) | time()
 ```
 
 Lavendeux can be extended with javascript. Extensions are run in a sandboxed environment, with no network or host access.  

@@ -91,7 +91,7 @@
 //! }
 //! ```
 //! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.0")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.1")]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
@@ -106,9 +106,11 @@ mod extensions;
 mod token;
 mod value;
 mod state;
-mod errors;
 
-pub use errors::*;
+/// Module defining errors that can occur during parsing
+pub mod errors;
+pub use errors::ParserError;
+
 pub use token::Token;
 pub use state::ParserState;
 pub use value::Value;

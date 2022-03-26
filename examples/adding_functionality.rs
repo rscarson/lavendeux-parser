@@ -1,4 +1,5 @@
-use lavendeux_parser::{ParserState, FunctionNArgError, ParserError, Token, Value};
+use lavendeux_parser::{ParserState, ParserError, Token, Value};
+use lavendeux_parser::errors::FunctionNArgError;
 
 fn echo_function(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
