@@ -90,9 +90,30 @@ fn main() -> Result<(), ParserError> {
     Ok(())
 }
 ```
-Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
 
+## Using Extensions
 Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
+
+Extensions can be loaded as follows:
+```rust
+use lavendeux_parser::{ParserState, ParserError, Value, Token};
+
+fn main() -> Result<(), ParserError> {
+    let mut state : ParserState = ParserState::new();
+
+    // Load one extension
+    state.extensions.load("example_extensions/colour_utils.js")?;
+
+    // Load a whole directory
+    state.extensions.load_all("./example_extensions")?;
+
+    // Once loaded, functions and @decorators decribed in the extensions
+    // can be called in expressions being parsed
+    let token = Token::new("complement(0xFF0000) @colour", &mut state)?;
+    assert_eq!(token.text(), "#ffff00");
+    Ok(())
+}
+```
 
 ## Syntax
 Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
