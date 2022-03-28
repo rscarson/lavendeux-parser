@@ -70,6 +70,8 @@
 //! ```
 //! 
 //! ## Using Extensions
+//! Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
+//! 
 //! Extensions can be loaded as follows:
 //! ```rust
 //! use lavendeux_parser::{ParserState, ParserError, Value, Token};

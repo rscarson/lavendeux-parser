@@ -4,15 +4,15 @@
 [![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
 
-lavendeux-parser  is  an  exensible  parsing  engine  for  mathematical  expressions.
-It  supports  variable  and  function  assignments, a  variety  of  datatypes, and  can
-be  extended  easily  at  runtime  through  extensions  written  in  javascript.
+lavendeux-parser is an exensible parsing engine for mathematical expressions.
+It supports variable and function assignments, a variety of datatypes, and can
+be extended easily at runtime through extensions written in javascript.
 
-Extensions  are  run  in  a  sandboxed  environment  with  no  host  or  network  access.
-This  project  is  the  engine  behind [Lavendeux](https://rscarson.github.io/lavendeux/).
+Extensions are run in a sandboxed environment with no host or network access.
+This project is the engine behind [Lavendeux](https://rscarson.github.io/lavendeux/).
 
-## Getting  Started
-To  use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
+## Getting Started
+To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 ```rust
 use lavendeux_parser::{ParserState, ParserError, Token, Value};
  
@@ -91,6 +91,8 @@ fn main() -> Result<(), ParserError> {
 }
 ```
 Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
+
+Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
 
 ## Syntax
 Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
