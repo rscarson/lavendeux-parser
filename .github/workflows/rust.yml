@@ -20,3 +20,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Run barebones tests
+      run: cargo test --no-default-features --lib
+    - name: Run clippy
+      run: cargo clippy
