@@ -95,7 +95,7 @@
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
-mod extensions;
+//mod extensions;
 mod decorators;
 mod functions;
 mod handlers;
@@ -103,10 +103,11 @@ mod token;
 mod value;
 mod state;
 
+#[cfg(feature = "extensions")]
+pub use extensions::Extension;
 
 /// Module defining errors that can occur during parsing
 pub mod errors;
-pub use extensions::Extension;
 pub use errors::ParserError;
 pub use token::Token;
 pub use state::ParserState;

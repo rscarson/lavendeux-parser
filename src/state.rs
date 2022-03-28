@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 use super::functions;
 use super::decorators;
+
+#[cfg(feature = "extensions")]
 use super::extensions;
 
 const MAX_STACK_DEPTH: usize = 100;
@@ -38,6 +40,7 @@ pub struct ParserState {
     pub decorators: decorators::DecoratorTable,
 
     /// Currently loaded extensions
+    #[cfg(feature = "extensions")]
     pub extensions: extensions::ExtensionTable,
 }
 
@@ -59,6 +62,7 @@ impl ParserState {
             user_functions: HashMap::new(),
             decorators: decorators::DecoratorTable::new(),
 
+            #[cfg(feature = "extensions")]
             extensions: extensions::ExtensionTable::new(),
         };
 

@@ -30,6 +30,7 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
             }
         } else {
             // Extension functions
+            #[cfg(feature = "extensions")]
             if state.extensions.has_function(name) {
                 match state.extensions.call_function(name, &args[..]) {
                     Ok(v) => {
