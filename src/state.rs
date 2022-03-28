@@ -1,6 +1,9 @@
 use super::value::Value;
-use super::{functions, decorators, extensions};
 use std::collections::HashMap;
+
+use super::functions;
+use super::decorators;
+use super::extensions;
 
 const MAX_STACK_DEPTH: usize = 100;
 
@@ -52,10 +55,11 @@ impl ParserState {
             variables: HashMap::new(),
             constants: HashMap::new(),
 
-            extensions: extensions::ExtensionTable::new(),
             functions: functions::FunctionTable::new(),
             user_functions: HashMap::new(),
             decorators: decorators::DecoratorTable::new(),
+
+            extensions: extensions::ExtensionTable::new(),
         };
 
         // Set up constants

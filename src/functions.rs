@@ -5,16 +5,9 @@ use std::collections::HashMap;
 pub type FunctionHandler = fn(&[Value]) -> Result<Value, ParserError>;
 
 mod trig;
-use trig::*;
-
 mod dev;
-use dev::*;
-
 mod network;
-use network::*;
-
 mod str;
-use self::str::*;
 
 #[derive(Clone)]
 pub struct FunctionTable(HashMap<String, FunctionHandler>);
@@ -27,22 +20,7 @@ impl FunctionTable {
         table.register("ceil", builtin_ceil);
         table.register("floor", builtin_floor);
         table.register("round", builtin_round);
-        
-        // Conversion functions
-        table.register("to_radians", builtin_to_radians);
-        table.register("to_degrees", builtin_to_degrees);
         table.register("abs", builtin_abs);
-        
-        // Trig functions
-        table.register("tan", builtin_tan);
-        table.register("cos", builtin_cos);
-        table.register("sin", builtin_sin);
-        table.register("atan", builtin_atan);
-        table.register("acos", builtin_acos);
-        table.register("asin", builtin_asin);
-        table.register("tanh", builtin_tanh);
-        table.register("cosh", builtin_cosh);
-        table.register("sinh", builtin_sinh);
         
         // Roots and logs
         table.register("ln", builtin_ln);
@@ -51,25 +29,11 @@ impl FunctionTable {
         table.register("sqrt", builtin_sqrt);
         table.register("root", builtin_root);
         
-        // String functions
-        table.register("concat", builtin_concat);
-        table.register("uppercase", builtin_uppercase);
-        table.register("lowercase", builtin_lowercase);
-        table.register("trim", builtin_trim);
-        table.register("strlen", builtin_strlen);
-        table.register("substr", builtin_substr);
-        table.register("contains", builtin_contains);
-        
-        // Developper functions
-        table.register("choose", builtin_choose);
-        table.register("rand", builtin_rand);
-        table.register("time", builtin_time);
-        table.register("tail", builtin_tail);
-
-        // Networking functions
-        table.register("get", builtin_get);
-        table.register("post", builtin_post);
-        table.register("resolve", builtin_resolve);
+        // Other builtins
+        str::register_functions(&mut table);
+        dev::register_functions(&mut table);
+        network::register_functions(&mut table);
+        trig::register_functions(&mut table);
 
         table
     }

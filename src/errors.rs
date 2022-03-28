@@ -9,7 +9,7 @@ mod values;
 pub use values::*;
 
 /// Represents all possible errors during expression handling
-#[derive(From, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub enum ParserError {
     /// An error with an unknown cause
     General(String),

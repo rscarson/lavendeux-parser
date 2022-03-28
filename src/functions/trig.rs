@@ -1,7 +1,24 @@
+use super::FunctionTable;
 use crate::value::{Value, FloatType};
 use crate::errors::*;
 
-pub fn builtin_to_radians(args: &[Value]) -> Result<Value, ParserError> {
+/// Register trig functions
+pub fn register_functions(table: &mut FunctionTable) {
+    table.register("to_radians", builtin_to_radians);
+    table.register("to_degrees", builtin_to_degrees);
+
+    table.register("tan", builtin_tan);
+    table.register("cos", builtin_cos);
+    table.register("sin", builtin_sin);
+    table.register("atan", builtin_atan);
+    table.register("acos", builtin_acos);
+    table.register("asin", builtin_asin);
+    table.register("tanh", builtin_tanh);
+    table.register("cosh", builtin_cosh);
+    table.register("sinh", builtin_sinh);
+}
+
+fn builtin_to_radians(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_radians(n)", 1, 1)));
     }
@@ -13,7 +30,7 @@ pub fn builtin_to_radians(args: &[Value]) -> Result<Value, ParserError> {
     }
 }
 
-pub fn builtin_to_degrees(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_to_degrees(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_degrees(n)", 1, 1)));
     }
@@ -37,39 +54,39 @@ fn builtin_trig(sig: &str, method: fn(FloatType) -> FloatType, args: &[Value]) -
     }
 }
 
-pub fn builtin_tan(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_tan(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("tan(n)", FloatType::tan, args)
 }
 
-pub fn builtin_cos(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_cos(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("cos(n)", FloatType::cos, args)
 }
 
-pub fn builtin_sin(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_sin(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("sin(n)", FloatType::sin, args)
 }
 
-pub fn builtin_atan(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_atan(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("atan(n)", FloatType::atan, args)
 }
 
-pub fn builtin_acos(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_acos(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("acos(n)", FloatType::acos, args)
 }
 
-pub fn builtin_asin(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_asin(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("asin(n)", FloatType::asin, args)
 }
 
-pub fn builtin_tanh(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_tanh(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("tanh(n)", FloatType::tanh, args)
 }
 
-pub fn builtin_cosh(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_cosh(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("cosh(n)", FloatType::cosh, args)
 }
 
-pub fn builtin_sinh(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_sinh(args: &[Value]) -> Result<Value, ParserError> {
     builtin_trig("sinh(n)", FloatType::sinh, args)
 }
 

@@ -150,7 +150,7 @@ f(x) = 2*x**2 + 3*x + 5
 f(2.3)
 
 // Recursive functions work too!
-factorial(x) = x==1 ? x : (x * factorial(x - 1) )
+factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
 factorial(5)
 ```
 

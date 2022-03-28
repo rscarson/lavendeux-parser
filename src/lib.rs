@@ -91,32 +91,28 @@
 //! }
 //! ```
 //! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.1")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.2")]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
-// Mostly for error type derivisions
-#[macro_use]
-extern crate derive_more;
-
-mod handlers;
-mod functions;
-mod decorators;
 mod extensions;
+mod decorators;
+mod functions;
+mod handlers;
 mod token;
 mod value;
 mod state;
 
+
 /// Module defining errors that can occur during parsing
 pub mod errors;
+pub use extensions::Extension;
 pub use errors::ParserError;
-
 pub use token::Token;
 pub use state::ParserState;
 pub use value::Value;
 pub use value::IntegerType;
 pub use value::FloatType;
-pub use extensions::Extension;
 
 #[cfg(test)]
 mod test_token {
