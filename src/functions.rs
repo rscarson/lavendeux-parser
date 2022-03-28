@@ -15,27 +15,30 @@ impl FunctionTable {
     /// Initialize a new function table, complete with default builtin functions
     pub fn new() -> FunctionTable {
         let mut table : FunctionTable = FunctionTable(HashMap::new());
+        table.register_builtins();
+        table
+    }
 
+    /// Register builtin functions
+    fn register_builtins(&mut self) {
         // Rounding functions
-        table.register("ceil", builtin_ceil);
-        table.register("floor", builtin_floor);
-        table.register("round", builtin_round);
-        table.register("abs", builtin_abs);
+        self.register("ceil", builtin_ceil);
+        self.register("floor", builtin_floor);
+        self.register("round", builtin_round);
+        self.register("abs", builtin_abs);
         
         // Roots and logs
-        table.register("ln", builtin_ln);
-        table.register("log10", builtin_log10);
-        table.register("log", builtin_log);
-        table.register("sqrt", builtin_sqrt);
-        table.register("root", builtin_root);
+        self.register("ln", builtin_ln);
+        self.register("log10", builtin_log10);
+        self.register("log", builtin_log);
+        self.register("sqrt", builtin_sqrt);
+        self.register("root", builtin_root);
         
         // Other builtins
-        str::register_functions(&mut table);
-        dev::register_functions(&mut table);
-        network::register_functions(&mut table);
-        trig::register_functions(&mut table);
-
-        table
+        str::register_functions(self);
+        dev::register_functions(self);
+        network::register_functions(self);
+        trig::register_functions(self);
     }
 
     /// Register a function in the table

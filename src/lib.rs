@@ -95,13 +95,15 @@
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
-//mod extensions;
 mod decorators;
 mod functions;
 mod handlers;
 mod token;
 mod value;
 mod state;
+
+#[cfg(feature = "extensions")]
+mod extensions;
 
 #[cfg(feature = "extensions")]
 pub use extensions::Extension;
