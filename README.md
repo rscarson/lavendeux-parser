@@ -92,6 +92,8 @@ fn main() -> Result<(), ParserError> {
 ```
 
 ## Using Extensions
+Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
+
 Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
 
 Extensions can be loaded as follows:
