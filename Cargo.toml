@@ -7,19 +7,25 @@ categories = ["parser-implementations", "development-tools", "command-line-utili
 homepage = "https://rscarson.github.io/Lavendeux/"
 repository = "https://github.com/rscarson/lavendeux-parser"
 readme = "readme.md"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
+
+[features]
+default = ["extensions"]
+extensions = ["js-sandbox"]
 
 [dependencies]
 pest = "2.1.3"
 pest_derive = "2.1.0"
-rand = "0.8.4"
-reqwest = { version = "0.11.10", features = ["blocking"] }
-chrono = "0.4.19"
-derive_more = "0.99.17"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
-js-sandbox = "0.1.6"
+reqwest = { version = "0.11.10", features = ["blocking"] }
+chrono = "0.4.19"
+rand = "0.8.4"
+derive_more = "0.99.17"
+
+# Feature deps
+js-sandbox = { version = "0.1.6", optional = true }
 
 [dev-dependencies]
 version-sync = "0.9"

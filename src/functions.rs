@@ -5,16 +5,9 @@ use std::collections::HashMap;
 pub type FunctionHandler = fn(&[Value]) -> Result<Value, ParserError>;
 
 mod trig;
-use trig::*;
-
 mod dev;
-use dev::*;
-
 mod network;
-use network::*;
-
 mod str;
-use self::str::*;
 
 #[derive(Clone)]
 pub struct FunctionTable(HashMap<String, FunctionHandler>);
@@ -22,56 +15,30 @@ impl FunctionTable {
     /// Initialize a new function table, complete with default builtin functions
     pub fn new() -> FunctionTable {
         let mut table : FunctionTable = FunctionTable(HashMap::new());
+        table.register_builtins();
+        table
+    }
 
+    /// Register builtin functions
+    fn register_builtins(&mut self) {
         // Rounding functions
-        table.register("ceil", builtin_ceil);
-        table.register("floor", builtin_floor);
-        table.register("round", builtin_round);
-        
-        // Conversion functions
-        table.register("to_radians", builtin_to_radians);
-        table.register("to_degrees", builtin_to_degrees);
-        table.register("abs", builtin_abs);
-        
-        // Trig functions
-        table.register("tan", builtin_tan);
-        table.register("cos", builtin_cos);
-        table.register("sin", builtin_sin);
-        table.register("atan", builtin_atan);
-        table.register("acos", builtin_acos);
-        table.register("asin", builtin_asin);
-        table.register("tanh", builtin_tanh);
-        table.register("cosh", builtin_cosh);
-        table.register("sinh", builtin_sinh);
+        self.register("ceil", builtin_ceil);
+        self.register("floor", builtin_floor);
+        self.register("round", builtin_round);
+        self.register("abs", builtin_abs);
         
         // Roots and logs
-        table.register("ln", builtin_ln);
-        table.register("log10", builtin_log10);
-        table.register("log", builtin_log);
-        table.register("sqrt", builtin_sqrt);
-        table.register("root", builtin_root);
+        self.register("ln", builtin_ln);
+        self.register("log10", builtin_log10);
+        self.register("log", builtin_log);
+        self.register("sqrt", builtin_sqrt);
+        self.register("root", builtin_root);
         
-        // String functions
-        table.register("concat", builtin_concat);
-        table.register("uppercase", builtin_uppercase);
-        table.register("lowercase", builtin_lowercase);
-        table.register("trim", builtin_trim);
-        table.register("strlen", builtin_strlen);
-        table.register("substr", builtin_substr);
-        table.register("contains", builtin_contains);
-        
-        // Developper functions
-        table.register("choose", builtin_choose);
-        table.register("rand", builtin_rand);
-        table.register("time", builtin_time);
-        table.register("tail", builtin_tail);
-
-        // Networking functions
-        table.register("get", builtin_get);
-        table.register("post", builtin_post);
-        table.register("resolve", builtin_resolve);
-
-        table
+        // Other builtins
+        str::register_functions(self);
+        dev::register_functions(self);
+        network::register_functions(self);
+        trig::register_functions(self);
     }
 
     /// Register a function in the table

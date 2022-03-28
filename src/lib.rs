@@ -70,6 +70,10 @@
 //! ```
 //! 
 //! ## Using Extensions
+//! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
+//! 
+//! Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
+//! 
 //! Extensions can be loaded as follows:
 //! ```rust
 //! use lavendeux_parser::{ParserState, ParserError, Value, Token};
@@ -91,32 +95,31 @@
 //! }
 //! ```
 //! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.1")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.5.2")]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
-// Mostly for error type derivisions
-#[macro_use]
-extern crate derive_more;
-
-mod handlers;
-mod functions;
 mod decorators;
-mod extensions;
+mod functions;
+mod handlers;
 mod token;
 mod value;
 mod state;
 
+#[cfg(feature = "extensions")]
+mod extensions;
+
+#[cfg(feature = "extensions")]
+pub use extensions::Extension;
+
 /// Module defining errors that can occur during parsing
 pub mod errors;
 pub use errors::ParserError;
-
 pub use token::Token;
 pub use state::ParserState;
 pub use value::Value;
 pub use value::IntegerType;
 pub use value::FloatType;
-pub use extensions::Extension;
 
 #[cfg(test)]
 mod test_token {

@@ -1,7 +1,19 @@
+use super::FunctionTable;
 use crate::value::{Value, IntegerType};
 use crate::errors::*;
 
-pub fn builtin_contains(args: &[Value]) -> Result<Value, ParserError> {
+/// Register string functions
+pub fn register_functions(table: &mut FunctionTable) {
+    table.register("concat", builtin_concat);
+    table.register("uppercase", builtin_uppercase);
+    table.register("lowercase", builtin_lowercase);
+    table.register("trim", builtin_trim);
+    table.register("strlen", builtin_strlen);
+    table.register("substr", builtin_substr);
+    table.register("contains", builtin_contains);
+}
+
+fn builtin_contains(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("contains(source, s)", 1, 1)));
     }
@@ -9,7 +21,7 @@ pub fn builtin_contains(args: &[Value]) -> Result<Value, ParserError> {
     Ok(Value::Boolean(args[0].as_string().contains(&args[1].as_string())))
 }
 
-pub fn builtin_strlen(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_strlen(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("strlen(s)", 1, 1)));
     }
@@ -20,7 +32,7 @@ pub fn builtin_strlen(args: &[Value]) -> Result<Value, ParserError> {
     }
 }
 
-pub fn builtin_concat(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_concat(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("concat(s, s2, ...)", 1, 1)));
     }
@@ -28,7 +40,7 @@ pub fn builtin_concat(args: &[Value]) -> Result<Value, ParserError> {
     Ok(Value::String(args.iter().map(|v|v.as_string()).collect::<String>()))
 }
 
-pub fn builtin_uppercase(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_uppercase(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("uppercase(s)", 1, 1)));
     }
@@ -36,7 +48,7 @@ pub fn builtin_uppercase(args: &[Value]) -> Result<Value, ParserError> {
     Ok(Value::String(args[0].as_string().to_uppercase()))
 }
 
-pub fn builtin_lowercase(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_lowercase(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("lowercase(s)", 1, 1)));
     }
@@ -44,7 +56,7 @@ pub fn builtin_lowercase(args: &[Value]) -> Result<Value, ParserError> {
     Ok(Value::String(args[0].as_string().to_lowercase()))
 }
 
-pub fn builtin_trim(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_trim(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("trim(s)", 1, 1)));
     }
@@ -52,7 +64,7 @@ pub fn builtin_trim(args: &[Value]) -> Result<Value, ParserError> {
     Ok(Value::String(args[0].as_string().trim().to_string()))
 }
 
-pub fn builtin_substr(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_substr(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 && args.len() != 3 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("substr(s, start, [length])", 2, 3)));
     }

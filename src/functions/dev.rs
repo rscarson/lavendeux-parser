@@ -2,21 +2,30 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use rand::prelude::*;
+use super::FunctionTable;
 use crate::value::{Value, IntegerType};
 use crate::errors::*;
 
-pub fn builtin_choose(args: &[Value]) -> Result<Value, ParserError> {
+/// Register developper functions
+pub fn register_functions(table: &mut FunctionTable) {
+    table.register("choose", builtin_choose);
+    table.register("rand", builtin_rand);
+    table.register("time", builtin_time);
+    table.register("tail", builtin_tail);
+}
+
+fn builtin_choose(args: &[Value]) -> Result<Value, ParserError> {
     let mut rng = rand::thread_rng();
 
     if args.is_empty() {
         Err(ParserError::FunctionNArg(FunctionNArgError::new("choose(..)", 1, 100)))
     } else {
-        let arg = rng.gen_range(0..(args.len() - 1));
+        let arg = rng.gen_range(0..args.len());
         Ok(args[arg].clone())
     }
 }
 
-pub fn builtin_rand(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_rand(args: &[Value]) -> Result<Value, ParserError> {
     let mut rng = rand::thread_rng();
     if args.is_empty() {
         // Generate a float between 0 and 1
@@ -32,14 +41,14 @@ pub fn builtin_rand(args: &[Value]) -> Result<Value, ParserError> {
     }
 }
 
-pub fn builtin_time(_args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_time(_args: &[Value]) -> Result<Value, ParserError> {
     match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(n) => Ok(Value::Integer(n.as_secs() as IntegerType)),
         Err(_) => Ok(Value::Integer(0))
     }
 }
 
-pub fn builtin_tail(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_tail(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 && args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("tail(file, [n_lines])", 1, 2)));
     }
@@ -71,17 +80,28 @@ mod test_builtin_table {
     
     #[test]
     fn test_choose() {
-        let result = builtin_choose(&[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
-        assert_eq!(true, result == Value::String("test".to_string()) || result == Value::Integer(5));
+        let mut result;
+        for _ in 0..30 {
+            result = builtin_choose(&[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
+            assert_eq!(true, result.is_string() || result == Value::Integer(5).is_int());
+        }
     }
     
     #[test]
     fn test_rand() {
-        let mut result = builtin_rand(&[]).unwrap();
-        assert_eq!(true, result.as_float().unwrap() >= 0.0 && result.as_float().unwrap() <= 1.0);
+        let mut result;
 
-        result = builtin_rand(&[Value::Integer(5), Value::Integer(10)]).unwrap();
-        assert_eq!(true, result.as_int().unwrap() >= 5 && result.as_int().unwrap() <= 10);
+        for _ in 0..30 {
+            result = builtin_rand(&[]).unwrap();
+            println!("{}", result);
+            assert_eq!(true, result.as_float().unwrap() >= 0.0 && result.as_float().unwrap() <= 1.0);
+        }
+
+        for _ in 0..30 {
+            result = builtin_rand(&[Value::Integer(5), Value::Integer(10)]).unwrap();
+            println!("{}", result);
+            assert_eq!(true, result.as_int().unwrap() >= 5 && result.as_int().unwrap() <= 10);
+        }
     }
     
     #[test]

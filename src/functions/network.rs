@@ -1,9 +1,17 @@
 use std::net::ToSocketAddrs;
 use std::time::Duration;
+use super::FunctionTable;
 use crate::value::{Value};
 use crate::errors::*;
 
-pub fn builtin_resolve(args: &[Value]) -> Result<Value, ParserError> {
+/// Register network functions
+pub fn register_functions(table: &mut FunctionTable) {
+    table.register("get", builtin_get);
+    table.register("post", builtin_post);
+    table.register("resolve", builtin_resolve);
+}
+
+fn builtin_resolve(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 1 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("resolve(hostname)", 1, 1)));
     }
@@ -24,7 +32,7 @@ pub fn builtin_resolve(args: &[Value]) -> Result<Value, ParserError> {
     }
 }
 
-pub fn builtin_get(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_get(args: &[Value]) -> Result<Value, ParserError> {
     if args.is_empty() {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("get(url, [\"header-name=value\", ...])", 1, 1)));
     }
@@ -54,7 +62,7 @@ pub fn builtin_get(args: &[Value]) -> Result<Value, ParserError> {
     }
 }
 
-pub fn builtin_post(args: &[Value]) -> Result<Value, ParserError> {
+fn builtin_post(args: &[Value]) -> Result<Value, ParserError> {
     if args.len() != 2 {
         return Err(ParserError::FunctionNArg(FunctionNArgError::new("post(url, body)", 1, 1)));
     }
