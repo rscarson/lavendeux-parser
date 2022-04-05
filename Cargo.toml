@@ -7,7 +7,7 @@ categories = ["parser-implementations", "development-tools", "command-line-utili
 homepage = "https://rscarson.github.io/Lavendeux/"
 repository = "https://github.com/rscarson/lavendeux-parser"
 readme = "readme.md"
-version = "0.5.2"
+version = "0.5.3"
 edition = "2021"
 
 [features]

@@ -83,7 +83,7 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
 
         Rule::assignment_expression => {
             if state.constants.contains_key(token.child(0).unwrap().text()) {
-                return Some(ParserError::ContantValue(ConstantValueError::new(token.child(0).unwrap().text().to_string())))
+                return Some(ParserError::ContantValue(ConstantValueError::new_with_token(token, token.child(0).unwrap().text())))
             } else {
                 state.variables.insert(token.child(0).unwrap().text().to_string(), token.child(2).unwrap().value());
                 token.set_value(token.child(2).unwrap().value());

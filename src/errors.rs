@@ -1,4 +1,5 @@
 extern crate pest;
+use crate::Token;
 use std::error::Error;
 use std::fmt;
 
@@ -21,10 +22,10 @@ pub enum ParserError {
     Pest(PestError),
     
     /// An error caused by attempting to parse an invalid integer value
-    ParseInt(std::num::ParseIntError),
+    ParseInt(ParseIntegerError),
     
     /// An error caused by attempting to parse an invalid floating point value
-    ParseFloat(std::num::ParseFloatError),
+    ParseFloat(ParseFloatingPointError),
     
     /// An error caused by attempting to use a value of the wrong type in a calculation
     ValueType(ValueTypeError),
@@ -135,37 +136,92 @@ impl fmt::Display for ExpectedTypes {
 
 /// Occurs when parsing the grammar of an expression fails
 #[derive(Debug, Clone)]
-pub struct PestError {cause: String}
+pub struct PestError {pos: Option<usize>, cause: String}
 error_type!(PestError, {
     /// Create a new instance of the error
     /// 
     /// # Arguments
     /// * `cause` - Underlying parsing error
-    pub fn new (cause: &str) -> Self {
-        Self { cause: cause.to_string() }
+    pub fn new(cause: &str) -> Self {
+        Self::new_with_index(None, cause)
+    }
+    
+    /// Create a new instance of the error caused by a token
+    /// 
+    /// # Arguments
+    /// * `token` - Token causing the error
+    /// * `cause` - Underlying parsing error
+    pub fn new_with_token(token: &Token, cause: &str) -> Self {
+        Self::new_with_index(Some(token.index()), cause)
+    }
+    
+    /// Create a new instance of the error at a specific position
+    /// 
+    /// # Arguments
+    /// * `pos` - Index at which the error occured
+    /// * `cause` - Underlying parsing error
+    pub fn new_with_index(pos: Option<usize>, cause: &str) -> Self {
+        Self { pos, cause: cause.to_string() }
     }
 
     /// Return the cause of the error
     pub fn cause(&self) -> &str {
         &self.cause
     }
+    
+    /// Return the location at which the error occured
+    pub fn pos(&self) -> Option<usize> {
+        self.pos
+    }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "unable to parse expression")
+        write!(f, "{}", "unexpected token in expression")?;
+        if let Some(pos) = self.pos {
+            write!(f, " at position {}", pos)?;
+        }
+
+        fmt::Result::Ok(())
     }
 });
 
 /// Occurs when a recursive function goes too deep
 #[derive(Debug, Clone)]
-pub struct StackError {}
+pub struct StackError {pos: Option<usize>}
 error_type!(StackError, {
     /// Create a new instance of the error
     pub fn new() -> Self {
-        Self { }
+        Self::new_with_index(None)
+    }
+    
+    /// Create a new instance of the error caused by a token
+    /// 
+    /// # Arguments
+    /// * `token` - Token causing the error
+    /// * `cause` - Underlying parsing error
+    pub fn new_with_token(token: &Token) -> Self {
+        Self::new_with_index(Some(token.index()))
+    }
+    
+    /// Create a new instance of the error at a specific position
+    /// 
+    /// # Arguments
+    /// * `pos` - Index at which the error occured
+    pub fn new_with_index(pos: Option<usize>) -> Self {
+        Self {pos}
+    }
+    
+    /// Return the location at which the error occured
+    pub fn pos(&self) -> Option<usize> {
+        self.pos
     }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "recursive function went too deep")
+        write!(f, "{}", "recursive function went too deep")?;
+        if let Some(pos) = self.pos {
+            write!(f, " at position {}", pos)?;
+        }
+
+        fmt::Result::Ok(())
     }
 });
 impl Default for StackError {
