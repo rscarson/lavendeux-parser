@@ -44,6 +44,8 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::ne => token.set_value(Value::Boolean(l.as_float().unwrap() != r.as_float().unwrap())),
                         _ => {}
                     }
+                } else {
+                    token.set_value(Value::Boolean(false));
                 }
 
                 i += 2;

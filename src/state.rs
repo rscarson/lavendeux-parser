@@ -7,7 +7,7 @@ use super::decorators;
 #[cfg(feature = "extensions")]
 use super::extensions;
 
-const MAX_STACK_DEPTH: usize = 100;
+const MAX_STACK_DEPTH: usize = 50;
 
 /// Holds the properties of a function assigned inside an expression
 #[derive(Clone)]

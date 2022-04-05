@@ -44,7 +44,7 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
             // User-defined functions
             if let Some(f) = state.user_functions.get(name) {
                 if args.len() != f.arguments.len() {
-                    return Some(ParserError::FunctionNArg(FunctionNArgError::new(&f.name, f.arguments.len(), f.arguments.len())));
+                    return Some(ParserError::FunctionNArg(FunctionNArgError::new_with_token(token, &f.name, f.arguments.len(), f.arguments.len())));
                 }
 
                 if let Some(mut inner_state) = state.spawn_inner() {
@@ -63,12 +63,12 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
                         Err(e) => { return Some(e); }
                     }
                 } else {
-                    return Some(ParserError::Stack(StackError::new()));
+                    return Some(ParserError::Stack(StackError::new_with_token(token)));
                 }
             }
         }
 
-        return Some(ParserError::FunctionName(FunctionNameError::new(name)));
+        return Some(ParserError::FunctionName(FunctionNameError::new_with_token(token, name)));
     }
 
     None

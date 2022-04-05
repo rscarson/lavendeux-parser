@@ -9,7 +9,7 @@ use crate::errors::*;
 /// * `input` - Source string
 /// * `prefix` - Number prefix to remove from the string
 /// * `base` - Numeric base
-fn parse_radix(input: &str, prefix: &[&str], base: u32) -> Result<IntegerType, ParserError> {
+fn parse_radix(input: &str, prefix: &[&str], base: u32) -> Result<IntegerType, std::num::ParseIntError> {
     let mut trimmed = input.to_string();
     for p in prefix {
         trimmed = trimmed.trim_start_matches(p).to_string();
@@ -17,7 +17,7 @@ fn parse_radix(input: &str, prefix: &[&str], base: u32) -> Result<IntegerType, P
     
     match IntegerType::from_str_radix(&trimmed, base) {
         Ok(n) => Ok(n),
-        Err(e) => Err(ParserError::ParseInt(e))
+        Err(e) => Err(e)
     }
 }
 
@@ -26,27 +26,27 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
         Rule::hex => {
             match parse_radix(token.text(), &["0x","0X"], 16) {
                 Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(e)
+                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
             }
         },
 
         Rule::bin => {
             match parse_radix(token.text(), &["0b","0B"], 2) {
                 Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(e)
+                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
             }
         },
 
         Rule::oct => {
             match parse_radix(token.text(), &["0o","0O"], 8) {
                 Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(e)
+                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
             }
         },
 
         Rule::sci|Rule::float => match token.text().replace(',', "").parse::<FloatType>() {
             Ok(n) => token.set_value(Value::Float(n)),
-            Err(e) => return Some(ParserError::ParseFloat(e)),
+            Err(e) => return Some(ParserError::ParseFloat(ParseFloatingPointError::new_with_index(Some(token.index()), &e.to_string()))),
         },
 
         Rule::boolean => {
@@ -70,12 +70,12 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
                     token.set_format(OutputFormat::Yen);
                 }
             },
-            Err(e) => return Some(ParserError::ParseFloat(e)),
+            Err(e) => return Some(ParserError::ParseFloat(ParseFloatingPointError::new_with_index(Some(token.index()), &e.to_string()))),
         },
 
         Rule::int => match token.text().replace(',', "").parse::<IntegerType>() {
             Ok(n) => token.set_value(Value::Integer(n)),
-            Err(e) => return Some(ParserError::ParseInt(e)),
+            Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string()))),
         },
 
         Rule::string => {
@@ -101,7 +101,7 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
         Rule::atomic_value => {
             token.set_value(token.child(0).unwrap().value());
             if matches!(token.value(), Value::None) {
-                return Some(ParserError::VariableName(VariableNameError::new(token.text().to_string())));
+                return Some(ParserError::VariableName(VariableNameError::new(token.text())));
             }
         },
 
