@@ -154,6 +154,14 @@ mod test_builtin_functions {
             Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
             Value::Integer(1)
         ]).unwrap());
+        assert_eq!(Value::String("foobar".to_string()), (REGEX.handler)(&REGEX, &[
+            Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
+            Value::Integer(0)
+        ]).unwrap());
+        assert_eq!(Value::Boolean(false), (REGEX.handler)(&REGEX, &[
+            Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
+            Value::Integer(6)
+        ]).unwrap());
     }
 
     #[test]

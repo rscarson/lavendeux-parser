@@ -1,3 +1,9 @@
+0.6.0
+-----
+Added (Implied)(Multiplication) 2x, etc
+Overhaul of functions to enable the help commands
+Add regex matching function
+
 0.5.3
 -----
 Make errors more useful

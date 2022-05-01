@@ -205,6 +205,10 @@ help("strlen") // Get help for a specific function by name
 concat("s1", "s2", ...) | strlen("string") | substr("string", start, [length])
 uppercase("s1") | lowercase("S1") | trim("    s1    ")
 
+// Regular expressions
+regex("foo.*", "foobar") // foobar
+regex("foo(.*)", "foobar", 1) // bar
+
 // Rounding functions
 ceil(n) | floor(n) | round(n, precision)
 
