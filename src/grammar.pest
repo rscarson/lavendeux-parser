@@ -43,7 +43,8 @@ expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
 
 toplevel_expression = {ternary_expression}
 
-ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
+ternary_expression = {implied_mul_expression ~ ("?" ~ implied_mul_expression ~ ":" ~ implied_mul_expression)*}
+implied_mul_expression = {bool_or_expression ~ bool_or_expression*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
 bool_cmp_expression = {or_expression ~ ((lt|gt|eq|ne) ~ or_expression)*}

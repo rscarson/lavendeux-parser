@@ -231,6 +231,26 @@ pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
             return None;
         }
 
+        Rule::implied_mul_expression => {
+            token.set_value(token.child(0).unwrap().value());
+            if token.children().len() > 1 {
+                let mut i = 1;
+                while i < token.children().len() {
+                    let ih = IntegerType::checked_mul;
+                    let fh = |l: FloatType, r: FloatType| l * r;
+
+                    match perform_binary_calculation(token, token.value(), token.child(i).unwrap().value(), ih, fh) {
+                        Ok(n) => token.set_value(n),
+                        Err(e) => return Some(e)
+                    }
+        
+                    i += 1;
+                }
+            }
+            
+            return None;
+        }
+
         Rule::as_expression => {
             token.set_value(token.child(0).unwrap().value());
             if token.children().len() > 1 {
