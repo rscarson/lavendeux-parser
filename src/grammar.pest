@@ -43,8 +43,7 @@ expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
 
 toplevel_expression = {ternary_expression}
 
-ternary_expression = {implied_mul_expression ~ ("?" ~ implied_mul_expression ~ ":" ~ implied_mul_expression)*}
-implied_mul_expression = {bool_or_expression ~ bool_or_expression*}
+ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
 bool_cmp_expression = {or_expression ~ ((lt|gt|eq|ne) ~ or_expression)*}
@@ -53,7 +52,8 @@ xor_expression = {and_expression ~ (xor ~ and_expression)*}
 and_expression = {sh_expression ~ (and ~ sh_expression)*}
 sh_expression = {as_expression ~ ((lshift|rshift) ~ as_expression)*}
 as_expression = {md_expression ~ ((plus|minus) ~ md_expression)*}
-md_expression = {power_expression ~ ((multiply|divide|modulus) ~ power_expression)*}
+md_expression = {implied_mul_expression ~ ((multiply|divide|modulus) ~ implied_mul_expression)*}
+implied_mul_expression = {power_expression ~ (!minus ~ power_expression)*}
 power_expression = {call_expression ~ (power ~ call_expression)*}
 call_expression = {identifier ~ lparen ~ toplevel_expression ~ rparen | identifier ~ lparen ~ expression_list? ~ rparen | prefix_unary_expression}
 prefix_unary_expression = {(not|minus)+ ~ postfix_unary_expression | postfix_unary_expression}

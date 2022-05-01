@@ -236,6 +236,11 @@ pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
             if token.children().len() > 1 {
                 let mut i = 1;
                 while i < token.children().len() {
+                    let next_child = token.child(i).unwrap();
+                    if next_child.text() == "(" || next_child.text() == ")" {
+                        continue;
+                    }
+
                     let ih = IntegerType::checked_mul;
                     let fh = |l: FloatType, r: FloatType| l * r;
 

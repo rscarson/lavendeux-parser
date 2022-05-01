@@ -462,6 +462,7 @@ mod test_token {
         token_does_value_equal("4(x)", Value::Integer(64), &mut state);
         token_does_value_equal("(4)x", Value::Integer(64), &mut state);
         token_does_value_equal("(2)(2)(2)(2)", Value::Integer(16), &mut state);
+        token_does_value_equal("(2)(2)(2)(-2)", Value::Integer(-16), &mut state);
 
         // add / sub expression
         token_does_text_equal("2*$2", "$4.00", &mut state);
@@ -498,6 +499,8 @@ mod test_token {
         let t = Token::new("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
         assert_eq!("10\nx * y\n10", t.text);
         token_does_value_equal("fn(5,5)", Value::Integer(25), &mut state);
+        let t = Token::new("fn(x, y) = 5x + 10(x * y)\nfn(2, 3)", &mut state).unwrap();
+        assert_eq!("5x + 10(x * y)\n70", t.text);
         assert_eq!(true, Token::new("f(x) = f(x)\nf(0)", &mut state).is_err());
 
         // Help
