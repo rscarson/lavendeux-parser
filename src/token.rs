@@ -295,6 +295,7 @@ impl Token {
 
 #[cfg(test)]
 mod test_token {
+    #[cfg(feature = "extensions")]
     use crate::extensions::{Extension};
     use super::*;
 
@@ -463,6 +464,8 @@ mod test_token {
         token_does_value_equal("(4)x", Value::Integer(64), &mut state);
         token_does_value_equal("(2)(2)(2)(2)", Value::Integer(16), &mut state);
         token_does_value_equal("(2)(2)(2)(-2)", Value::Integer(-16), &mut state);
+        token_does_value_equal("2-2", Value::Integer(0), &mut state);
+        token_does_value_equal("-2x", Value::Integer(-32), &mut state);
 
         // add / sub expression
         token_does_text_equal("2*$2", "$4.00", &mut state);
@@ -504,18 +507,25 @@ mod test_token {
         assert_eq!(true, Token::new("f(x) = f(x)\nf(0)", &mut state).is_err());
 
         // Help
+        #[cfg(feature = "extensions")]
         state.extensions.add("test.js", Extension::new_stub(
             None, None, None, 
             vec!["test".to_string(), "test2".to_string()], 
             vec!["test3".to_string(), "test4".to_string()]
         ));
+
         let t = Token::new("help()", &mut state).unwrap();
         assert_eq!(true, t.text.contains("Built-in Functions"));
         assert_eq!(true, t.text.contains("Built-in Decorators"));
+        
+        #[cfg(feature = "extensions")]
         assert_eq!(true, t.text.contains("Unnamed Extension v0.0.0"));
+
         assert_eq!(true, t.text.contains("User-defined Functions"));
         token_does_text_equal("help('strlen')", "strlen(s): Returns the length of the string s", &mut state);
         token_does_text_equal("help('fn')", "fn(x, y)", &mut state);
+        
+        #[cfg(feature = "extensions")]
         token_does_text_equal("help('test2')", "test2(...)", &mut state);
     }
 }
