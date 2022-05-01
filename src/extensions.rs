@@ -14,10 +14,19 @@ impl ExtensionTable {
         Self(HashMap::new())
     }
 
+    /// Add an extension
+    /// 
+    /// # Arguments
+    /// * `filename` - File name
+    /// * `extension` - Extension to add
+    pub fn add(&mut self, filename: &str, extension: Extension) {
+        self.0.insert(filename.to_string(), extension);
+    }
+
     /// Load an extension from a filename
     /// 
     /// # Arguments
-    /// * `name` - Function name
+    /// * `filename` - File name
     pub fn load(&mut self, filename: &str) -> Result<Extension, ParserError> {
         let e = Extension::new(filename)?;
         self.0.insert(filename.to_string(), e.clone());
@@ -95,6 +104,10 @@ impl Default for ExtensionTable {
     }
 }
 
+fn default_name() -> String { "Unnamed Extension".to_string() }
+fn default_author() -> String { "Anonymous".to_string() }
+fn default_version() -> String { "0.0.0".to_string() }
+
 /// Represents a single loaded extension. It describes the functions and decorators it adds,
 /// as well as metadata about the extension and it's author.
 /// 
@@ -105,13 +118,13 @@ pub struct Extension {
     #[serde(default)]
     filename: String,
 
-    #[serde(default)]
+    #[serde(default = "default_name")]
     name: String,
 
-    #[serde(default)]
+    #[serde(default = "default_author")]
     author: String,
 
-    #[serde(default)]
+    #[serde(default = "default_version")]
     version: String,
     
     #[serde(default)]
@@ -135,7 +148,7 @@ impl Extension {
     /// Load an extension from a filename
     /// 
     /// # Arguments
-    /// * `name` - Function name
+    /// * `filename` - Source filename
     pub fn new(filename: &str) -> Result<Extension, std::io::Error> {
         match fs::read_to_string(filename) {
             Ok(s) => {
@@ -146,6 +159,32 @@ impl Extension {
             },
             Err(e) => Err(e)
         }
+    }
+
+    /// Create a new dummy extension that cannot be called or used
+    /// 
+    /// # Arguments
+    /// * `name` - Extension name
+    /// * `author` - Extension author
+    /// * `author` - Extension author
+    /// * `version` - Extension version
+    /// * `functions` - Extension functions
+    /// * `decorators` - Extension decorators
+    pub fn new_stub(name: Option<&str>, author: Option<&str>, version: Option<&str>, functions: Vec<String>, decorators: Vec<String>) -> Self {
+        let mut stub = Self {
+            name: name.unwrap_or(&default_name()).to_string(),
+            author: author.unwrap_or(&default_author()).to_string(),
+            version: version.unwrap_or(&default_version()).to_string(),
+            contents: "".to_string(),
+            filename: "".to_string(),
+            functions: HashMap::new(),
+            decorators: HashMap::new()
+        };
+
+        for f in functions { stub.functions.insert(f.clone(), f); }
+        for d in decorators { stub.decorators.insert(d.clone(), d); }
+
+        stub
     }
 
     /// Attempt to load all extensions in a directory
@@ -252,6 +291,16 @@ impl Extension {
     /// Returns the version of the extension
     pub fn version(&self) -> &str {
         &self.version
+    }
+
+    /// Return the list of all functions in the extension
+    pub fn functions(&self) -> Vec<String> {
+        self.functions.keys().cloned().collect()
+    }
+
+    /// Return the list of all decorators in the extension
+    pub fn decorators(&self) -> Vec<String> {
+        self.decorators.keys().cloned().collect()
     }
 } 
 

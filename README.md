@@ -54,12 +54,8 @@ fn main() -> Result<(), ParserError> {
 
 A number of functions and @decorators are available for expressions to use - add more using the state:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, Value};
- 
-// Functions take in an array of values, and return a single value
-fn new_function_handler(args: &[Value]) -> Result<Value, ParserError> {
-    Ok(Value::Integer(0))
-}
+use lavendeux_parser::{ParserState, ParserError, FunctionDefinition, FunctionArgument, Value};
+use lavendeux_parser::errors::*;
  
 // Decorators take in a single value, and return a string representation
 fn new_decorator_handler(arg: &Value) -> Result<String, ParserError> {
@@ -68,7 +64,18 @@ fn new_decorator_handler(arg: &Value) -> Result<String, ParserError> {
  
 let mut state : ParserState = ParserState::new();
 state.decorators.register("new_decorator", new_decorator_handler);
-state.functions.register("new_function", new_function_handler);
+
+// Functions take in an array of values, and return a single value
+state.functions.register(FunctionDefinition {
+    name: "echo",
+    description: "Echo back the provided input",
+    arguments: || vec![
+        FunctionArgument::new_required("input", ExpectedTypes::String),
+    ],
+    handler: |_, args: &[Value]| {
+        Ok(Value::String(args[0].as_string()))
+    }
+});
  
 // Expressions being parsed can now call new_function(), and use the @new_decorator
 ```rust
@@ -191,6 +198,9 @@ Decorators can be put at the end of a line to change the output format. Valid de
 
 The following functions are supported by default:
 ```javascript
+help() // List all functions and decorators
+help("strlen") // Get help for a specific function by name
+
 // String functions
 concat("s1", "s2", ...) | strlen("string") | substr("string", start, [length])
 uppercase("s1") | lowercase("S1") | trim("    s1    ")

@@ -121,7 +121,13 @@ pub enum ExpectedTypes {
     IntOrFloat, 
     
     /// String value
-    String
+    String,
+    
+    /// Boolean value
+    Boolean,
+    
+    /// Any type of value
+    Any
 }
 impl fmt::Display for ExpectedTypes {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -130,6 +136,8 @@ impl fmt::Display for ExpectedTypes {
             ExpectedTypes::Float => write!(f, "float"),
             ExpectedTypes::IntOrFloat => write!(f, "int or float"),
             ExpectedTypes::String => write!(f, "string"),
+            ExpectedTypes::Boolean => write!(f, "boolean"),
+            ExpectedTypes::Any => write!(f, "any"),
         }
     }
 }

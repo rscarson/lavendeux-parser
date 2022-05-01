@@ -1,18 +1,22 @@
 use lavendeux_parser::{ParserState, ParserError, Token, Value};
-use lavendeux_parser::errors::FunctionNArgError;
+use lavendeux_parser::{FunctionDefinition, FunctionArgument};
+use lavendeux_parser::errors::*;
 
-fn echo_function(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        Err(ParserError::FunctionNArg(FunctionNArgError::new("echo(input)", 1, 1)))
-    } else {
+const ECHO : FunctionDefinition = FunctionDefinition {
+    name: "echo",
+    description: "Echo back the provided input",
+    arguments: || vec![
+        FunctionArgument::new_required("input", ExpectedTypes::String),
+    ],
+    handler: |_, args: &[Value]| {
         Ok(Value::String(args[0].as_string()))
     }
-}
+};
 
 fn main() -> Result<(), ParserError> {
     // Load the extensions into our parser
     let mut state : ParserState = ParserState::new();
-    state.functions.register("echo", echo_function);
+    state.functions.register(ECHO);
     
     // Now we can use the new functions and @decorators
     let token = Token::new("echo(5)", &mut state)?;

@@ -1,93 +1,133 @@
-use super::FunctionTable;
+use super::{FunctionDefinition, FunctionArgument, FunctionTable};
 use crate::value::{Value, FloatType};
 use crate::errors::*;
 
+fn builtin_trig(method: fn(FloatType) -> FloatType, args: &[Value]) -> Result<Value, ParserError> {
+    let n = args[0].as_float().unwrap();
+    Ok(Value::Float(method(n)))
+}
+
+const TO_RADIANS : FunctionDefinition = FunctionDefinition {
+    name: "to_radians",
+    description: "Convert the given degree value into radians",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| {
+        let n = args[0].as_float().unwrap();
+        Ok(Value::Float(n * (std::f64::consts::PI / 180.0)))
+    }
+};
+
+const TO_DEGREES : FunctionDefinition = FunctionDefinition {
+    name: "to_degrees",
+    description: "Convert the given radian value into degrees",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| {
+        let n = args[0].as_float().unwrap();
+        Ok(Value::Float(n * 180.0 / std::f64::consts::PI))
+    }
+};
+
+const TAN : FunctionDefinition = FunctionDefinition {
+    name: "tan",
+    description: "Calculate the tangent of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::tan, args)
+};
+
+const COS : FunctionDefinition = FunctionDefinition {
+    name: "cos",
+    description: "Calculate the cosine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::cos, args)
+};
+
+const SIN : FunctionDefinition = FunctionDefinition {
+    name: "sin",
+    description: "Calculate the sine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::sin, args)
+};
+
+const ATAN : FunctionDefinition = FunctionDefinition {
+    name: "atan",
+    description: "Calculate the arctangent of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::atan, args)
+};
+
+const ACOS : FunctionDefinition = FunctionDefinition {
+    name: "acos",
+    description: "Calculate the arccosine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::acos, args)
+};
+
+const ASIN : FunctionDefinition = FunctionDefinition {
+    name: "asin",
+    description: "Calculate the arcsine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::asin, args)
+};
+
+const TANH : FunctionDefinition = FunctionDefinition {
+    name: "tanh",
+    description: "Calculate the hyperbolic tangent of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::tanh, args)
+};
+
+const COSH : FunctionDefinition = FunctionDefinition {
+    name: "cosh",
+    description: "Calculate the hyperbolic cosine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::cosh, args)
+};
+
+const SINH : FunctionDefinition = FunctionDefinition {
+    name: "sinh",
+    description: "Calculate the hyperbolic sine of n",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
+    ],
+    handler: |_, args: &[Value]| builtin_trig(FloatType::sinh, args)
+};
+
 /// Register trig functions
 pub fn register_functions(table: &mut FunctionTable) {
-    table.register("to_radians", builtin_to_radians);
-    table.register("to_degrees", builtin_to_degrees);
+    table.register(TO_RADIANS);
+    table.register(TO_DEGREES);
 
-    table.register("tan", builtin_tan);
-    table.register("cos", builtin_cos);
-    table.register("sin", builtin_sin);
-    table.register("atan", builtin_atan);
-    table.register("acos", builtin_acos);
-    table.register("asin", builtin_asin);
-    table.register("tanh", builtin_tanh);
-    table.register("cosh", builtin_cosh);
-    table.register("sinh", builtin_sinh);
-}
-
-fn builtin_to_radians(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_radians(n)", 1, 1)));
-    }
-
-    if let Some(n) = args[0].as_float() {
-        Ok(Value::Float(n * (std::f64::consts::PI / 180.0)))
-    } else {
-        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_radians(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_to_degrees(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("to_degrees(n)", 1, 1)));
-    }
-
-    if let Some(n) = args[0].as_float() {
-        Ok(Value::Float(n * 180.0 / std::f64::consts::PI))
-    } else {
-        Err(ParserError::FunctionArgType(FunctionArgTypeError::new("to_degrees(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_trig(sig: &str, method: fn(FloatType) -> FloatType, args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new(sig, 1, 1)));
-    }
-
-    if let Some(n) = args[0].as_float() {
-        Ok(Value::Float(method(n)))
-    } else {
-        Err(ParserError::FunctionArgType(FunctionArgTypeError::new(sig, 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_tan(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("tan(n)", FloatType::tan, args)
-}
-
-fn builtin_cos(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("cos(n)", FloatType::cos, args)
-}
-
-fn builtin_sin(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("sin(n)", FloatType::sin, args)
-}
-
-fn builtin_atan(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("atan(n)", FloatType::atan, args)
-}
-
-fn builtin_acos(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("acos(n)", FloatType::acos, args)
-}
-
-fn builtin_asin(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("asin(n)", FloatType::asin, args)
-}
-
-fn builtin_tanh(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("tanh(n)", FloatType::tanh, args)
-}
-
-fn builtin_cosh(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("cosh(n)", FloatType::cosh, args)
-}
-
-fn builtin_sinh(args: &[Value]) -> Result<Value, ParserError> {
-    builtin_trig("sinh(n)", FloatType::sinh, args)
+    table.register(TAN);
+    table.register(ATAN);
+    table.register(TANH);
+    
+    table.register(COS);
+    table.register(ACOS);
+    table.register(COSH);
+    
+    table.register(SIN);
+    table.register(ASIN);
+    table.register(SINH);
 }
 
 #[cfg(test)]
@@ -96,62 +136,62 @@ mod test_builtin_functions {
         
     #[test]
     fn test_to_radians() {
-        assert_eq!(Value::Float(std::f64::consts::PI), builtin_to_radians(&[Value::Integer(180)]).unwrap());
-        assert_eq!(Value::Float(std::f64::consts::PI * 4.0), builtin_to_radians(&[Value::Integer(720)]).unwrap());
+        assert_eq!(Value::Float(std::f64::consts::PI), (TO_RADIANS.handler)(&TO_RADIANS, &[Value::Integer(180)]).unwrap());
+        assert_eq!(Value::Float(std::f64::consts::PI * 4.0), (TO_RADIANS.handler)(&TO_RADIANS, &[Value::Integer(720)]).unwrap());
     }
         
     #[test]
     fn test_to_degrees() {
-        assert_eq!(Value::Float(180.0), builtin_to_degrees(&[Value::Float(std::f64::consts::PI)]).unwrap());
-        assert_eq!(Value::Float(90.0), builtin_to_degrees(&[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
+        assert_eq!(Value::Float(180.0), (TO_DEGREES.handler)(&TO_DEGREES, &[Value::Float(std::f64::consts::PI)]).unwrap());
+        assert_eq!(Value::Float(90.0), (TO_DEGREES.handler)(&TO_DEGREES, &[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
     }
     
     #[test]
     fn test_tan() {
-        assert_eq!(Value::Float(0.0), builtin_tan(&[Value::Float(0.0)]).unwrap());
-        assert_eq!(true, 0.00001 > 1.0 - builtin_tan(&[Value::Float(std::f64::consts::PI / 4.0)]).unwrap().as_float().unwrap());
+        assert_eq!(Value::Float(0.0), (TAN.handler)(&TAN, &[Value::Float(0.0)]).unwrap());
+        assert_eq!(true, 0.00001 > 1.0 - (TAN.handler)(&TAN, &[Value::Float(std::f64::consts::PI / 4.0)]).unwrap().as_float().unwrap());
     }
     
     #[test]
     fn test_cos() {
-        assert_eq!(Value::Float(1.0), builtin_cos(&[Value::Float(0.0)]).unwrap());
-        assert_eq!(true, 0.00001 > builtin_cos(&[Value::Float(std::f64::consts::PI / 2.0)]).unwrap().as_float().unwrap());
+        assert_eq!(Value::Float(1.0), (COS.handler)(&COS, &[Value::Float(0.0)]).unwrap());
+        assert_eq!(true, 0.00001 > (COS.handler)(&COS, &[Value::Float(std::f64::consts::PI / 2.0)]).unwrap().as_float().unwrap());
     }
     
     #[test]
     fn test_sin() {
-        assert_eq!(Value::Float(0.0), builtin_sin(&[Value::Float(0.0)]).unwrap());
-        assert_eq!(Value::Float(1.0), builtin_sin(&[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (SIN.handler)(&SIN, &[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(1.0), (SIN.handler)(&SIN, &[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
     }
     
     #[test]
     fn test_atan() {
-        assert_eq!(Value::Float(0.0), builtin_atan(&[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (ATAN.handler)(&ATAN, &[Value::Float(0.0)]).unwrap());
     }
     
     #[test]
     fn test_acos() {
-        assert_eq!(Value::Float(0.0), builtin_acos(&[Value::Float(1.0)]).unwrap());
-        assert_eq!(Value::Float(std::f64::consts::PI), builtin_acos(&[Value::Float(-1.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (ACOS.handler)(&ACOS, &[Value::Float(1.0)]).unwrap());
+        assert_eq!(Value::Float(std::f64::consts::PI), (ACOS.handler)(&ACOS, &[Value::Float(-1.0)]).unwrap());
     }
     
     #[test]
     fn test_asin() {
-        assert_eq!(Value::Float(0.0), builtin_asin(&[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (ASIN.handler)(&ASIN, &[Value::Float(0.0)]).unwrap());
     }
     
     #[test]
     fn test_tanh() {
-        assert_eq!(Value::Float(0.0), builtin_tanh(&[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (TANH.handler)(&TANH, &[Value::Float(0.0)]).unwrap());
     }
     
     #[test]
     fn test_cosh() {
-        assert_eq!(Value::Float(1.0), builtin_cosh(&[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(1.0), (COSH.handler)(&COSH, &[Value::Float(0.0)]).unwrap());
     }
     
     #[test]
     fn test_sinh() {
-        assert_eq!(Value::Float(0.0), builtin_sinh(&[Value::Float(0.0)]).unwrap());
+        assert_eq!(Value::Float(0.0), (SINH.handler)(&SINH, &[Value::Float(0.0)]).unwrap());
     }
 }

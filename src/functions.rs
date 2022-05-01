@@ -1,16 +1,163 @@
-use super::value::{Value, IntegerType, FloatType};
+use super::value::{Value};
 use super::errors::*;
 use std::collections::HashMap;
 
-pub type FunctionHandler = fn(&[Value]) -> Result<Value, ParserError>;
+pub type FunctionHandler = fn(&FunctionDefinition, &[Value]) -> Result<Value, ParserError>;
 
-mod trig;
+/// Describes an argument for a callable function
+#[derive(Clone)]
+pub struct FunctionArgument{ name: String, expected: ExpectedTypes, optional: bool, plural: bool }
+impl FunctionArgument {
+    /// Build a new function argument
+    pub fn new(name: &str, expected: ExpectedTypes, optional: bool) -> Self {
+        Self {name: name.to_string(), expected, optional, plural: false}
+    }
+    
+    /// Build a new plural function argument
+    pub fn new_plural(name: &str, expected: ExpectedTypes, optional: bool) -> Self {
+        Self {name: name.to_string(), expected, optional, plural: true}
+    }
+
+    /// Build a new required function argument
+    pub fn new_required(name: &str, expected: ExpectedTypes) -> Self {
+        Self::new(name, expected, false)
+    }
+
+    /// Build a new optional function argument
+    pub fn new_optional(name: &str, expected: ExpectedTypes) -> Self {
+        Self::new(name, expected, true)
+    }
+
+    /// Return the argument's name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Return the argument's expected type
+    pub fn expected(&self) -> &ExpectedTypes {
+        &self.expected
+    }
+
+    /// Return wether or not the argument is optional
+    pub fn optional(&self) -> bool {
+        self.optional
+    }
+
+    /// Return wether or not the argument is plural
+    pub fn plural(&self) -> bool {
+        self.plural
+    }
+}
+impl std::fmt::Display for FunctionArgument {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let name = if self.plural {
+            format!("{}1, {}2", self.name, self.name)
+        } else {self.name().to_string()};
+        write!(f, "{}{}{}", 
+            if self.optional {"["} else {""},
+            name,
+            if self.optional {"]"} else {""},
+        )
+    }
+}
+
+/// Holds the definition of a builtin callable function
+#[derive(Clone)]
+pub struct FunctionDefinition {
+    /// Function call name
+    pub name: &'static str,
+    
+    /// Function short description
+    pub description: &'static str,
+
+    /// Vector of arguments the function supports
+    pub arguments: fn() -> Vec<FunctionArgument>,
+
+    /// Handler function
+    pub handler: FunctionHandler
+}
+impl FunctionDefinition {
+    /// Return the function's name
+    pub fn name(&self) -> &str {
+        self.name
+    }
+    
+    /// Return the function's description
+    pub fn description(&self) -> &str {
+        self.description
+    }
+
+    /// Return the function's arguments
+    pub fn args(&self) -> Vec<FunctionArgument> {
+        (self.arguments)()
+    }
+    
+    /// Return the function's signature
+    pub fn signature(&self) -> String {
+        format!("{}({})", self.name, self.args().iter().map(|e| e.to_string()).collect::<Vec<String>>().join(", "))
+    }
+    
+    /// Return the function's help string
+    pub fn help(&self) -> String {
+        format!("{}: {}", self.signature(), self.description())
+    }
+
+    /// Validate function arguments, and return an error if one exists
+    /// 
+    /// # Arguments
+    /// * `args` - Function arguments
+    pub fn validate(&self, args: &[Value]) -> Option<ParserError> {
+        let optional_arguments = self.args().iter().filter(|e| e.optional).count();
+        let plural_arguments = self.args().iter().filter(|e| e.plural).count();
+        let max_arguments = self.args().len();
+        let min_arguments = max_arguments - optional_arguments;
+
+        // Argument count
+        if args.len() < min_arguments || (plural_arguments == 0 && args.len() > max_arguments) {
+            return Some(ParserError::FunctionNArg(FunctionNArgError::new(&self.signature(), min_arguments, max_arguments)))
+        }
+        
+        // Argument types
+        for (i, arg) in args.iter().enumerate() {
+            let argument = &self.args()[i];
+            let valid = match argument.expected {
+                ExpectedTypes::Float => arg.is_float(),
+                ExpectedTypes::Int => arg.is_int(),
+                ExpectedTypes::IntOrFloat => arg.is_float() || arg.is_int(),
+                ExpectedTypes::String => true, ExpectedTypes::Boolean => true, ExpectedTypes::Any => true // These can be converted from any type
+            };
+
+            if !valid {
+                return Some(ParserError::FunctionArgType(FunctionArgTypeError::new(&self.signature(), i+1, argument.expected.clone())));
+            }
+        }
+
+        None
+    }
+
+    // Call the associated function handler
+    /// 
+    /// # Arguments
+    /// * `args` - Function arguments
+    pub fn call(&self, args: &[Value]) -> Result<Value, ParserError> {
+        if let Some(error) = self.validate(args) {
+            Err(error)
+        } else {
+            (self.handler)(self, args)
+        }
+    }
+}
+
+//mod trig;
+mod math;
 mod dev;
 mod network;
 mod str;
+mod trig;
 
+/// Holds a set of callable functions
 #[derive(Clone)]
-pub struct FunctionTable(HashMap<String, FunctionHandler>);
+pub struct FunctionTable(HashMap<String, FunctionDefinition>);
 impl FunctionTable {
     /// Initialize a new function table, complete with default builtin functions
     pub fn new() -> FunctionTable {
@@ -21,20 +168,7 @@ impl FunctionTable {
 
     /// Register builtin functions
     fn register_builtins(&mut self) {
-        // Rounding functions
-        self.register("ceil", builtin_ceil);
-        self.register("floor", builtin_floor);
-        self.register("round", builtin_round);
-        self.register("abs", builtin_abs);
-        
-        // Roots and logs
-        self.register("ln", builtin_ln);
-        self.register("log10", builtin_log10);
-        self.register("log", builtin_log);
-        self.register("sqrt", builtin_sqrt);
-        self.register("root", builtin_root);
-        
-        // Other builtins
+        math::register_functions(self);
         str::register_functions(self);
         dev::register_functions(self);
         network::register_functions(self);
@@ -46,8 +180,8 @@ impl FunctionTable {
     /// # Arguments
     /// * `name` - Function name
     /// * `handler` - Function handler
-    pub fn register(&mut self, name: &str, handler: FunctionHandler) {
-        self.0.insert(name.to_string(), handler);
+    pub fn register(&mut self, function: FunctionDefinition) {
+        self.0.insert(function.name.to_string(), function);
     }
 
     /// Remove a function from the table
@@ -66,6 +200,19 @@ impl FunctionTable {
         self.0.contains_key(name)
     }
 
+    /// Return a given function
+    /// 
+    /// # Arguments
+    /// * `name` - Function name
+    pub fn get(&self, name: &str) -> Option<&FunctionDefinition> {
+        self.0.get(name)
+    }
+
+    /// Get a collection of all included functions
+    pub fn all(&self) -> Vec<&FunctionDefinition> {
+        self.0.values().collect()
+    }
+
     /// Call a function
     /// 
     /// # Arguments
@@ -73,9 +220,25 @@ impl FunctionTable {
     /// * `args` - Function arguments
     pub fn call(&self, name: &str, args: &[Value]) -> Result<Value, ParserError> {
         match self.0.get(name) {
-            Some(f) => f(args),
+            Some(f) => f.call(args),
             None => Err(ParserError::FunctionName(FunctionNameError::new(name)))
         }
+    }
+
+    /// Return a function's signature
+    /// 
+    /// # Arguments
+    /// * `name` - Function name
+    pub fn signature(&self, name: &str) -> Option<String> {
+        self.0.get(name).map(|f| f.signature())
+    }
+
+    /// Return a function's description
+    /// 
+    /// # Arguments
+    /// * `name` - Function name
+    pub fn description(&self, name: &str) -> Option<String> {
+        self.0.get(name).map(|f| f.description().to_string())
     }
 }
 
@@ -85,211 +248,42 @@ impl Default for FunctionTable {
     }
 }
 
-fn builtin_ceil(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("ceil(n)", 1, 1)))
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Integer(n)),
-        Value::Float(n) => Ok(Value::Integer(n.ceil() as IntegerType)),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("ceil(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_floor(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("floor(n)", 1, 1)))
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Integer(n)),
-        Value::Float(n) => Ok(Value::Integer(n.floor() as IntegerType)),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("floor(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_round(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 && args.len() != 2 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("round(n, precision=0)", 1, 2)));
-    }
-
-    let precision = if args.len()== 1 {0} else {
-        match args[1] {
-            Value::Integer(n) => n,
-            _ => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("round(n, precision=0)", 2, ExpectedTypes::Int)))
-        }
-    };
-
-    if precision > u32::MAX as IntegerType { 
-        return Err(ParserError::FunctionArgOverFlow(FunctionArgOverFlowError::new("round(n, precision=0)", 2))); 
-    }
-
-    let multiplier = f64::powi(10.0, precision as i32);
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Integer(n)),
-        Value::Float(n) => Ok(Value::Float((n * multiplier).round() / multiplier)),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("round(n, precision=0)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_abs(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("abs(n)", 1, 1)));
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Integer(n.abs())),
-        Value::Float(n) => Ok(Value::Integer(n.abs() as IntegerType)),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("abs(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_log10(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("log10(n)", 1, 1)));
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType).log10())),
-        Value::Float(n) => Ok(Value::Float(n.log10())),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("log10(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_ln(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("ln(n)", 1, 1)));
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType).ln())),
-        Value::Float(n) => Ok(Value::Float(n.ln())),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("ln(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_log(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 2 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("log(n, base)", 2, 2)));
-    }
-
-    let base = match args[1].as_float() {
-        Some(n) => n,
-        None => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("log(n, base)", 2, ExpectedTypes::IntOrFloat)))
-    };
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType).log(base))),
-        Value::Float(n) => Ok(Value::Float(n.log(base))),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("log(n, base)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_sqrt(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("sqrt(n)", 1, 1)));
-    }
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType).sqrt())),
-        Value::Float(n) => Ok(Value::Float(n.sqrt())),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("sqrt(n)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
-fn builtin_root(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 2 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("root(n, base)", 2, 2)));
-    }
-
-    let base = match args[1].as_float() {
-        Some(n) => n,
-        None => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("root(n, base)", 2, ExpectedTypes::IntOrFloat)))
-    };
-
-    match args[0] {
-        Value::Integer(n) => Ok(Value::Float((n as FloatType).powf(1.0 / base))),
-        Value::Float(n) => Ok(Value::Float(n.powf(1.0 / base))),
-        _ => Err(ParserError::FunctionArgType(FunctionArgTypeError::new("root(n, base)", 1, ExpectedTypes::IntOrFloat)))
-    }
-}
-
 #[cfg(test)]
 mod test_builtin_table {
     use super::*;
+
+    const EXAMPLE : FunctionDefinition = FunctionDefinition {
+        name: "example",
+        description: "Sample function",
+        arguments: || vec![
+            FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+        ],
+        handler: |_definition, _args: &[Value]| {
+            Ok(Value::Integer(4))
+        }
+    };
     
     #[test]
     fn test_register() {
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
+        let mut table = FunctionTable::new();
+        table.register(EXAMPLE);
+        assert_eq!(true, table.has("example"));
     }
     
     #[test]
     fn test_has() {
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
+        let mut table = FunctionTable::new();
+        table.register(EXAMPLE);
+        assert_eq!(true, table.has("example"));
     }
     
     #[test]
-    fn test_run() {
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
-    }
-}
+    fn test_call() {
+        let mut table = FunctionTable::new();
+        table.register(EXAMPLE);
 
-#[cfg(test)]
-mod test_builtin_functions {
-    use super::*;
-    
-    #[test]
-    fn test_ceil() {
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), builtin_ceil(&[Value::Integer(4)]).unwrap());
-    }
-    
-    #[test]
-    fn test_floor() {
-        assert_eq!(Value::Integer(3), builtin_floor(&[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), builtin_floor(&[Value::Integer(4)]).unwrap());
-    }
-    
-    #[test]
-    fn test_round() {
-        assert_eq!(Value::Float(3.56), builtin_round(&[Value::Float(3.555), Value::Integer(2)]).unwrap());
-        assert_eq!(Value::Float(4.0), builtin_round(&[Value::Integer(4), Value::Integer(2)]).unwrap());
-    }
-    
-    #[test]
-    fn test_abs() {
-        assert_eq!(Value::Integer(3), builtin_abs(&[Value::Integer(3)]).unwrap());
-        assert_eq!(Value::Integer(3), builtin_abs(&[Value::Integer(-3)]).unwrap());
-        assert_eq!(Value::Float(4.0), builtin_abs(&[Value::Float(-4.0)]).unwrap());
-    }
-    
-    #[test]
-    fn test_ln() {
-        assert_eq!(Value::Float(1.0), builtin_ln(&[Value::Float(std::f64::consts::E)]).unwrap());
-    }
-    
-    #[test]
-    fn test_log10() {
-        assert_eq!(Value::Float(2.0), builtin_log10(&[Value::Float(100.0)]).unwrap());
-    }
-    
-    #[test]
-    fn test_log() {
-        assert_eq!(Value::Float(2.0), builtin_log(&[Value::Float(100.0), Value::Integer(10)]).unwrap());
-    }
-    
-    #[test]
-    fn test_sqrt() {
-        assert_eq!(Value::Float(3.0), builtin_sqrt(&[Value::Float(9.0)]).unwrap());
-    }
-    
-    #[test]
-    fn test_root() {
-        assert_eq!(Value::Float(3.0), builtin_root(&[Value::Float(27.0), Value::Integer(3)]).unwrap());
+        table.call("example", &[]).unwrap_err();
+        table.call("example", &[Value::String("".to_string())]).unwrap_err();
+        table.call("example", &[Value::Integer(4)]).unwrap();
     }
 }

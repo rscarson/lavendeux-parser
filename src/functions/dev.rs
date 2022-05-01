@@ -1,76 +1,99 @@
+use super::{FunctionDefinition, FunctionArgument, FunctionTable};
+use crate::value::{Value, IntegerType};
+use crate::errors::*;
+
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use rand::prelude::*;
-use super::FunctionTable;
-use crate::value::{Value, IntegerType};
-use crate::errors::*;
 
-/// Register developper functions
-pub fn register_functions(table: &mut FunctionTable) {
-    table.register("choose", builtin_choose);
-    table.register("rand", builtin_rand);
-    table.register("time", builtin_time);
-    table.register("tail", builtin_tail);
-}
-
-fn builtin_choose(args: &[Value]) -> Result<Value, ParserError> {
-    let mut rng = rand::thread_rng();
-
-    if args.is_empty() {
-        Err(ParserError::FunctionNArg(FunctionNArgError::new("choose(..)", 1, 100)))
-    } else {
+const CHOOSE : FunctionDefinition = FunctionDefinition {
+    name: "choose",
+    description: "Returns any one of the provided arguments at random",
+    arguments: || vec![
+        FunctionArgument::new_plural("option", ExpectedTypes::Any, false)
+    ],
+    handler: |_, args: &[Value]| {
+        let mut rng = rand::thread_rng();
         let arg = rng.gen_range(0..args.len());
         Ok(args[arg].clone())
     }
-}
+};
 
-fn builtin_rand(args: &[Value]) -> Result<Value, ParserError> {
-    let mut rng = rand::thread_rng();
-    if args.is_empty() {
-        // Generate a float between 0 and 1
-        Ok(Value::Float(rng.gen()))
-    } else if args.len() == 2 {
-        if !matches!(args[0], Value::Integer(_)) || !matches!(args[1], Value::Integer(_)) {
-            Err(ParserError::FunctionArgType(FunctionArgTypeError::new("rand([start], [end])", 1, ExpectedTypes::Int)))
+const RAND : FunctionDefinition = FunctionDefinition {
+    name: "rand",
+    description: "With no arguments, return a float from 0 to 1. Otherwise return an integer from 0 to m, or m to n",
+    arguments: || vec![
+        FunctionArgument::new_optional("m", ExpectedTypes::Int),
+        FunctionArgument::new_optional("n", ExpectedTypes::Int)
+    ],
+    handler: |_, args: &[Value]| {
+        let mut rng = rand::thread_rng();
+        if args.is_empty() {
+            // Generate a float between 0 and 1
+            Ok(Value::Float(rng.gen()))
+        } else if args.len() == 1 {
+            // Generate an int between 0 and n
+            let n = args[0].as_int().unwrap();
+            if n < 0 {
+                Ok(Value::Integer(rng.gen_range(n..0)))
+            } else {
+                Ok(Value::Integer(rng.gen_range(0..n)))
+            }
         } else {
-            Ok(Value::Integer(rng.gen_range(args[0].as_int().unwrap()..args[1].as_int().unwrap())))
-        }
-    } else {
-        Err(ParserError::FunctionNArg(FunctionNArgError::new("rand([start, end])", 0, 2)))
-    }
-}
-
-fn builtin_time(_args: &[Value]) -> Result<Value, ParserError> {
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(n) => Ok(Value::Integer(n.as_secs() as IntegerType)),
-        Err(_) => Ok(Value::Integer(0))
-    }
-}
-
-fn builtin_tail(args: &[Value]) -> Result<Value, ParserError> {
-    if args.len() != 1 && args.len() != 2 {
-        return Err(ParserError::FunctionNArg(FunctionNArgError::new("tail(file, [n_lines])", 1, 2)));
-    }
-
-    let mut n_lines = 1;
-    if args.len() == 2 {
-        match args[1].as_int() {
-            Some(n) => n_lines = n,
-            None => return Err(ParserError::FunctionArgType(FunctionArgTypeError::new("tail(file, [n_lines])", 1, ExpectedTypes::IntOrFloat)))
+            // Generate an int between n and m
+            let n = args[0].as_int().unwrap();
+            let m = args[1].as_int().unwrap();
+            if n < m {
+                Ok(Value::Integer(rng.gen_range(n..m)))
+            } else {
+                Ok(Value::Integer(rng.gen_range(m..n)))
+            }
         }
     }
+};
 
-    let f = File::open(args[0].as_string())?;
-    let mut lines : Vec<String> = Vec::new();
-    for line in BufReader::new(f).lines() {
-        lines.push(line?);
-        if lines.len() as IntegerType > n_lines {
-            lines.remove(0);
+const TIME : FunctionDefinition = FunctionDefinition {
+    name: "time",
+    description: "Returns a unix timestamp for the current system time",
+    arguments: Vec::new,
+    handler: |_, _: &[Value]| {
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(n) => Ok(Value::Integer(n.as_secs() as IntegerType)),
+            Err(_) => Ok(Value::Integer(0))
         }
     }
+};
 
-    Ok(Value::String(lines.join("\n")))
+const TAIL : FunctionDefinition = FunctionDefinition {
+    name: "tail",
+    description: "Returns the last [lines] lines from a given file",
+    arguments: || vec![
+        FunctionArgument::new_required("filename", ExpectedTypes::String),
+        FunctionArgument::new_optional("lines", ExpectedTypes::Int),
+    ],
+    handler: |_, args: &[Value]| {
+        let n_lines = if args.len() == 2 { args[1].as_int().unwrap().abs()} else { 1 };
+
+        let f = File::open(args[0].as_string())?;
+        let mut lines : Vec<String> = Vec::new();
+        for line in BufReader::new(f).lines() {
+            lines.push(line?);
+            if lines.len() as IntegerType > n_lines {
+                lines.remove(0);
+            }
+        }
+
+        Ok(Value::String(lines.join("\n")))
+    }
+};
+
+/// Register developper functions
+pub fn register_functions(table: &mut FunctionTable) {
+    table.register(CHOOSE);
+    table.register(RAND);
+    table.register(TIME);
+    table.register(TAIL);
 }
 
 #[cfg(test)]
@@ -82,7 +105,7 @@ mod test_builtin_table {
     fn test_choose() {
         let mut result;
         for _ in 0..30 {
-            result = builtin_choose(&[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
+            result = (CHOOSE.handler)(&CHOOSE, &[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
             assert_eq!(true, result.is_string() || result == Value::Integer(5).is_int());
         }
     }
@@ -92,13 +115,19 @@ mod test_builtin_table {
         let mut result;
 
         for _ in 0..30 {
-            result = builtin_rand(&[]).unwrap();
+            result = (RAND.handler)(&RAND, &[]).unwrap();
             println!("{}", result);
             assert_eq!(true, result.as_float().unwrap() >= 0.0 && result.as_float().unwrap() <= 1.0);
         }
 
         for _ in 0..30 {
-            result = builtin_rand(&[Value::Integer(5), Value::Integer(10)]).unwrap();
+            result = (RAND.handler)(&RAND, &[Value::Integer(5)]).unwrap();
+            println!("{}", result);
+            assert_eq!(true, result.as_int().unwrap() >= 0 && result.as_int().unwrap() <= 5);
+        }
+
+        for _ in 0..30 {
+            result = (RAND.handler)(&RAND, &[Value::Integer(5), Value::Integer(10)]).unwrap();
             println!("{}", result);
             assert_eq!(true, result.as_int().unwrap() >= 5 && result.as_int().unwrap() <= 10);
         }
@@ -106,13 +135,13 @@ mod test_builtin_table {
     
     #[test]
     fn test_time() {
-        let result = builtin_time(&[]).unwrap();
+        let result = (TIME.handler)(&TIME, &[]).unwrap();
         assert_eq!(true, result.as_int().unwrap() > WAS_NOW);
     }
     
     #[test]
     fn test_tail() {
-        let result = builtin_tail(&[Value::String("README.md".to_string()), Value::Integer(5)]).unwrap();
+        let result = (TAIL.handler)(&TAIL, &[Value::String("README.md".to_string()), Value::Integer(5)]).unwrap();
         assert_eq!(4, result.as_string().matches("\n").count());
     }
 }

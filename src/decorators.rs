@@ -58,6 +58,11 @@ impl DecoratorTable {
         self.0.contains_key(name)
     }
 
+    /// Get a collection of all included decorators
+    pub fn all(&self) -> Vec<String> {
+        self.0.keys().cloned().collect()
+    }
+
     /// Call a decorator
     /// 
     /// # Arguments

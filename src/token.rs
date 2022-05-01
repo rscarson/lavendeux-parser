@@ -164,7 +164,9 @@ impl Token {
             value: Value::None,
             index: next_pair.as_span().start(),
             children: Vec::new()
-        };        
+        };
+
+        println!("{}", token.text);
 
         if token.rule == Rule::ternary_expression && children.len() > 1 {
             // Ternary expression handler - enables short-circuit interpretation
@@ -293,6 +295,7 @@ impl Token {
 
 #[cfg(test)]
 mod test_token {
+    use crate::extensions::{Extension};
     use super::*;
 
     fn token_does_value_equal(input: &str, expected: Value, state: &mut ParserState) {
@@ -439,6 +442,8 @@ mod test_token {
 
         // Call expression
         token_does_error("rooplipp(9)", &mut state);
+        token_does_error("sqrt('string')", &mut state);
+        token_does_error("sqrt()", &mut state);
         token_does_value_equal("sqrt(9)", Value::Integer(3), &mut state);
         token_does_value_equal("sqrt(9 | 5)", Value::Integer(3), &mut state);
         token_does_value_equal("root(9, 2)", Value::Integer(3), &mut state);
@@ -452,6 +457,11 @@ mod test_token {
         token_does_value_equal("2*2", Value::Integer(4), &mut state);
         token_does_value_equal("2*2*2", Value::Integer(8), &mut state);
         token_does_value_equal("2*2/(2|2)", Value::Integer(2), &mut state);
+        token_does_value_equal("x=4(4)", Value::Integer(16), &mut state);
+        token_does_value_equal("4x", Value::Integer(64), &mut state);
+        token_does_value_equal("4(x)", Value::Integer(64), &mut state);
+        token_does_value_equal("(4)x", Value::Integer(64), &mut state);
+        token_does_value_equal("(2)(2)(2)(2)", Value::Integer(16), &mut state);
 
         // add / sub expression
         token_does_text_equal("2*$2", "$4.00", &mut state);
@@ -489,5 +499,20 @@ mod test_token {
         assert_eq!("10\nx * y\n10", t.text);
         token_does_value_equal("fn(5,5)", Value::Integer(25), &mut state);
         assert_eq!(true, Token::new("f(x) = f(x)\nf(0)", &mut state).is_err());
+
+        // Help
+        state.extensions.add("test.js", Extension::new_stub(
+            None, None, None, 
+            vec!["test".to_string(), "test2".to_string()], 
+            vec!["test3".to_string(), "test4".to_string()]
+        ));
+        let t = Token::new("help()", &mut state).unwrap();
+        assert_eq!(true, t.text.contains("Built-in Functions"));
+        assert_eq!(true, t.text.contains("Built-in Decorators"));
+        assert_eq!(true, t.text.contains("Unnamed Extension v0.0.0"));
+        assert_eq!(true, t.text.contains("User-defined Functions"));
+        token_does_text_equal("help('strlen')", "strlen(s): Returns the length of the string s", &mut state);
+        token_does_text_equal("help('fn')", "fn(x, y)", &mut state);
+        token_does_text_equal("help('test2')", "test2(...)", &mut state);
     }
 }
