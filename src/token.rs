@@ -166,8 +166,6 @@ impl Token {
             children: Vec::new()
         };
 
-        println!("{}", token.text);
-
         if token.rule == Rule::ternary_expression && children.len() > 1 {
             // Ternary expression handler - enables short-circuit interpretation
             let condition = Self::from_pair(children[0].clone(), handler, state)?;
@@ -523,9 +521,14 @@ mod test_token {
 
         assert_eq!(true, t.text.contains("User-defined Functions"));
         token_does_text_equal("help('strlen')", "strlen(s): Returns the length of the string s", &mut state);
+        token_does_text_equal("help(strlen)", "strlen(s): Returns the length of the string s", &mut state);
         token_does_text_equal("help('fn')", "fn(x, y)", &mut state);
+        token_does_text_equal("help(fn)", "fn(x, y)", &mut state);
         
         #[cfg(feature = "extensions")]
         token_does_text_equal("help('test2')", "test2(...)", &mut state);
+        
+        #[cfg(feature = "extensions")]
+        token_does_text_equal("help(test2)", "test2(...)", &mut state);
     }
 }

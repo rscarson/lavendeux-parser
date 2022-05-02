@@ -21,23 +21,31 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
     if token.rule() == Rule::call_expression {
         // Get function name and arguments
         let name = token.child(0).unwrap().text();
+        let mut arg_tokens = Vec::<&Token>::new();
+
         let mut args : Vec<Value> = Vec::new();
         match token.child(2).unwrap().rule() {
             Rule::rparen => { },
             Rule::expression_list => {
                 let mut i = 0;
                 while i < token.child(2).unwrap().children().len() {
-                    args.push(token.child(2).unwrap().child(i).unwrap().value());
+                    let t = token.child(2).unwrap().child(i).unwrap();
+                    args.push(t.value());
+                    arg_tokens.push(t);
                     i += 2;
                 }
             },
-            _ => args.push(token.child(2).unwrap().value())
+            _ => {
+                let t = token.child(2).unwrap();
+                args.push(t.value());
+                arg_tokens.push(t);
+            }
         }
 
         // Help
         if name == "help" {
             if args.len() == 1 {
-                let target_name = args[0].to_string();
+                let target_name = if arg_tokens[0].value().is_none() { arg_tokens[0].text().to_string() } else { arg_tokens[0].value().to_string() };
 
                 // Builtin functions
                 if let Some(f) = state.functions.get(&target_name) {

@@ -121,6 +121,11 @@ impl Value {
     pub fn is_string(&self) -> bool {
         matches!(self, Value::String(_))
     }
+
+    /// Determine if the value is empty
+    pub fn is_none(&self) -> bool {
+        matches!(self, Value::None)
+    }
 }
 
 impl Clone for Value {

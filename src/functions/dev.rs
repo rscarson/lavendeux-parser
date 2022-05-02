@@ -116,19 +116,16 @@ mod test_builtin_table {
 
         for _ in 0..30 {
             result = (RAND.handler)(&RAND, &[]).unwrap();
-            println!("{}", result);
             assert_eq!(true, result.as_float().unwrap() >= 0.0 && result.as_float().unwrap() <= 1.0);
         }
 
         for _ in 0..30 {
             result = (RAND.handler)(&RAND, &[Value::Integer(5)]).unwrap();
-            println!("{}", result);
             assert_eq!(true, result.as_int().unwrap() >= 0 && result.as_int().unwrap() <= 5);
         }
 
         for _ in 0..30 {
             result = (RAND.handler)(&RAND, &[Value::Integer(5), Value::Integer(10)]).unwrap();
-            println!("{}", result);
             assert_eq!(true, result.as_int().unwrap() >= 5 && result.as_int().unwrap() <= 10);
         }
     }
