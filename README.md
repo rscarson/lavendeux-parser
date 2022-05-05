@@ -54,16 +54,16 @@ fn main() -> Result<(), ParserError> {
 
 A number of functions and @decorators are available for expressions to use - add more using the state:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, FunctionDefinition, FunctionArgument, Value};
+use lavendeux_parser::{ParserState, ParserError, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value};
 use lavendeux_parser::errors::*;
  
-// Decorators take in a single value, and return a string representation
-fn new_decorator_handler(arg: &Value) -> Result<String, ParserError> {
-    Ok(arg.as_string())
-}
- 
 let mut state : ParserState = ParserState::new();
-state.decorators.register("new_decorator", new_decorator_handler);
+state.decorators.register(DecoratorDefinition {
+    name: &["upper", "uppercase"],
+    description: "Outputs an uppercase version of the input",
+    argument: ExpectedTypes::Any,
+    handler: |_, input| Ok(input.as_string().to_uppercase())
+});
 
 // Functions take in an array of values, and return a single value
 state.functions.register(FunctionDefinition {

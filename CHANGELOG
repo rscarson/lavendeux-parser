@@ -1,3 +1,8 @@
+0.6.1
+-----
+Remove debug output
+help() no longer takes just strings
+
 0.6.0
 -----
 Added (Implied)(Multiplication) 2x, etc

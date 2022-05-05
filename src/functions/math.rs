@@ -2,6 +2,40 @@ use super::{FunctionDefinition, FunctionArgument, FunctionTable};
 use crate::value::{Value, IntegerType};
 use crate::errors::*;
 
+const MIN : FunctionDefinition = FunctionDefinition {
+    name: "min",
+    description: "Returns the smallest numeric value from the supplied arguments",
+    arguments: || vec![
+        FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
+    ],
+    handler: |_, args: &[Value]| {
+        let mut valid_args = args.into_iter().filter(|a|!a.as_float().unwrap().is_nan()).map(|a|a.clone()).collect::<Vec<Value>>();
+        valid_args.sort_by(|a,b| a.as_float().unwrap().partial_cmp(&b.as_float().unwrap()).unwrap());
+        if valid_args.is_empty() {
+            Ok(args[0].clone())
+        } else {
+            Ok(valid_args[0].clone())
+        }
+    }
+};
+
+const MAX : FunctionDefinition = FunctionDefinition {
+    name: "max",
+    description: "Returns the largest numeric value from the supplied arguments",
+    arguments: || vec![
+        FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
+    ],
+    handler: |_, args: &[Value]| {
+        let mut valid_args = args.into_iter().filter(|a|!a.as_float().unwrap().is_nan()).map(|a|a.clone()).collect::<Vec<Value>>();
+        valid_args.sort_by(|a,b| b.as_float().unwrap().partial_cmp(&a.as_float().unwrap()).unwrap());
+        if valid_args.is_empty() {
+            Ok(args[0].clone())
+        } else {
+            Ok(valid_args[0].clone())
+        }
+    }
+};
+
 const CEIL : FunctionDefinition = FunctionDefinition {
     name: "ceil",
     description: "Returns the nearest whole integer larger than n",
@@ -120,6 +154,8 @@ const ROOT : FunctionDefinition = FunctionDefinition {
 /// Register string functions
 pub fn register_functions(table: &mut FunctionTable) {
     // Rounding functions
+    table.register(MIN);
+    table.register(MAX);
     table.register(CEIL);
     table.register(FLOOR);
     table.register(ROUND);
@@ -136,7 +172,40 @@ pub fn register_functions(table: &mut FunctionTable) {
 
 #[cfg(test)]
 mod test_builtin_functions {
+    use crate::value::{FloatType};
     use super::*;
+    
+    #[test]
+    fn test_min() {
+        assert_eq!(Value::Integer(3), (MIN.handler)(&MIN, &[
+            Value::Float(3.5),
+            Value::Integer(3),
+            Value::Integer(7),
+            Value::Float(FloatType::NAN)
+        ]).unwrap());
+        assert_eq!(Value::Float(3.1), (MIN.handler)(&MIN, &[
+            Value::Float(3.5),
+            Value::Float(3.1),
+            Value::Integer(7),
+            Value::Float(FloatType::NAN)
+        ]).unwrap());
+    }
+    
+    #[test]
+    fn test_max() {
+        assert_eq!(Value::Integer(7), (MAX.handler)(&MAX, &[
+            Value::Float(3.5),
+            Value::Integer(3),
+            Value::Integer(7),
+            Value::Float(FloatType::NAN)
+        ]).unwrap());
+        assert_eq!(Value::Float(7.1), (MAX.handler)(&MAX, &[
+            Value::Float(3.5),
+            Value::Integer(3),
+            Value::Float(7.1),
+            Value::Float(FloatType::NAN)
+        ]).unwrap());
+    }
     
     #[test]
     fn test_ceil() {

@@ -79,7 +79,9 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
                 ).collect::<Vec<String>>().join("\n").as_str();
                 
                 output += format!("\n\nBuilt-in Decorators\n{}\n", divider).as_str();
-                output += inline_sort(state.decorators.all()).join(", ").as_str();
+                output += inline_sort(state.decorators.all()).into_iter().map(|f|
+                    format!("@{}: {}", f, state.decorators.get(f).unwrap().description())
+                ).collect::<Vec<String>>().join("\n").as_str();
                 
                 #[cfg(feature = "extensions")]
                 if !state.extensions.all().is_empty() {
