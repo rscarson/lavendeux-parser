@@ -9,7 +9,7 @@ const MIN : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
     ],
     handler: |_, args: &[Value]| {
-        let mut valid_args = args.into_iter().filter(|a|!a.as_float().unwrap().is_nan()).map(|a|a.clone()).collect::<Vec<Value>>();
+        let mut valid_args = args.iter().filter(|a|!a.as_float().unwrap().is_nan()).cloned().collect::<Vec<Value>>();
         valid_args.sort_by(|a,b| a.as_float().unwrap().partial_cmp(&b.as_float().unwrap()).unwrap());
         if valid_args.is_empty() {
             Ok(args[0].clone())
@@ -26,7 +26,7 @@ const MAX : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
     ],
     handler: |_, args: &[Value]| {
-        let mut valid_args = args.into_iter().filter(|a|!a.as_float().unwrap().is_nan()).map(|a|a.clone()).collect::<Vec<Value>>();
+        let mut valid_args = args.iter().filter(|a|!a.as_float().unwrap().is_nan()).cloned().collect::<Vec<Value>>();
         valid_args.sort_by(|a,b| b.as_float().unwrap().partial_cmp(&a.as_float().unwrap()).unwrap());
         if valid_args.is_empty() {
             Ok(args[0].clone())

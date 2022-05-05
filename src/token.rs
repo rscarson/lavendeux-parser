@@ -513,7 +513,6 @@ mod test_token {
         ));
 
         let t = Token::new("help()", &mut state).unwrap();
-        assert_eq!(t.text(), "".to_string());
         assert_eq!(true, t.text.contains("Built-in Functions"));
         assert_eq!(true, t.text.contains("Built-in Decorators"));
         

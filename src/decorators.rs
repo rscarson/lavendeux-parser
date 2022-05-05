@@ -116,8 +116,7 @@ impl DecoratorDefinition {
     
     /// Return the decorator's signature
     pub fn signature(&self) -> String {
-        let name = self.name.into_iter().map(|n|format!("@{n}")).collect::<Vec<String>>().join("/");
-        format!("{}", name)
+        self.name.iter().map(|n|format!("@{n}")).collect::<Vec<String>>().join("/")
     }
     
     /// Return the decorator's signature

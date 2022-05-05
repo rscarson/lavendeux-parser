@@ -1,3 +1,7 @@
+0.6.2
+-----
+Make decorators work like functions
+
 0.6.1
 -----
 Remove debug output
