@@ -12,9 +12,42 @@ const MAX_STACK_DEPTH: usize = 50;
 /// Holds the properties of a function assigned inside an expression
 #[derive(Clone)]
 pub struct UserFunction {
-    pub name: String,
-    pub arguments: Vec<String>,
-    pub definition: String
+    name: String,
+    arguments: Vec<String>,
+    definition: String
+}
+impl UserFunction {
+    /// Return a new user function
+    /// 
+    /// # Arguments
+    /// * `name` - Function name
+    /// * `arguments` - Arguments expected by the function
+    /// * `definition` - Function definition string
+    pub fn new(name: String, arguments: Vec<String>, definition: String) -> Self {
+        Self {
+            name, arguments, definition
+        }
+    }
+
+    /// Return the function's name
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    
+    /// Return the function's expected arguments
+    pub fn arguments(&self) -> &Vec<String> {
+        &self.arguments
+    }
+    
+    /// Return the function's definition string
+    pub fn definition(&self) -> &str {
+        &self.definition
+    }
+
+    /// Return the function's signature
+    pub fn signature(&self) -> String {
+        format!("{}({}) = {}", self.name(), self.arguments().join(", "), self.definition())
+    }
 }
 
 /// Represents the current state of the parser

@@ -81,3 +81,73 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
 
     None
 }
+
+#[cfg(test)]
+mod test_token {
+    use super::*;
+
+    #[test]
+    fn test_bool_cmp_expression() {
+        let mut state: ParserState = ParserState::new();
+        
+        assert_eq!(Value::Boolean(true), Token::new(" 'a' < 'b' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 'b' < 'a' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 'a' > 'b' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 'b' > 'a' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 'a' == 'b' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 'a' == 'a' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 'a' != 'b' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 'a' != 'a' ", &mut state).unwrap().value());
+        
+        assert_eq!(Value::Boolean(true), Token::new(" false < true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" true < false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" false > true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" true > false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" false == true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false == false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false != true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" false != false ", &mut state).unwrap().value());
+        
+        assert_eq!(Value::Boolean(true), Token::new(" 1 < 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 2 < 1 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1 > 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 2 > 1 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1 == 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1 == 1 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1 != 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1 != 1 ", &mut state).unwrap().value());
+        
+        assert_eq!(Value::Boolean(true), Token::new(" 1.3 < 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 2 < 1.3 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1.3 > 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 2 > 1.3 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1.3 == 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1.3 == 1.3 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1.3 != 2 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" 1.3 != 1.3 ", &mut state).unwrap().value());
+        
+        assert_eq!(Value::Boolean(false), Token::new(" '1' == 1 ", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_bool_and_expression() {
+        let mut state: ParserState = ParserState::new();
+        assert_eq!(Value::Boolean(false), Token::new(" false && false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" false && true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" true && false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" true && true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" true && true && true && true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" true && true && true && false ", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_bool_or_expression() {
+        let mut state: ParserState = ParserState::new();
+        assert_eq!(Value::Boolean(false), Token::new(" false || false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false || true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" true || false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" true || true ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(false), Token::new(" false || false || false || false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false || false || false || true ", &mut state).unwrap().value());
+    }
+}

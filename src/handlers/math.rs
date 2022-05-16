@@ -13,10 +13,14 @@ type FloatHandler = fn(l:FloatType, r:FloatType) -> FloatType;
 /// * `r` - Right value
 fn integer_type_checked_pow(l:IntegerType, r:IntegerType) -> Option<IntegerType> {
     if r > u32::MAX as IntegerType { return None; }
-    match l.checked_pow(r as u32) {
-        Some(mut v) => {
-            if r<0 { v = 1/v; }
-            Some(v)
+    if r == IntegerType::MIN { return None; }
+    match l.checked_pow(r.checked_abs().unwrap() as u32) {
+        Some(v) => {
+            if r < 0 {
+                Some(1/v)
+            } else {
+                Some(v)
+            }
         },
         None => None
     }
@@ -402,4 +406,153 @@ pub fn bitwise_expression_handler(token: &mut Token, _state: &mut ParserState) -
     }
 
     None
+}
+
+#[cfg(test)]
+mod test_token {
+    use super::*;
+
+    #[test]
+    fn test_integer_type_checked_pow() {
+        assert_eq!(1, integer_type_checked_pow(10, 0).unwrap());
+        assert_eq!(10, integer_type_checked_pow(10, 1).unwrap());
+        assert_eq!(100, integer_type_checked_pow(10, 2).unwrap());
+        assert_eq!(0, integer_type_checked_pow(100, -1).unwrap());
+    }
+
+    #[test]
+    fn test_perform_int_calculation() {
+        let mut state = ParserState::new();
+        let token = Token::new("1 + 1", &mut state).unwrap();
+
+        assert_eq!(Value::Integer(1), perform_int_calculation(&token, Value::Integer(2), Value::Integer(1), |l,r| Some(l-r)).unwrap());
+    }
+
+    #[test]
+    fn test_perform_float_calculation() {
+        let mut state = ParserState::new();
+        let token = Token::new("1.0 + 1.0", &mut state).unwrap();
+
+        assert_eq!(Value::Float(1.0), perform_float_calculation(&token, Value::Float(2.0), Value::Float(1.0), |l,r| l-r).unwrap());
+    }
+
+    #[test]
+    fn test_perform_binary_calculation() {
+        let mut state = ParserState::new();
+        let token = Token::new("1.0 + 1.0", &mut state).unwrap();
+        
+        assert_eq!(Value::Integer(1), perform_binary_calculation(&token, Value::Integer(2), Value::Integer(1), |l,r| Some(l-r), |l,r| l-r).unwrap());
+        assert_eq!(Value::Float(1.0), perform_binary_calculation(&token, Value::Integer(2), Value::Float(1.0), |l,r| Some(l-r), |l,r| l-r).unwrap());
+        assert_eq!(Value::Float(1.0), perform_binary_calculation(&token, Value::Float(2.0), Value::Integer(1), |l,r| Some(l-r), |l,r| l-r).unwrap());
+        assert_eq!(Value::Float(1.0), perform_binary_calculation(&token, Value::Float(2.0), Value::Float(1.0), |l,r| Some(l-r), |l,r| l-r).unwrap());
+    }
+
+    #[test]
+    fn test_factorial() {
+        assert_eq!(1, factorial(0).unwrap());
+        assert_eq!(1, factorial(1).unwrap());
+        assert_eq!(2, factorial(2).unwrap());
+        assert_eq!(24, factorial(4).unwrap());
+        assert_eq!(true, factorial(-1).is_none());
+    }
+
+    #[test]
+    fn test_trim_binary() {
+        assert_eq!(Value::Integer(255), trim_binary(Value::Integer(65535), 255).unwrap());
+        assert_eq!(Value::Integer(9999), trim_binary(Value::Integer(9999), 9999).unwrap());
+    }
+
+    #[test]
+    fn test_prefix_unary_expression_minus() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(-255), Token::new("-255", &mut state).unwrap().value());
+        assert_eq!(Value::Float(-255.0), Token::new("-255.0", &mut state).unwrap().value());
+        assert_eq!(true, Token::new("-'test'", &mut state).is_err());
+        assert_eq!(true, Token::new("-false", &mut state).is_err());
+    }
+
+    #[test]
+    fn test_prefix_unary_expression_not() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Boolean(false), Token::new("~true", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(0), Token::new("~255", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(3), Token::new("~0b1100", &mut state).unwrap().value());
+        assert_eq!(true, Token::new("~1.2", &mut state).is_err());
+        assert_eq!(true, Token::new("~'test'", &mut state).is_err());
+    }
+
+    #[test]
+    fn test_postfix_unary_expression_factorial() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(1), Token::new("0!", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("1!", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(2), Token::new("2!", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(24), Token::new("4!", &mut state).unwrap().value());
+        assert_eq!(true, Token::new("(-1)!", &mut state).is_err());
+    }
+
+    #[test]
+    fn test_power_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(4), Token::new("2**2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(16), Token::new("2**2**2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(16), Token::new("2**2**(2)", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_md_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(4), Token::new("2*2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("2/2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("11%10", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(2), Token::new("12%10 * 2 / 2", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_implied_mul_expression() {
+        let mut state = ParserState::new();
+        Token::new("x=4", &mut state).unwrap();
+        assert_eq!(Value::Integer(16), Token::new("4x", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(16), Token::new("(4)(x)", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(16), Token::new("4(x)", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(16), Token::new("(4)x", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(64), Token::new("2(2)(2)(2)(2)(2)", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_as_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(4), Token::new("2+2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(0), Token::new("2-2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(2), Token::new("2 - 2 + 2", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_sh_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(2), Token::new("4 >> 1", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(8), Token::new("2 << 2", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(2), Token::new("2 << 2 >> 2", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_and_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(15), Token::new("0xFF & 0x0F", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(8), Token::new("0b1100 & 0b1110 & 0b1000", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_xor_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(240), Token::new("0xFF ^ 0x0F", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(80), Token::new("0xFF ^ 0x0F ^ 0xA0", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_or_expression() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Integer(255), Token::new("0xF0 | 0x0F", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(15), Token::new("0b1100 | 0b1110 | 0b1", &mut state).unwrap().value());
+    }
 }
