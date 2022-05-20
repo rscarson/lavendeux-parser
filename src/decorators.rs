@@ -22,6 +22,7 @@ impl DecoratorTable {
         table.register(FLOAT);
         table.register(INT);
         table.register(BOOL);
+        table.register(ARRAY);
         
         table.register(UTC);
         table.register(DOLLAR);
@@ -133,7 +134,12 @@ impl DecoratorDefinition {
             ExpectedTypes::Float => arg.is_float(),
             ExpectedTypes::Int => arg.is_int(),
             ExpectedTypes::IntOrFloat => arg.is_float() || arg.is_int(),
-            ExpectedTypes::String => true, ExpectedTypes::Boolean => true, ExpectedTypes::Any => true // These can be converted from any type
+
+            // These can be converted from any type
+            ExpectedTypes::String => true, 
+            ExpectedTypes::Boolean => true, 
+            ExpectedTypes::Array => true, 
+            ExpectedTypes::Any => true
         };
         
         if !valid {
@@ -181,6 +187,7 @@ const DEFAULT : DecoratorDefinition = DecoratorDefinition {
         Value::Boolean(_) => (BOOL.handler)(&BOOL, input),
         Value::Integer(_) => (INT.handler)(&INT, input),
         Value::Float(_) => (FLOAT.handler)(&FLOAT, input),
+        Value::Array(_) => (ARRAY.handler)(&ARRAY, input),
         Value::String(s) => Ok(s.to_string()),
         Value::None => Ok("".to_string())
     }
@@ -273,6 +280,13 @@ const BOOL : DecoratorDefinition = DecoratorDefinition {
     description: "Format a number as a boolean",
     argument: ExpectedTypes::IntOrFloat,
     handler: |_, input| Ok(Value::Boolean(input.as_bool()).as_string())
+};
+
+const ARRAY : DecoratorDefinition = DecoratorDefinition {
+    name: &["array"],
+    description: "Format a number as an array",
+    argument: ExpectedTypes::Array,
+    handler: |_, input| Ok(Value::Array(input.as_array()).as_string())
 };
 
 #[cfg(test)]

@@ -338,3 +338,82 @@ error_macro::error_type!(VariableNameError, {
         fmt::Result::Ok(())
     }
 });
+
+/// Occurs when attempting to use 2 or more arrays with incompatible lengths
+#[derive(Debug, Clone)]
+pub struct ArrayLengthError {pos: Option<usize>}
+error_macro::error_type!(ArrayLengthError, {
+    /// Create a new instance of the error
+    pub fn new() -> Self {
+        Self::new_with_index(None)
+    }
+    
+    /// Create a new instance of the error caused by a token
+    pub fn new_with_token(token: &Token) -> Self {
+        Self::new_with_index(Some(token.index()))
+    }
+
+    /// Create a new instance of the error at a specific position
+    pub fn new_with_index(pos: Option<usize>) -> Self {
+        Self {pos}
+    }
+    
+    /// Return the location at which the error occured
+    pub fn pos(&self) -> Option<usize> {
+        self.pos
+    }
+}, {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Array lengths incompatible")?;
+        if let Some(pos) = self.pos {
+            write!(f, " at position {}", pos)?;
+        }
+
+        fmt::Result::Ok(())
+    }
+});
+impl Default for ArrayLengthError {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+
+/// Occurs when attempting to use 2 or more arrays with incompatible lengths
+#[derive(Debug, Clone)]
+pub struct ArrayIndexError {pos: Option<usize>, index: usize}
+error_macro::error_type!(ArrayIndexError, {
+    /// Create a new instance of the error
+    pub fn new(index: usize) -> Self {
+        Self::new_with_index(None, index)
+    }
+    
+    /// Create a new instance of the error caused by a token
+    pub fn new_with_token(token: &Token, index: usize) -> Self {
+        Self::new_with_index(Some(token.index()), index)
+    }
+
+    /// Create a new instance of the error at a specific position
+    pub fn new_with_index(pos: Option<usize>, index: usize) -> Self {
+        Self {pos, index}
+    }
+
+    /// The index that caused the error
+    pub fn index(&self) -> usize {
+        self.index
+    }
+    
+    /// Return the location at which the error occured
+    pub fn pos(&self) -> Option<usize> {
+        self.pos
+    }
+}, {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Array index {} out of bounds", self.index)?;
+        if let Some(pos) = self.pos {
+            write!(f, " at position {}", pos)?;
+        }
+
+        fmt::Result::Ok(())
+    }
+});

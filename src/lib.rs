@@ -19,7 +19,7 @@
 //! 
 //!     // The resulting token contains the resulting values and text
 //!     assert_eq!(lines.text(), "9\n0b11");
-//!     assert_eq!(lines.child(1).unwrap().value(), Value::Integer(3));
+//!     assert_eq!(lines.child(1).unwrap().value(), Value::Float(3.0));
 //!     
 //!     Ok(())
 //! }

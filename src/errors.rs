@@ -41,6 +41,12 @@ pub enum ParserError {
 
     /// An error caused by attempting to overwrite a constant
     ContantValue(ConstantValueError),
+    
+    /// An error caused by attempting to use arrays of incompatible lengths
+    ArrayLength(ArrayLengthError),
+
+    /// An error caused by attempting to use an out of bounds index on an array
+    ArrayIndex(ArrayIndexError),
 
     /// An error caused by an unknown exception in a javascript extension
     Script(ScriptError),
@@ -73,6 +79,8 @@ impl fmt::Display for ParserError {
             Self::Underflow(e) => write!(f, "{}", e),
             Self::VariableName(e) => write!(f, "{}", e),
             Self::ContantValue(e) => write!(f, "{}", e),
+            Self::ArrayLength(e) => write!(f, "{}", e),
+            Self::ArrayIndex(e) => write!(f, "{}", e),
         
             Self::Script(e) => write!(f, "{}", e),
             Self::DecoratorName(e) => write!(f, "{}", e),
@@ -126,6 +134,9 @@ pub enum ExpectedTypes {
     /// Boolean value
     Boolean,
     
+    /// Array value
+    Array,
+    
     /// Any type of value
     Any
 }
@@ -137,6 +148,7 @@ impl fmt::Display for ExpectedTypes {
             ExpectedTypes::IntOrFloat => write!(f, "int or float"),
             ExpectedTypes::String => write!(f, "string"),
             ExpectedTypes::Boolean => write!(f, "boolean"),
+            ExpectedTypes::Array => write!(f, "array"),
             ExpectedTypes::Any => write!(f, "any"),
         }
     }

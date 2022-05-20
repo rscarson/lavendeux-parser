@@ -8,6 +8,9 @@ pub type IntegerType = i64;
 /// The datatype for floating point values
 pub type FloatType = f64;
 
+/// The datatype for array values
+pub type ArrayType = Vec<Value>;
+
 /// Represents a single value resulting from a calculation
 /// Can take the form of an integer, float, boolean or string
 /// 
@@ -31,8 +34,11 @@ pub enum Value {
     /// A floating point value - integers can also be expressed as floats
     Float(FloatType), 
     
-    /// A string value - all types can be expressed as booleans
-    String(String)
+    /// A string value - all types can be expressed as strings
+    String(String),
+
+    /// An array value
+    Array(ArrayType)
 }
 
 impl std::fmt::Display for Value {
@@ -60,6 +66,7 @@ impl Value {
                 f
             },
             Value::String(s) => s.to_string(),
+            Value::Array(v) => format!("[{}]", v.iter().map(|e| e.as_string()).collect::<Vec<String>>().join(", ")),
             Value::None => "".to_string(),
         }
     }
@@ -72,6 +79,7 @@ impl Value {
             Value::Integer(n) => *n != 0,
             Value::Float(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
+            Value::Array(v) => v.iter().any(|e|e.as_bool())
         }
     }
     
@@ -83,6 +91,7 @@ impl Value {
             Value::Integer(n) => Some(*n),
             Value::Float(n) => Some(*n as IntegerType),
             Value::String(_) => None,
+            Value::Array(_) => None,
         }
     }
     
@@ -94,6 +103,19 @@ impl Value {
             Value::Integer(n) => Some(*n as FloatType),
             Value::Float(n) => Some(*n),
             Value::String(_) => None,
+            Value::Array(_) => None,
+        }
+    }
+    
+    /// Return the value as an array, if possible
+    pub fn as_array(&self) -> ArrayType {
+        match self {
+            Value::None => vec![],
+            Value::Boolean(_) => vec![self.clone()],
+            Value::Integer(_) => vec![self.clone()],
+            Value::Float(_) => vec![self.clone()],
+            Value::String(_) => vec![self.clone()],
+            Value::Array(v) => v.clone(),
         }
     }
 
@@ -122,6 +144,11 @@ impl Value {
         matches!(self, Value::String(_))
     }
 
+    /// Determine if the value is an array
+    pub fn is_array(&self) -> bool {
+        matches!(self, Value::Array(_))
+    }
+
     /// Determine if the value is empty
     pub fn is_none(&self) -> bool {
         matches!(self, Value::None)
@@ -136,18 +163,22 @@ impl Clone for Value {
             Value::Integer(n) => Value::Integer(*n),
             Value::Float(n) => Value::Float(*n),
             Value::String(s) => Value::String(s.to_string()),
+            Value::Array(v) => Value::Array(v.clone()),
         }
     }
 }
 
 impl PartialEq for Value {
-    fn eq(&self, _other: &Self) -> bool {
-        match self {
-            Value::None => matches!(self, _other),
-            Value::Boolean(v) => matches!(self, _other) && *v == _other.as_bool(),
-            Value::Integer(n) => matches!(self, _other) && *n == _other.as_int().unwrap(),
-            Value::Float(n) => matches!(self, _other) && *n == _other.as_float().unwrap(),
-            Value::String(s) => matches!(self, _other) && *s == _other.as_string(),
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::None, Value::None) => true,
+            (Value::Boolean(s), Value::Boolean(o)) => s == o,
+            (Value::Integer(s), Value::Integer(o)) => s == o,
+            (Value::Float(s), Value::Float(o)) => s == o,
+            (Value::String(s), Value::String(o)) => s == o,
+            (Value::Array(s), Value::Array(o)) => s == o,
+
+            _ => false
         }
     }
 }
@@ -187,6 +218,13 @@ impl PartialEq<String> for Value {
 impl PartialEq<&str> for Value {
     fn eq(&self, other: &&str) -> bool {
         self.as_string() == *other.to_string()
+    }
+}
+
+impl PartialEq<ArrayType> for Value {
+    fn eq(&self, other: &ArrayType) -> bool {
+        self.as_array().len() == other.len() &&
+        self.as_array().iter().zip(other.iter()).all(|(a,b)| a == b) 
     }
 }
 
@@ -235,6 +273,12 @@ mod test_atomic_value {
     }
     
     #[test]
+    fn test_as_array() {
+        assert_eq!(1, Value::Float(5.0).as_array().len());
+        assert_eq!(2, Value::Array(vec![Value::Integer(5), Value::Integer(5)]).as_array().len());
+    }
+    
+    #[test]
     fn test_is_float() {
         assert_eq!(true, Value::Float(5.0).is_float());
         assert_eq!(false, Value::Integer(5).is_float());
@@ -244,6 +288,12 @@ mod test_atomic_value {
     fn test_is_string() {
         assert_eq!(true, Value::String("5.0".to_string()).is_string());
         assert_eq!(false, Value::Integer(5).is_string());
+    }
+    
+    #[test]
+    fn test_is_array() {
+        assert_eq!(true, Value::Array(vec![Value::Integer(5)]).is_array());
+        assert_eq!(false, Value::Integer(5).is_array());
     }
     
     #[test]

@@ -124,7 +124,12 @@ impl FunctionDefinition {
                 ExpectedTypes::Float => arg.is_float(),
                 ExpectedTypes::Int => arg.is_int(),
                 ExpectedTypes::IntOrFloat => arg.is_float() || arg.is_int(),
-                ExpectedTypes::String => true, ExpectedTypes::Boolean => true, ExpectedTypes::Any => true // These can be converted from any type
+                
+                // These can be converted from any type
+                ExpectedTypes::String => true, 
+                ExpectedTypes::Boolean => true, 
+                ExpectedTypes::Array => true, 
+                ExpectedTypes::Any => true
             };
 
             if !valid {
@@ -148,10 +153,10 @@ impl FunctionDefinition {
     }
 }
 
-//mod trig;
 mod math;
 mod dev;
 mod network;
+mod array;
 mod str;
 mod trig;
 
@@ -173,6 +178,7 @@ impl FunctionTable {
         dev::register_functions(self);
         network::register_functions(self);
         trig::register_functions(self);
+        array::register_functions(self);
     }
 
     /// Register a function in the table

@@ -33,16 +33,51 @@ fn integer_type_checked_pow(l:IntegerType, r:IntegerType) -> Option<IntegerType>
 /// * `r` - Right value
 /// * `handler` - checked_* function
 fn perform_int_calculation(expression: &Token, l: Value, r: Value, handler: IntHandler) -> Result<Value, ParserError> {
-    // Perform datatype conversions
-    let lv = l.as_int(); let rv = r.as_int();
-    if matches!(lv, None) || matches!(rv, None) {
-        return Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::IntOrFloat)))
-    }
-    
-    // Detect overflow and return resulting value
-    match handler(lv.unwrap(), rv.unwrap()) {
-        Some(n) => Ok(Value::Integer(n)),
-        None => Err(ParserError::Overflow(OverflowError::new_with_token(expression)))
+    if l.is_array() && r.is_array() {
+        let mut la = l.as_array();
+        let ra = r.as_array();
+
+        if la.len() != ra.len() {
+            Err(ParserError::ArrayLength(ArrayLengthError::new_with_token(expression)))
+        } else {
+            for (pos, e) in la.clone().iter().enumerate() {
+                match perform_int_calculation(expression, e.clone(), ra[pos].clone(), handler) {
+                    Ok(n) => la[pos] = n,
+                    Err(e) => return Err(e) 
+                }
+            }
+            Ok(Value::Array(la))
+        }
+    } else if l.is_array() {
+        let mut la = l.as_array();
+        for (pos, e) in la.clone().iter().enumerate() {
+            match perform_int_calculation(expression, e.clone(), r.clone(), handler) {
+                Ok(n) => la[pos] = n,
+                Err(e) => return Err(e) 
+            }
+        }
+        Ok(Value::Array(la))
+    } else if r.is_array() {
+        let mut ra = r.as_array();
+        for (pos, e) in ra.clone().iter().enumerate() {
+            match perform_int_calculation(expression, l.clone(), e.clone(), handler) {
+                Ok(n) => ra[pos] = n,
+                Err(e) => return Err(e) 
+            }
+        }
+        Ok(Value::Array(ra))
+    } else {
+        // Perform datatype conversions
+        let lv = l.as_int(); let rv = r.as_int();
+        if matches!(lv, None) || matches!(rv, None) {
+            Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::IntOrFloat)))
+        } else {
+            // Detect overflow and return resulting value
+            match handler(lv.unwrap(), rv.unwrap()) {
+                Some(n) => Ok(Value::Integer(n)),
+                None => Err(ParserError::Overflow(OverflowError::new_with_token(expression)))
+            }
+        }
     }
 }
 
@@ -53,22 +88,57 @@ fn perform_int_calculation(expression: &Token, l: Value, r: Value, handler: IntH
 /// * `r` - Right value
 /// * `handler` - checked_* function
 fn perform_float_calculation(expression: &Token, l: Value, r: Value, handler: FloatHandler) -> Result<Value, ParserError> {
-    // Perform datatype conversions
-    let lv = l.as_float(); let rv = r.as_float();
-    if matches!(lv, None) || matches!(rv, None) { 
-        return Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::IntOrFloat)))
-    }
-    
-    // Detect overflow
-    let r = handler(lv.unwrap(), rv.unwrap());
-    if r == FloatType::INFINITY {
-        return Err(ParserError::Overflow(OverflowError::new_with_token(expression)))
-    } else if r == FloatType::NEG_INFINITY {
-        return Err(ParserError::Underflow(UnderflowError::new_with_token(expression)))
-    }
+    if l.is_array() && r.is_array() {
+        let mut la = l.as_array();
+        let ra = r.as_array();
 
-    // Return resulting value
-    Ok(Value::Float(r))
+        if la.len() != ra.len() {
+            Err(ParserError::ArrayLength(ArrayLengthError::new_with_token(expression)))
+        } else {
+            for (pos, e) in la.clone().iter().enumerate() {
+                match perform_float_calculation(expression, e.clone(), ra[pos].clone(), handler) {
+                    Ok(n) => la[pos] = n,
+                    Err(e) => return Err(e) 
+                }
+            }
+            Ok(Value::Array(la))
+        }
+    } else if l.is_array() {
+        let mut la = l.as_array();
+        for (pos, e) in la.clone().iter().enumerate() {
+            match perform_float_calculation(expression, e.clone(), r.clone(), handler) {
+                Ok(n) => la[pos] = n,
+                Err(e) => return Err(e) 
+            }
+        }
+        Ok(Value::Array(la))
+    } else if r.is_array() {
+        let mut ra = r.as_array();
+        for (pos, e) in ra.clone().iter().enumerate() {
+            match perform_float_calculation(expression, l.clone(), e.clone(), handler) {
+                Ok(n) => ra[pos] = n,
+                Err(e) => return Err(e) 
+            }
+        }
+        Ok(Value::Array(ra))
+    } else {
+        // Perform datatype conversions
+        let lv = l.as_float(); let rv = r.as_float();
+        if matches!(lv, None) || matches!(rv, None) { 
+            return Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::IntOrFloat)))
+        }
+        
+        // Detect overflow
+        let r = handler(lv.unwrap(), rv.unwrap());
+        if r == FloatType::INFINITY {
+            return Err(ParserError::Overflow(OverflowError::new_with_token(expression)))
+        } else if r == FloatType::NEG_INFINITY {
+            return Err(ParserError::Underflow(UnderflowError::new_with_token(expression)))
+        }
+    
+        // Return resulting value
+        Ok(Value::Float(r))
+    }
 }
 
 /// Perform a bitwise calculation against 2 values
@@ -79,7 +149,7 @@ fn perform_float_calculation(expression: &Token, l: Value, r: Value, handler: Fl
 /// * `i_handler` - integer handler function
 /// * `f_handler` - float handler function
 fn perform_binary_calculation(expression: &Token, l: Value, r: Value, i_handler: IntHandler, f_handler: FloatHandler) -> Result<Value, ParserError> {
-    if l.is_float() || r.is_float() {
+    if l.as_array().iter().any(|e| e.is_float()) || r.as_array().iter().any(|e| e.is_float()) {
         match perform_float_calculation(expression, l, r, f_handler) {
             Ok(n) => Ok(n),
             Err(e) => Err(e)
@@ -131,6 +201,83 @@ fn trim_binary(input: Value, base: IntegerType) -> Option<Value> {
     }
 }
 
+/// Perform a unary arithmetic negation
+/// 
+/// # Arguments
+/// * `expression` - Source token
+/// * `value` - Value to process
+fn unary_minus(expression: &Token, value: Value) -> Result<Value, ParserError> {
+    match value {
+        Value::Integer(n) => Ok(Value::Integer(-n)),
+        Value::Float(n) => Ok(Value::Float(-n)),
+        Value::Boolean(n) => Ok(Value::Boolean(!n)),
+        Value::Array(a) => {
+            let mut ra = a;
+            for (pos, e) in ra.clone().iter().enumerate() {
+                match unary_minus(expression, e.clone()) {
+                    Ok(n) => ra[pos] = n,
+                    Err(e) => return Err(e) 
+                }
+            }
+            Ok(Value::Array(ra))
+        },
+        _ => Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::IntOrFloat)))
+    }
+}
+
+/// Perform a unary bitwise negation
+/// 
+/// # Arguments
+/// * `expression` - Source token
+/// * `value` - Value to process
+fn unary_not(expression: &Token, value: Value) -> Result<Value, ParserError> {
+    match value {
+        Value::Boolean(n) => Ok(Value::Boolean(!n)),
+        Value::Integer(n) => {
+            match trim_binary(Value::Integer(!n), n) {
+                Some(v) => Ok(v),
+                None => Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::Int)))
+            }
+        },
+        Value::Array(a) => {
+            let mut ra = a;
+            for (pos, e) in ra.clone().iter().enumerate() {
+                match unary_not(expression, e.clone()) {
+                    Ok(n) => ra[pos] = n,
+                    Err(e) => return Err(e) 
+                }
+            }
+            Ok(Value::Array(ra))
+        },
+        _ => Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::Int)))
+    }
+}
+
+/// Perform a unary factorial
+/// 
+/// # Arguments
+/// * `expression` - Source token
+/// * `value` - Value to process
+fn unary_factorial(expression: &Token, value: Value) -> Result<Value, ParserError> {
+    if let Some(input) = value.as_int() {
+        match factorial(input) {
+            Some(n) => Ok(Value::Integer(n)),
+            None => Err(ParserError::Overflow(OverflowError::new_with_token(expression)))
+        }
+    } else if value.is_array() {
+        let mut ra = value.as_array();
+        for (pos, e) in ra.clone().iter().enumerate() {
+            match unary_factorial(expression, e.clone()) {
+                Ok(n) => ra[pos] = n,
+                Err(e) => return Err(e) 
+            }
+        }
+        Ok(Value::Array(ra))
+    } else {
+        Err(ParserError::ValueType(ValueTypeError::new_with_token(expression, ExpectedTypes::Int)))
+    }
+}
+
 pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
     match token.rule() {
         Rule::prefix_unary_expression => {
@@ -141,23 +288,14 @@ pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                     idx-=1;
 
                     if token.child(idx).unwrap().rule() == Rule::minus {
-                        match token.value() {
-                            Value::Integer(n) => token.set_value(Value::Integer(-n)),
-                            Value::Float(n) => token.set_value(Value::Float(-n)),
-                            _ => return Some(ParserError::ValueType(ValueTypeError::new_with_token(token, ExpectedTypes::IntOrFloat)))
+                        match unary_minus(token, token.value()) {
+                            Ok(n) => token.set_value(n),
+                            Err(e) => return Some(e)
                         }
                     } else if token.child(idx).unwrap().rule() == Rule::not {
-                        match token.value() {
-                            Value::Integer(n) => {
-                                match trim_binary(Value::Integer(!n), n) {
-                                    Some(v) => token.set_value(v),
-                                    None => return Some(ParserError::ValueType(ValueTypeError::new_with_token(token, ExpectedTypes::IntOrFloat)))
-                                }
-                            },
-                            Value::Boolean(n) => {
-                                token.set_value(Value::Boolean(!n));
-                            },
-                            _ => return Some(ParserError::ValueType(ValueTypeError::new_with_token(token, ExpectedTypes::IntOrFloat)))
+                        match unary_not(token, token.value()) {
+                            Ok(n) => token.set_value(n),
+                            Err(e) => return Some(e)
                         }
                     }
                 }
@@ -170,13 +308,9 @@ pub fn math_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                 let mut i = 1;
                 while i < token.children().len() {
                     if token.child(i).unwrap().rule() == Rule::factorial {
-                        if let Some(input) = token.value().as_int() {
-                            match factorial(input) {
-                                Some(n) => token.set_value(Value::Integer(n)),
-                                None => return Some(ParserError::Overflow(OverflowError::new_with_token(token)))
-                            }
-                        } else {
-                            return Some(ParserError::ValueType(ValueTypeError::new_with_token(token, ExpectedTypes::Int)))
+                        match unary_factorial(token, token.value()) {
+                            Ok(n) => token.set_value(n),
+                            Err(e) => return Some(e)
                         }
                     }
 
@@ -423,24 +557,96 @@ mod test_token {
     #[test]
     fn test_perform_int_calculation() {
         let mut state = ParserState::new();
-        let token = Token::new("1 + 1", &mut state).unwrap();
-
-        assert_eq!(Value::Integer(1), perform_int_calculation(&token, Value::Integer(2), Value::Integer(1), |l,r| Some(l-r)).unwrap());
+        assert_eq!(
+            Value::Integer(1), 
+            perform_int_calculation(&Token::new("2 - 1", &mut state).unwrap(), 
+                Value::Integer(2), 
+                Value::Integer(1), 
+                |l,r| Some(l-r)
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Integer(1), Value::Integer(1)]), 
+            perform_int_calculation(&Token::new("[2, 2] - 1", &mut state).unwrap(), 
+                Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                Value::Integer(1), 
+                |l,r| Some(l-r)
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Integer(-1), Value::Integer(-1)]), 
+            perform_int_calculation(&Token::new("1 - [2, 2]", &mut state).unwrap(), 
+                Value::Integer(1), 
+                Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                |l,r| Some(l-r)
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Integer(1), Value::Integer(1)]), 
+            perform_int_calculation(&Token::new("[2, 2] - [1, 1]", &mut state).unwrap(), 
+            Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                Value::Array(vec![Value::Integer(1), Value::Integer(1)]), 
+                |l,r| Some(l-r)
+            ).unwrap()
+        );
     }
 
     #[test]
     fn test_perform_float_calculation() {
         let mut state = ParserState::new();
-        let token = Token::new("1.0 + 1.0", &mut state).unwrap();
 
-        assert_eq!(Value::Float(1.0), perform_float_calculation(&token, Value::Float(2.0), Value::Float(1.0), |l,r| l-r).unwrap());
+        assert_eq!(
+            Value::Float(1.0), 
+            perform_float_calculation(&Token::new("2.0 - 1.0", &mut state).unwrap(), 
+                Value::Float(2.0), 
+                Value::Float(1.0), 
+                |l,r| l-r
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Float(1.0), Value::Float(1.0)]), 
+            perform_float_calculation(&Token::new("[2, 2] - 1", &mut state).unwrap(), 
+                Value::Array(vec![Value::Integer(2), Value::Float(2.0)]), 
+                Value::Integer(1), 
+                |l,r| l-r
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Float(-1.0), Value::Float(-1.0)]), 
+            perform_float_calculation(&Token::new("1.0 - [2, 2]", &mut state).unwrap(), 
+                Value::Float(1.0), 
+                Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                |l,r| l-r
+            ).unwrap()
+        );
+        
+        assert_eq!(
+            Value::Array(vec![Value::Float(1.0), Value::Float(1.0)]), 
+            perform_float_calculation(&Token::new("[2, 2] - [1, 1.0]", &mut state).unwrap(), 
+                Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                Value::Array(vec![Value::Integer(1), Value::Float(1.0)]), 
+                |l,r| l-r
+            ).unwrap()
+        );
     }
 
     #[test]
     fn test_perform_binary_calculation() {
         let mut state = ParserState::new();
         let token = Token::new("1.0 + 1.0", &mut state).unwrap();
-        
+        assert_eq!(Value::Array(vec![Value::Integer(1), 
+            Value::Integer(1)]), 
+            perform_binary_calculation(&token, 
+                Value::Array(vec![Value::Integer(2), Value::Integer(2)]), 
+                Value::Integer(1), 
+                |l,r| Some(l-r), |l,r| l-r
+            ).unwrap()
+        );
         assert_eq!(Value::Integer(1), perform_binary_calculation(&token, Value::Integer(2), Value::Integer(1), |l,r| Some(l-r), |l,r| l-r).unwrap());
         assert_eq!(Value::Float(1.0), perform_binary_calculation(&token, Value::Integer(2), Value::Float(1.0), |l,r| Some(l-r), |l,r| l-r).unwrap());
         assert_eq!(Value::Float(1.0), perform_binary_calculation(&token, Value::Float(2.0), Value::Integer(1), |l,r| Some(l-r), |l,r| l-r).unwrap());
@@ -465,15 +671,21 @@ mod test_token {
     #[test]
     fn test_prefix_unary_expression_minus() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(-1), Value::Integer(1), Value::Float(1.0), 
+        ]), Token::new("-[1,-1, -1.0]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(-255), Token::new("-255", &mut state).unwrap().value());
         assert_eq!(Value::Float(-255.0), Token::new("-255.0", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new("-false", &mut state).unwrap().value());
         assert_eq!(true, Token::new("-'test'", &mut state).is_err());
-        assert_eq!(true, Token::new("-false", &mut state).is_err());
     }
 
     #[test]
     fn test_prefix_unary_expression_not() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(0), Value::Integer(3), Value::Boolean(false), 
+        ]), Token::new("~[255, 0b1100, true]", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new("~true", &mut state).unwrap().value());
         assert_eq!(Value::Integer(0), Token::new("~255", &mut state).unwrap().value());
         assert_eq!(Value::Integer(3), Token::new("~0b1100", &mut state).unwrap().value());
@@ -484,6 +696,9 @@ mod test_token {
     #[test]
     fn test_postfix_unary_expression_factorial() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(1), Value::Integer(2), Value::Integer(24), 
+        ]), Token::new("[0, 2, 4]!", &mut state).unwrap().value());
         assert_eq!(Value::Integer(1), Token::new("0!", &mut state).unwrap().value());
         assert_eq!(Value::Integer(1), Token::new("1!", &mut state).unwrap().value());
         assert_eq!(Value::Integer(2), Token::new("2!", &mut state).unwrap().value());
@@ -494,6 +709,12 @@ mod test_token {
     #[test]
     fn test_power_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(4), Value::Integer(16), Value::Integer(0), 
+        ]), Token::new("[2, 2**2, 0]**2", &mut state).unwrap().value());
+        assert_eq!(Value::Array(vec![
+            Value::Integer(1), Value::Integer(2), Value::Integer(4), 
+        ]), Token::new("2**[0, 1, 2]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(4), Token::new("2**2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(16), Token::new("2**2**2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(16), Token::new("2**2**(2)", &mut state).unwrap().value());
@@ -502,6 +723,12 @@ mod test_token {
     #[test]
     fn test_md_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(4), Value::Integer(8), 
+        ]), Token::new("2*[2, 4]", &mut state).unwrap().value());
+        assert_eq!(Value::Array(vec![
+            Value::Integer(1), Value::Integer(0), 
+        ]), Token::new("2/[2, 4]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(4), Token::new("2*2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(1), Token::new("2/2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(1), Token::new("11%10", &mut state).unwrap().value());
@@ -512,6 +739,9 @@ mod test_token {
     fn test_implied_mul_expression() {
         let mut state = ParserState::new();
         Token::new("x=4", &mut state).unwrap();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(4), Value::Integer(4), 
+        ]), Token::new("(2)([2,2])", &mut state).unwrap().value());
         assert_eq!(Value::Integer(16), Token::new("4x", &mut state).unwrap().value());
         assert_eq!(Value::Integer(16), Token::new("(4)(x)", &mut state).unwrap().value());
         assert_eq!(Value::Integer(16), Token::new("4(x)", &mut state).unwrap().value());
@@ -522,6 +752,12 @@ mod test_token {
     #[test]
     fn test_as_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(4), Value::Integer(6), 
+        ]), Token::new("2+[2, 4]", &mut state).unwrap().value());
+        assert_eq!(Value::Array(vec![
+            Value::Integer(0), Value::Integer(-2), 
+        ]), Token::new("2-[2, 4]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(4), Token::new("2+2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(0), Token::new("2-2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(2), Token::new("2 - 2 + 2", &mut state).unwrap().value());
@@ -530,6 +766,9 @@ mod test_token {
     #[test]
     fn test_sh_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(2), Value::Integer(1), 
+        ]), Token::new("4 >> [1,2]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(2), Token::new("4 >> 1", &mut state).unwrap().value());
         assert_eq!(Value::Integer(8), Token::new("2 << 2", &mut state).unwrap().value());
         assert_eq!(Value::Integer(2), Token::new("2 << 2 >> 2", &mut state).unwrap().value());
@@ -538,6 +777,9 @@ mod test_token {
     #[test]
     fn test_and_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(15), Value::Integer(0), 
+        ]), Token::new("0xFF & [0x0F, 0]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(15), Token::new("0xFF & 0x0F", &mut state).unwrap().value());
         assert_eq!(Value::Integer(8), Token::new("0b1100 & 0b1110 & 0b1000", &mut state).unwrap().value());
     }
@@ -545,6 +787,9 @@ mod test_token {
     #[test]
     fn test_xor_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(240), Value::Integer(255), 
+        ]), Token::new("0xFF ^ [0x0F, 0]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(240), Token::new("0xFF ^ 0x0F", &mut state).unwrap().value());
         assert_eq!(Value::Integer(80), Token::new("0xFF ^ 0x0F ^ 0xA0", &mut state).unwrap().value());
     }
@@ -552,6 +797,9 @@ mod test_token {
     #[test]
     fn test_or_expression() {
         let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(255), Value::Integer(255), 
+        ]), Token::new("0xFF | [0x0F, 0]", &mut state).unwrap().value());
         assert_eq!(Value::Integer(255), Token::new("0xF0 | 0x0F", &mut state).unwrap().value());
         assert_eq!(Value::Integer(15), Token::new("0b1100 | 0b1110 | 0b1", &mut state).unwrap().value());
     }

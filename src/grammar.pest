@@ -1,4 +1,4 @@
-atomic_value = {hex|bin|oct|currency|sci|float|int|boolean|string|identifier}
+atomic_value = {hex|bin|oct|currency|sci|float|int|boolean|string|identifier|array}
     hex = @{(^"0x") ~ ('a'..'f' | 'A'..'F' | '0'..'9')+}
     bin = @{(^"0b") ~ ('0'..'1')+}
     oct = @{(^"0o" | "0") ~ ('0'..'7')+}
@@ -8,6 +8,7 @@ atomic_value = {hex|bin|oct|currency|sci|float|int|boolean|string|identifier}
     int = @{('0'..'9'){4,} | (('0'..'9'){1,3} ~ ("," ~ ('0'..'9'){3})*)}
     string = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))* ~ "\"") | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))* ~ "\'")}
     identifier = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
+    array = {lbracket ~ rbracket | lbracket ~ toplevel_expression ~ rbracket | lbracket ~ expression_list ~ rbracket}
 
 currency_symbol = @{"$" | "€" | "£" | "¥"}
 currency = @{currency_symbol ~ int ~ ("." ~ ('0'..'9')+)?}
@@ -36,6 +37,8 @@ decorator = {"@"}
 equal = {"="}
 lparen = {"("}
 rparen = {")"}
+lbracket = {"["}
+rbracket = {"]"}
 
 function_assignment = {((identifier ~ lparen ~ rparen) | identifier ~ lparen ~ identifier ~ (comma ~ identifier)* ~ rparen) ~ equal ~ toplevel_expression}
 

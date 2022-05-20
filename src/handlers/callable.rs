@@ -132,7 +132,7 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
         // User-defined functions
         if let Some(f) = state.user_functions.get(name) {
             if args.len() != f.arguments().len() {
-                return Some(ParserError::FunctionNArg(FunctionNArgError::new_with_token(token, &f.name(), f.arguments().len(), f.arguments().len())));
+                return Some(ParserError::FunctionNArg(FunctionNArgError::new_with_token(token, f.name(), f.arguments().len(), f.arguments().len())));
             }
 
             if let Some(mut inner_state) = state.spawn_inner() {
@@ -142,7 +142,7 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
                 }
 
                 // Run the function as an expression
-                match Token::new(&f.definition(), &mut inner_state) {
+                match Token::new(f.definition(), &mut inner_state) {
                     Ok(t) => {
                         token.set_value(t.child(0).unwrap().value());
                         token.set_text(t.text());
@@ -169,9 +169,9 @@ mod test_token {
     fn test_builtin_function_call() {
         let mut state: ParserState = ParserState::new();
         
-        assert_eq!(Value::Integer(3), Token::new("sqrt(9)", &mut state).unwrap().value());
-        assert_eq!(Value::Integer(3), Token::new("sqrt(9 | 5)", &mut state).unwrap().value());
-        assert_eq!(Value::Integer(3), Token::new("root(9, 2)", &mut state).unwrap().value());
+        assert_eq!(Value::Float(3.0), Token::new("sqrt(9)", &mut state).unwrap().value());
+        assert_eq!(Value::Float(3.0), Token::new("sqrt(3*3)", &mut state).unwrap().value());
+        assert_eq!(Value::Float(3.0), Token::new("root(9, 2)", &mut state).unwrap().value());
         assert_eq!(true, Token::new("rooplipp(9)", &mut state).is_err());
     }
 

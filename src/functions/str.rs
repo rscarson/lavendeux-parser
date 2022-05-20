@@ -124,7 +124,6 @@ const REGEX : FunctionDefinition = FunctionDefinition {
 
 /// Register string functions
 pub fn register_functions(table: &mut FunctionTable) {
-
     table.register(CONTAINS);
     table.register(CONCAT);
     table.register(STRLEN);

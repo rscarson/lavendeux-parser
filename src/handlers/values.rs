@@ -97,6 +97,22 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
                 }
             }
         },
+
+        Rule::array => {
+            let child_container = token.child(1).unwrap().clone();
+            if matches!(child_container.rule(), Rule::expression_list) {
+                token.set_value(Value::Array(
+                    child_container.children().iter()
+                    .filter(|e| !matches!(e.rule(), Rule::comma))
+                    .map(|e| e.value())
+                    .collect::<Vec<Value>>()
+                ));
+            } else if matches!(child_container.rule(), Rule::rbracket)  {
+                token.set_value(Value::Array(vec![]));
+            } else  {
+                token.set_value(Value::Array(vec![child_container.value()]));
+            }
+        },
         
         Rule::atomic_value => {
             token.set_value(token.child(0).unwrap().value());
@@ -159,7 +175,7 @@ mod test_token {
     #[test]
     fn test_value_handler_float() {
         let mut state = ParserState::new();
-        assert_eq!(Value::Float(10000.0), Token::new("10,000", &mut state).unwrap().value());
+        assert_eq!(Value::Float(10000.0), Token::new("10,000.0", &mut state).unwrap().value());
         assert_eq!(Value::Float(1.0), Token::new("1.00000", &mut state).unwrap().value());
     }
 
@@ -204,5 +220,20 @@ mod test_token {
         Token::new("x=4", &mut state).unwrap();
         assert_eq!(Value::Integer(4), Token::new("x", &mut state).unwrap().value());
         assert_eq!(Value::None, Token::new("y", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_value_handler_array() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::Array(vec![
+            Value::Integer(5), 
+            Value::Float(2.0), 
+            Value::String("test".to_string())
+        ]), Token::new("[5, 2.0, 'test']", &mut state).unwrap().value());
+        assert_eq!(Value::Array(vec![
+            Value::Integer(5)
+        ]), Token::new("[5]", &mut state).unwrap().value());
+        assert_eq!(Value::Array(vec![
+        ]), Token::new("[]", &mut state).unwrap().value());
     }
 }
