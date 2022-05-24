@@ -278,14 +278,14 @@ const INT : DecoratorDefinition = DecoratorDefinition {
 const BOOL : DecoratorDefinition = DecoratorDefinition {
     name: &["bool", "boolean"],
     description: "Format a number as a boolean",
-    argument: ExpectedTypes::IntOrFloat,
+    argument: ExpectedTypes::Any,
     handler: |_, input| Ok(Value::Boolean(input.as_bool()).as_string())
 };
 
 const ARRAY : DecoratorDefinition = DecoratorDefinition {
     name: &["array"],
     description: "Format a number as an array",
-    argument: ExpectedTypes::Array,
+    argument: ExpectedTypes::Any,
     handler: |_, input| Ok(Value::Array(input.as_array()).as_string())
 };
 

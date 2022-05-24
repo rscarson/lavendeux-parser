@@ -146,6 +146,11 @@ true || false
 
 // Strings are also supported
 concat("foo", "bar")
+
+// Arrays can be composed of any combination of types
+[10, 12] + [1.2, 1.3]
+2 * [10, 5] // Operations can also be applied between scalar values and arrays
+[false, 0, true] == true // An array evaluates to true if any element is true
 ```
 
 Beyond the simpler operators, the following operations are supported:
@@ -180,6 +185,10 @@ value = pi * e * tau
 // You can also define functions
 f(x) = 2*x**2 + 3*x + 5
 f(2.3)
+
+// Functions work well with arrays
+sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )
+sum([10, 10, 11])
 
 // Recursive functions work too!
 factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
@@ -218,6 +227,9 @@ tan(r), cos(r), sin(r), atan(r), acos(r), asin(r), tanh(r), cosh(r), sinh(r)
 // Rounding functions
 ln(n) | log10(n) | log(n, base)
 sqrt(n) | root(n, base)
+
+// Typecasting
+bool(n) | array(n) | int(n) | float(n)
 
 // RNG functions
 choose("argument 1", 2, 3.0, ...) | rand() | rand(min, max)

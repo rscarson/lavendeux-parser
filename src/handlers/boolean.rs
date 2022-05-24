@@ -22,7 +22,7 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::le => token.set_value(Value::Boolean(l.as_string() <= r.as_string())),
                         _ => {}
                     }
-                } else if l.is_bool() && r.is_bool() {
+                } else if l.is_bool() || r.is_bool() {
                     match token.child(i+1).unwrap().rule() {
                         Rule::lt => token.set_value(Value::Boolean(!l.as_bool() & r.as_bool())),
                         Rule::gt => token.set_value(Value::Boolean(l.as_bool() & !r.as_bool())),

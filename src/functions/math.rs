@@ -2,6 +2,50 @@ use super::{FunctionDefinition, FunctionArgument, FunctionTable};
 use crate::value::{Value, IntegerType};
 use crate::errors::*;
 
+const BOOL : FunctionDefinition = FunctionDefinition {
+    name: "bool",
+    description: "Returns a value as a boolean",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::Any),
+    ],
+    handler: |_, args: &[Value]| {
+        Ok(Value::Boolean(args[0].as_bool()))
+    }
+};
+
+const ARRAY : FunctionDefinition = FunctionDefinition {
+    name: "array",
+    description: "Returns a value as an array",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::Any),
+    ],
+    handler: |_, args: &[Value]| {
+        Ok(Value::Array(args[0].as_array()))
+    }
+};
+
+const INT : FunctionDefinition = FunctionDefinition {
+    name: "int",
+    description: "Returns a value as an integer",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+    ],
+    handler: |_, args: &[Value]| {
+        Ok(Value::Integer(args[0].as_int().unwrap()))
+    }
+};
+
+const FLOAT : FunctionDefinition = FunctionDefinition {
+    name: "float",
+    description: "Returns a value as a float",
+    arguments: || vec![
+        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+    ],
+    handler: |_, args: &[Value]| {
+        Ok(Value::Float(args[0].as_float().unwrap()))
+    }
+};
+
 const MIN : FunctionDefinition = FunctionDefinition {
     name: "min",
     description: "Returns the smallest numeric value from the supplied arguments",
@@ -153,6 +197,12 @@ const ROOT : FunctionDefinition = FunctionDefinition {
 
 /// Register string functions
 pub fn register_functions(table: &mut FunctionTable) {
+    // Typecasting
+    table.register(BOOL);
+    table.register(ARRAY);
+    table.register(INT);
+    table.register(FLOAT);
+
     // Rounding functions
     table.register(MIN);
     table.register(MAX);

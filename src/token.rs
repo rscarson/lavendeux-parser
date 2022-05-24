@@ -493,6 +493,11 @@ mod test_token {
         token_does_value_equal("true == false", Value::Boolean(false), &mut state);
         token_does_value_equal("true == false != true", Value::Boolean(true), &mut state);
 
+        // arrays
+        token_does_value_equal("[10, 12] + [1.2, 1.3]", Value::Array(vec![Value::Float(11.2), Value::Float(13.3)]), &mut state);
+        token_does_value_equal("2 * [10, 5]", Value::Array(vec![Value::Integer(20), Value::Integer(10)]), &mut state);
+        token_does_value_equal("[false, 0, true] == true", Value::Boolean(true), &mut state);
+
         // Function
         let t = Token::new("5+5\nfn(x, y) = x * y\n5+5", &mut state).unwrap();
         assert_eq!("10\nx * y\n10", t.text);
