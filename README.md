@@ -218,6 +218,12 @@ uppercase("s1") | lowercase("S1") | trim("    s1    ")
 regex("foo.*", "foobar") // foobar
 regex("foo(.*)", "foobar", 1) // bar
 
+// Array functions
+len(a) | is_empty(a)
+pop(a) | push(a) | dequeue(a) | enqueue(a)
+remove(a, index) | element(a, index)
+merge(a1, a2)
+
 // Rounding functions
 ceil(n) | floor(n) | round(n, precision)
 
