@@ -500,6 +500,8 @@ mod test_token {
         let t = Token::new("fn(x, y) = 5x + 10(x * y)\nfn(2, 3)", &mut state).unwrap();
         assert_eq!("5x + 10(x * y)\n70", t.text);
         assert_eq!(true, Token::new("f(x) = f(x)\nf(0)", &mut state).is_err());
+        assert_eq!(false, Token::new("sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )", &mut state).is_err());
+        assert_eq!(Value::Integer(31), Token::new("sum([10, 10, 11])", &mut state).unwrap().value());
 
         // Help
         #[cfg(feature = "extensions")]

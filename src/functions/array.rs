@@ -2,8 +2,8 @@ use super::{FunctionDefinition, FunctionArgument, FunctionTable};
 use crate::value::{Value, IntegerType, ArrayType};
 use crate::errors::*;
 
-const LENGTH : FunctionDefinition = FunctionDefinition {
-    name: "length",
+const LEN : FunctionDefinition = FunctionDefinition {
+    name: "len",
     description: "Returns the length of the given array",
     arguments: || vec![
         FunctionArgument::new_required("array", ExpectedTypes::Array)
@@ -26,7 +26,7 @@ const IS_EMPTY : FunctionDefinition = FunctionDefinition {
 
 const POP : FunctionDefinition = FunctionDefinition {
     name: "pop",
-    description: "Return the last element from an array",
+    description: "Remove the last element from an array",
     arguments: || vec![
         FunctionArgument::new_required("array", ExpectedTypes::Array)
     ],
@@ -35,7 +35,8 @@ const POP : FunctionDefinition = FunctionDefinition {
         if e.is_empty() {
             Err(ParserError::ArrayLength(ArrayLengthError::new()))
         } else {
-            Ok(e.pop().unwrap())
+            e.pop();
+            Ok(Value::Array(e))
         }
     }
 };
@@ -56,16 +57,17 @@ const PUSH : FunctionDefinition = FunctionDefinition {
 
 const DEQUEUE : FunctionDefinition = FunctionDefinition {
     name: "dequeue",
-    description: "Return the first element from an array",
+    description: "Remove the first element from an array",
     arguments: || vec![
         FunctionArgument::new_required("array", ExpectedTypes::Array)
     ],
     handler: |_, args: &[Value]| {
-        let e = args[0].as_array();
+        let mut e = args[0].as_array();
         if e.is_empty() {
             Err(ParserError::ArrayLength(ArrayLengthError::new()))
         } else {
-            Ok(e[0].clone())
+            e.remove(0);
+            Ok(Value::Array(e))
         }
     }
 };
@@ -138,7 +140,7 @@ const MERGE :FunctionDefinition = FunctionDefinition {
 
 /// Register array functions
 pub fn register_functions(table: &mut FunctionTable) {
-    table.register(LENGTH);
+    table.register(LEN);
     table.register(IS_EMPTY);
     table.register(POP);
     table.register(PUSH);
@@ -154,13 +156,13 @@ mod test_builtin_functions {
     use super::*;
 
     #[test]
-    fn test_length() {
-        assert_eq!(Value::Integer(1), (LENGTH.handler)(&LENGTH, &[
+    fn test_len() {
+        assert_eq!(Value::Integer(1), (LEN.handler)(&LEN, &[
             Value::Array(vec![
                 Value::Integer(5), 
             ])
         ]).unwrap());
-        assert_eq!(Value::Integer(3), (LENGTH.handler)(&LENGTH, &[
+        assert_eq!(Value::Integer(3), (LEN.handler)(&LEN, &[
             Value::Array(vec![
                 Value::Integer(5), 
                 Value::Float(2.0), 
@@ -183,7 +185,9 @@ mod test_builtin_functions {
 
     #[test]
     fn test_pop() {
-        assert_eq!(Value::Integer(3), (POP.handler)(&POP, &[
+        assert_eq!(Value::Array(vec![
+            Value::Integer(5)
+        ]), (POP.handler)(&POP, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ])
@@ -203,7 +207,9 @@ mod test_builtin_functions {
 
     #[test]
     fn test_dequeue() {
-        assert_eq!(Value::Integer(5), (DEQUEUE.handler)(&DEQUEUE, &[
+        assert_eq!(Value::Array(vec![
+            Value::Integer(3), 
+        ]), (DEQUEUE.handler)(&DEQUEUE, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ])

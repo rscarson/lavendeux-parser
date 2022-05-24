@@ -18,6 +18,8 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::gt => token.set_value(Value::Boolean(l.as_string() > r.as_string())),
                         Rule::eq => token.set_value(Value::Boolean(l.as_string() == r.as_string())),
                         Rule::ne => token.set_value(Value::Boolean(l.as_string() != r.as_string())),
+                        Rule::ge => token.set_value(Value::Boolean(l.as_string() >= r.as_string())),
+                        Rule::le => token.set_value(Value::Boolean(l.as_string() <= r.as_string())),
                         _ => {}
                     }
                 } else if l.is_bool() && r.is_bool() {
@@ -26,6 +28,8 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::gt => token.set_value(Value::Boolean(l.as_bool() & !r.as_bool())),
                         Rule::eq => token.set_value(Value::Boolean(l.as_bool() == r.as_bool())),
                         Rule::ne => token.set_value(Value::Boolean(l.as_bool() != r.as_bool())),
+                        Rule::ge => token.set_value(Value::Boolean(l.as_bool() >= r.as_bool())),
+                        Rule::le => token.set_value(Value::Boolean(l.as_bool() <= r.as_bool())),
                         _ => {}
                     }
                 } else if l.is_int() && r.is_int() {
@@ -34,6 +38,8 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::gt => token.set_value(Value::Boolean(l.as_int().unwrap() > r.as_int().unwrap())),
                         Rule::eq => token.set_value(Value::Boolean(l.as_int().unwrap() == r.as_int().unwrap())),
                         Rule::ne => token.set_value(Value::Boolean(l.as_int().unwrap() != r.as_int().unwrap())),
+                        Rule::ge => token.set_value(Value::Boolean(l.as_int().unwrap() >= r.as_int().unwrap())),
+                        Rule::le => token.set_value(Value::Boolean(l.as_int().unwrap() <= r.as_int().unwrap())),
                         _ => {}
                     }
                 } else if l.is_numeric() && r.is_numeric() {
@@ -42,6 +48,8 @@ pub fn bool_expression_handler(token: &mut Token, _state: &mut ParserState) -> O
                         Rule::gt => token.set_value(Value::Boolean(l.as_float().unwrap() > r.as_float().unwrap())),
                         Rule::eq => token.set_value(Value::Boolean(l.as_float().unwrap() == r.as_float().unwrap())),
                         Rule::ne => token.set_value(Value::Boolean(l.as_float().unwrap() != r.as_float().unwrap())),
+                        Rule::ge => token.set_value(Value::Boolean(l.as_float().unwrap() >= r.as_float().unwrap())),
+                        Rule::le => token.set_value(Value::Boolean(l.as_float().unwrap() <= r.as_float().unwrap())),
                         _ => {}
                     }
                 } else {
@@ -98,6 +106,8 @@ mod test_token {
         assert_eq!(Value::Boolean(true), Token::new(" 'a' == 'a' ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(true), Token::new(" 'a' != 'b' ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" 'a' != 'a' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 'a' >= 'a' ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 'a' <= 'b' ", &mut state).unwrap().value());
         
         assert_eq!(Value::Boolean(true), Token::new(" false < true ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" true < false ", &mut state).unwrap().value());
@@ -107,6 +117,8 @@ mod test_token {
         assert_eq!(Value::Boolean(true), Token::new(" false == false ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(true), Token::new(" false != true ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" false != false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false >= false ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" false <= true ", &mut state).unwrap().value());
         
         assert_eq!(Value::Boolean(true), Token::new(" 1 < 2 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" 2 < 1 ", &mut state).unwrap().value());
@@ -116,6 +128,8 @@ mod test_token {
         assert_eq!(Value::Boolean(true), Token::new(" 1 == 1 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(true), Token::new(" 1 != 2 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" 1 != 1 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1 >= 1 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1 <= 1 ", &mut state).unwrap().value());
         
         assert_eq!(Value::Boolean(true), Token::new(" 1.3 < 2 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" 2 < 1.3 ", &mut state).unwrap().value());
@@ -125,6 +139,8 @@ mod test_token {
         assert_eq!(Value::Boolean(true), Token::new(" 1.3 == 1.3 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(true), Token::new(" 1.3 != 2 ", &mut state).unwrap().value());
         assert_eq!(Value::Boolean(false), Token::new(" 1.3 != 1.3 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1.3 >= 1.3 ", &mut state).unwrap().value());
+        assert_eq!(Value::Boolean(true), Token::new(" 1.3 <= 1.3 ", &mut state).unwrap().value());
         
         assert_eq!(Value::Boolean(false), Token::new(" '1' == 1 ", &mut state).unwrap().value());
     }

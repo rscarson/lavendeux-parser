@@ -28,6 +28,8 @@ lshift = @{"<<"}
 rshift = @{">>"}
 lt = {"<"}
 gt = {">"}
+ge = @{">="}
+le = @{"<="}
 eq = @{"=="}
 ne = @{"!="}
 factorial = {"!"}
@@ -49,7 +51,7 @@ toplevel_expression = {ternary_expression}
 ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
-bool_cmp_expression = {or_expression ~ ((lt|gt|eq|ne) ~ or_expression)*}
+bool_cmp_expression = {or_expression ~ ((ge|le|lt|gt|eq|ne) ~ or_expression)*}
 or_expression = {xor_expression ~ (or ~ xor_expression)*}
 xor_expression = {and_expression ~ (xor ~ and_expression)*}
 and_expression = {sh_expression ~ (and ~ sh_expression)*}
