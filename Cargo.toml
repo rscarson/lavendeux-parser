@@ -17,7 +17,7 @@ extensions = ["js-sandbox"]
 [dependencies]
 regex = "1.6.0"
 pest = "2.2.1"
-pest_derive = "2.1.0"
+pest_derive = "2.2.1"
 serde = { version = "1.0.143", features = ["derive"] }
 serde_json = "1.0.83"
 reqwest = { version = "0.11.11", features = ["blocking"] }
