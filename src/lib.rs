@@ -102,7 +102,7 @@
 //! }
 //! ```
 //! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.7.2")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.7.3")]
 #![warn(missing_docs)]
 #![warn(rustdoc::missing_doc_code_examples)]
 
