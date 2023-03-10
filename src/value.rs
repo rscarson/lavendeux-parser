@@ -24,6 +24,9 @@ pub type ArrayType = Vec<Value>;
 pub enum Value {
     /// The lack of a value
     None, 
+
+    /// An unresolved identifier
+    Identifier(String),
     
     /// A boolean value - all types can be expressed as booleans
     Boolean(bool), 
@@ -67,6 +70,7 @@ impl Value {
             },
             Value::String(s) => s.to_string(),
             Value::Array(v) => format!("[{}]", v.iter().map(|e| e.as_string()).collect::<Vec<String>>().join(", ")),
+            Value::Identifier(s) => s.to_string(),
             Value::None => "".to_string(),
         }
     }
@@ -75,6 +79,7 @@ impl Value {
     pub fn as_bool(&self) -> bool {
         match self {
             Value::None => false,
+            Value::Identifier(_) => false,
             Value::Boolean(v) => *v,
             Value::Integer(n) => *n != 0,
             Value::Float(n) => *n != 0.0,
@@ -87,6 +92,7 @@ impl Value {
     pub fn as_int(&self) -> Option<IntegerType> {
         match self {
             Value::None => None,
+            Value::Identifier(_) => None,
             Value::Boolean(v) => Some(*v as IntegerType),
             Value::Integer(n) => Some(*n),
             Value::Float(n) => Some(*n as IntegerType),
@@ -99,6 +105,7 @@ impl Value {
     pub fn as_float(&self) -> Option<FloatType> {
         match self {
             Value::None => None,
+            Value::Identifier(_) => None,
             Value::Boolean(v) => Some((*v as IntegerType) as FloatType),
             Value::Integer(n) => Some(*n as FloatType),
             Value::Float(n) => Some(*n),
@@ -111,6 +118,7 @@ impl Value {
     pub fn as_array(&self) -> ArrayType {
         match self {
             Value::None => vec![],
+            Value::Identifier(_) => vec![],
             Value::Boolean(_) => vec![self.clone()],
             Value::Integer(_) => vec![self.clone()],
             Value::Float(_) => vec![self.clone()],
@@ -149,6 +157,11 @@ impl Value {
         matches!(self, Value::Array(_))
     }
 
+    /// Determine if the value is an identifier
+    pub fn is_identifier(&self) -> bool {
+        matches!(self, Value::Identifier(_))
+    }
+
     /// Determine if the value is empty
     pub fn is_none(&self) -> bool {
         matches!(self, Value::None)
@@ -159,6 +172,7 @@ impl Clone for Value {
     fn clone(&self) -> Value {
         match self {
             Value::None => Value::None,
+            Value::Identifier(s) => Value::Identifier(s.to_string()),
             Value::Boolean(v) => Value::Boolean(*v),
             Value::Integer(n) => Value::Integer(*n),
             Value::Float(n) => Value::Float(*n),
@@ -172,6 +186,7 @@ impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Value::None, Value::None) => true,
+            (Value::Identifier(s), Value::Identifier(o)) => s == o,
             (Value::Boolean(s), Value::Boolean(o)) => s == o,
             (Value::Integer(s), Value::Integer(o)) => s == o,
             (Value::Float(s), Value::Float(o)) => s == o,
@@ -293,6 +308,12 @@ mod test_atomic_value {
     #[test]
     fn test_is_array() {
         assert_eq!(true, Value::Array(vec![Value::Integer(5)]).is_array());
+        assert_eq!(false, Value::Integer(5).is_array());
+    }
+    
+    #[test]
+    fn test_is_identifier() {
+        assert_eq!(false, Value::Array(vec![Value::Integer(5)]).is_identifier());
         assert_eq!(false, Value::Integer(5).is_array());
     }
     

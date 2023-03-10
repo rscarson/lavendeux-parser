@@ -5,8 +5,6 @@
 //! Extensions are run in a sandboxed environment with no host or network access.
 //! This project is the engine behind [Lavendeux](https://rscarson.github.io/lavendeux/).
 //! 
-//! For help on the syntax of expressions, visit <https://rscarson.github.io/lavendeux>
-//! 
 //! ## Getting Started
 //! To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 //! ```rust
@@ -64,21 +62,69 @@
 //! // Functions take in an array of values, and return a single value
 //! state.functions.register(FunctionDefinition {
 //!     name: "echo",
+//!     category: None,
 //!     description: "Echo back the provided input",
 //!     arguments: || vec![
 //!         FunctionArgument::new_required("input", ExpectedTypes::String),
 //!     ],
-//!     handler: |_, args: &[Value]| {
-//!         Ok(Value::String(args[0].as_string()))
+//!     handler: |_function, _state, args| {
+//!         Ok(Value::String(args.get("input").required().as_string()))
 //!     }
 //! });
 //! 
 //! // Expressions being parsed can now call new_function(), and use the @new_decorator
 //! ```
 //! 
-//! ## Using Extensions
-//! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
+//! Javascript extensions give a flexible way of adding functionality at runtime.
+//! Extensions are run in a sandboxed environment, with no network or host access.  
+//! An extension must implement an extension() function taking no arguments and returning an object describing the extension - see example below
+//!
+//! ```javascript
+//! /**
+//! * This function tells Lavendeux about this extension.
+//! * It must return an object similar to the one below.
+//! * @returns Object
+//! */
+//! function extension() }
+//!     return {
+//!         name: "Extension Name",
+//!         author: "Author's name",
+//!         version: "0.0.0",
+//!         
+//!         functions: {,
+//!             "callable_name": "js_function_name"
+//!         },
+//!         
+//!         decorators: {,
+//!             "callable_name": "js_decorator_name"
+//!         },
+//!     }
+//! }
 //! 
+//! /**
+//! * This function can be called from Lavendeux as callable_name(...)
+//! * args is an array of value objects with either the key Integer, Float or String
+//! * It must also return an object of that kind, or throw an exception
+//! * @returns Object
+//! */
+//! function js_function_name(args) }
+//!     return {
+//!         "Integer": 5,
+//!     };
+//! }
+//! 
+//! /**
+//! * This decorator can be called from Lavendeux as @callable_name
+//! * arg is a value object with either the key Integer, Float or String
+//! * It must return a string, or throw an exception
+//! * @returns String
+//! */
+//! function js_decorator_name(arg) {
+//!     return "formatted value";
+//! }
+//! ```
+//! 
+//! ## Using Extensions
 //! Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
 //! 
 //! Extensions can be loaded as follows:
@@ -101,21 +147,145 @@
 //!     Ok(())
 //! }
 //! ```
-//! Extensions give a more flexible way of adding functionality at runtime. Extensions are written in javascript.
+//! 
+//! ## Syntax
+//! Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
+//! ```javascript
+//! // Integer, floating point or scientific notation numbers
+//! 5 + 5.56 + .2e+3
+//! 
+//! // Currency values
+//! // Note that no exchange rate is being applied automatically
+//! $1,000.00 == ¥1,000.00
+//! 
+//! // Scientific numbers can be represented a number of ways
+//! 5.6e+7 - .6E7 + .2e-3
+//! 
+//! // Booleans
+//! in_range = 5 > 3 && 5 < 10
+//! true || false
+//! 
+//! // Integers can also be represented in base 2, 8 or 16
+//! 0xFFA & 0b110 & 0777
+//! 
+//! // Strings are also supported
+//! concat("foo", "bar")
+//! 
+//! // Arrays can be composed of any combination of types
+//! [10, 12] + [1.2, 1.3]
+//! 2 * [10, 5] // Operations can also be applied between scalar values and arrays
+//! [false, 0, true] == true // An array evaluates to true if any element is true
+//! ```
+//! 
+//! Beyond the simpler operators, the following operations are supported:
+//! ```javascript
+//! 5 ** 2 // Exponentiation
+//! 6 % 2 // Modulo
+//! 3! // Factorial
+//! 
+//! // Bitwise operators AND, OR, and XOR:
+//! 0xF & 0xA | 0x2 ^ 0xF
+//! 
+//! // Bitwise SHIFT, and NOT
+//! 0xF << 1
+//! 0x1 >> 2
+//! ~0xA
+//! 
+//! // Boolean operators
+//! true || false && true
+//! 1 < 2 > 5 // true
+//! ```
+//! 
+//! You can also assign values to variables to be used later:  
+//! They are case sensitive, and can be composed of underscores or alphanumeric characters
+//! ```javascript
+//! // You can also assign values to variables to be used later
+//! x = 0xFFA & 0xFF0
+//! x - 55 // The result will be 200
+//! 
+//! // A few constants are also pre-defined
+//! value = pi * e * tau
+//! 
+//! // You can also define functions
+//! f(x) = 2*x**2 + 3*x + 5
+//! f(2.3)
+//! 
+//! // Functions work well with arrays
+//! sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )
+//! sum([10, 10, 11])
+//! 
+//! // Recursive functions work too!
+//! factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
+//! factorial(5)
+//! ```
+//! 
+//! Decorators can be put at the end of a line to change the output format. Valid decorators include:  
+//! **@bin, @oct, @hex, @int, @float, or @sci**
+//! ```javascript
+//! 255 @hex // The result will be 0xFF
+//! 8 @oct // The result will be 0o10
+//! 5 @float // The result will be 5.0
+//! 5 @usd // Also works with @dollars @cad, @aud, @yen, @pounds, or @euros
+//! 1647950086 @utc // 2022-03-22 11:54:46
+//! ```
+//! 
+//! The following functions are supported by default:
+//! ```javascript
+//! help() // List all functions and decorators
+//! help("strlen") // Get help for a specific function by name
+//! 
+//! // String functions
+//! concat("s1", "s2", ...) | strlen("string") | substr("string", start, [length])
+//! uppercase("s1") | lowercase("S1") | trim("    s1    ")
+//! 
+//! // Regular expressions
+//! regex("foo.*", "foobar") // foobar
+//! regex("foo(.*)", "foobar", 1) // bar
+//! 
+//! // Array functions
+//! len(a) | is_empty(a)
+//! pop(a) | push(a) | dequeue(a) | enqueue(a)
+//! remove(a, index) | element(a, index)
+//! merge(a1, a2)
+//! 
+//! // Rounding functions
+//! ceil(n) | floor(n) | round(n, precision)
+//! 
+//! // Trigonometric functions - values are in radians, use to_radians to convert
+//! tan(r), cos(r), sin(r), atan(r), acos(r), asin(r), tanh(r), cosh(r), sinh(r)
+//! 
+//! // Rounding functions
+//! ln(n) | log10(n) | log(n, base)
+//! sqrt(n) | root(n, base)
+//! 
+//! // Typecasting
+//! bool(n) | array(n) | int(n) | float(n)
+//! 
+//! // RNG functions
+//! choose("argument 1", 2, 3.0, ...) | rand() | rand(min, max)
+//! 
+//! // Networking functions
+//! get(url, ["header-name=value", ...]) | post(url, ["header-name=value", ...]) | resolve(hostname)
+//! 
+//! // Misc. functions
+//! to_radians(degree_value) | to_degrees(radian_value) | abs(n) | tail(filename, [lines]) | time()
+//! ```
 #![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.8.0")]
 #![warn(missing_docs)]
-#![warn(rustdoc::missing_doc_code_examples)]
 
 mod handlers;
 mod token;
 mod value;
 mod state;
 
+mod network;
+pub use network::*;
+
 mod functions;
-pub use functions::{FunctionTable, FunctionDefinition, FunctionArgument};
+pub use functions::*;
 
 mod decorators;
-pub use decorators::{DecoratorTable, DecoratorDefinition};
+pub use decorators::*;
 
 #[cfg(feature = "extensions")]
 mod extensions;

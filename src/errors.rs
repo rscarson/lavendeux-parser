@@ -21,6 +21,9 @@ pub enum ParserError {
     /// An error caused by a problem in parsing the grammar of an expression
     Pest(PestError),
     
+    /// An error caused by attempting use an out of range value
+    Range(RangeError),
+    
     /// An error caused by attempting to parse an invalid integer value
     ParseInt(ParseIntegerError),
     
@@ -72,6 +75,8 @@ impl fmt::Display for ParserError {
             Self::General(e) => write!(f, "{}", e),
             Self::Stack(e) => write!(f, "{}", e),
             Self::Pest(e) => write!(f, "{}", e),
+            
+            Self::Range(e) => write!(f, "{}", e),
             Self::ParseInt(e) => write!(f, "{}", e),
             Self::ParseFloat(e) => write!(f, "{}", e),
             Self::ValueType(e) => write!(f, "{}", e),

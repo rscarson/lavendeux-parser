@@ -3,6 +3,7 @@ use super::errors::*;
 use std::collections::HashMap;
 use chrono::prelude::*;
 
+/// Handler for executing a decorator
 pub type DecoratorHandler = fn(&DecoratorDefinition, &Value) -> Result<String, ParserError>;
 
 /// Holds a set of callable decorators
@@ -189,6 +190,7 @@ const DEFAULT : DecoratorDefinition = DecoratorDefinition {
         Value::Float(_) => (FLOAT.handler)(&FLOAT, input),
         Value::Array(_) => (ARRAY.handler)(&ARRAY, input),
         Value::String(s) => Ok(s.to_string()),
+        Value::Identifier(_) => Ok("".to_string()),
         Value::None => Ok("".to_string())
     }
 };
@@ -227,9 +229,13 @@ const UTC : DecoratorDefinition = DecoratorDefinition {
     argument: ExpectedTypes::IntOrFloat,
     handler: |_, input| {
         let n = input.as_int().unwrap();
-        let t = NaiveDateTime::from_timestamp(n, 0);
-        let datetime: DateTime<Utc> = DateTime::from_utc(t, Utc);
-        Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+        match NaiveDateTime::from_timestamp_millis(n*1000) {
+            Some(t) => {
+                let datetime: DateTime<Utc> = DateTime::from_utc(t, Utc);
+                Ok(datetime.format("%Y-%m-%d %H:%M:%S").to_string())
+            },
+            None => Err(ParserError::Range(RangeError::new(input.clone())))
+        }
     }
 };
 

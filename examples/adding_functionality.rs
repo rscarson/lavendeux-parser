@@ -9,12 +9,13 @@ fn main() -> Result<(), ParserError> {
     // Register a new function
     state.functions.register(FunctionDefinition {
         name: "echo",
+        category: None,
         description: "Echo back the provided input",
         arguments: || vec![
             FunctionArgument::new_required("input", ExpectedTypes::String),
         ],
-        handler: |_, args: &[Value]| {
-            Ok(Value::String(args[0].as_string()))
+        handler: |_function, _state, args| {
+            Ok(Value::String(args.get("input").required().as_string()))
         }
     });
     

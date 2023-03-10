@@ -1,0 +1,4 @@
+factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
+important_value = 5
+
+api_register("animechan", "https://animechan.vercel.app/api/random")

@@ -79,17 +79,35 @@ pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<Parse
         },
 
         Rule::string => {
-            token.set_value(Value::String(
-                token.text()[1..token.text().len()-1].to_string()
+            // Remove the first and last characters - the quotes around our string
+            // This would not work great with graphemes like é, but we know that it's
+            // either ' or " so this should be safe
+            let mut c = token.text().chars();
+            c.next();
+            c.next_back();
+
+            // Now we split along our \\ backslash escapes, and rejoin after
+            // to prevent going over them twice. This method isn't super
+            // neat, there's likely a better way
+            let string = c.as_str().split("\\\\").map(|s|s
                 .replace("\\'", "\'")
                 .replace("\\\"", "\"")
                 .replace("\\n", "\n")
                 .replace("\\r", "\r")
-                .replace("\\t", "\t")
-            ));
+                .replace("\\t", "\t"))
+            .collect::<Vec<String>>().join("\\");
+
+            token.set_value(Value::String(string));
         },
 
         Rule::identifier => {
+            if let Some(v) = state.constants.get(token.text()) {
+                token.set_value(v.clone());
+            } else if let Some(v) = state.variables.get(token.text()) {
+                token.set_value(v.clone());
+            } else {
+                token.set_value(Value::Identifier(token.text().to_string()));
+            }
             match state.constants.get(token.text()) {
                 Some(v) => token.set_value(v.clone()),
                 None => if let Some(v) = state.variables.get(token.text()) {
@@ -211,7 +229,19 @@ mod test_token {
         assert_eq!(Value::String("\"".to_string()), Token::new("'\"'", &mut state).unwrap().value());
         assert_eq!(Value::String("'".to_string()), Token::new("\"'\"", &mut state).unwrap().value());
         assert_eq!(Value::String("test".to_string()), Token::new("'test'", &mut state).unwrap().value());
-        assert_eq!(Value::String("test".to_string()), Token::new("\"test\"", &mut state).unwrap().value());
+        assert_eq!(Value::String("test".to_string()), Token::new("\"test\"", &mut state).unwrap().value());        
+    }
+
+    #[test]
+    fn test_string_escapes() {
+        let mut state = ParserState::new();
+        assert_eq!(Value::String("\"".to_string()), Token::new("'\\\"'", &mut state).unwrap().value());
+        assert_eq!(Value::String("\'".to_string()), Token::new("'\\''", &mut state).unwrap().value());
+        assert_eq!(Value::String("\\".to_string()), Token::new("'\\\\'", &mut state).unwrap().value());
+        assert_eq!(Value::String("\n".to_string()), Token::new("'\\n'", &mut state).unwrap().value());
+        assert_eq!(Value::String("\n".to_string()), Token::new("'\\n'", &mut state).unwrap().value());
+        assert_eq!(Value::String("\r".to_string()), Token::new("'\\r'", &mut state).unwrap().value());
+        assert_eq!(Value::String("\t".to_string()), Token::new("'\\t'", &mut state).unwrap().value());
     }
 
     #[test]
@@ -219,7 +249,7 @@ mod test_token {
         let mut state = ParserState::new();
         Token::new("x=4", &mut state).unwrap();
         assert_eq!(Value::Integer(4), Token::new("x", &mut state).unwrap().value());
-        assert_eq!(Value::None, Token::new("y", &mut state).unwrap().value());
+        assert_eq!(Value::Identifier("y".to_string()), Token::new("y", &mut state).unwrap().value());
     }
 
     #[test]

@@ -11,23 +11,25 @@ version = "0.8.0"
 edition = "2021"
 
 [features]
-default = ["extensions"]
+default = ["extensions", "crypto-functions"]
 extensions = ["js-sandbox"]
+crypto-functions = ["md-5", "sha2"]
 
 [dependencies]
 regex = "1.7.1"
-pest = "2.5.5"
-pest_derive = "2.5.5"
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.93"
+pest = "2.5.6"
+pest_derive = "2.5.6"
+serde = { version = "1.0.153", features = ["derive"] }
+serde_json = "1.0.94"
 reqwest = { version = "0.11.14", features = ["blocking"] }
 chrono = "0.4.23"
-rand = "0.8.4"
-derive_more = "0.99.17"
+rand = "0.8.5"
 
 # Feature deps
 js-sandbox = { version = "0.1.6", optional = true }
+md-5 = { version = "0.10.5", optional = true }
+sha2 = { version = "0.10.6", optional = true }
 
 [dev-dependencies]
-version-sync = "0.9"
+version-sync = "0.9.4"
 cargo-readme = "3.2.0"

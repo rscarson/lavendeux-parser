@@ -1,11 +1,60 @@
 extern crate pest;
 
 use crate::Token;
+use crate::Value;
 use std::error::Error;
 use std::fmt;
 
 use super::ExpectedTypes;
 use super::error_macro;
+
+/// Occurs when attempting use an out of range value
+#[derive(Debug, Clone)]
+pub struct RangeError {pos: Option<usize>, value: Value}
+error_macro::error_type!(RangeError, {
+    /// Create a new instance of the error
+    /// * `value` - Causal value
+    pub fn new(value: Value) -> Self {
+        Self::new_with_index(None, value)
+    }
+    
+    /// Create a new instance of the error caused by a token
+    /// 
+    /// # Arguments
+    /// * `token` - Token causing the error
+    /// * `value` - Causal value
+    pub fn new_with_token(token: &Token, value: Value) -> Self {
+        Self::new_with_index(Some(token.index()), value)
+    }
+    
+    /// Create a new instance of the error at a specific position
+    /// 
+    /// # Arguments
+    /// * `pos` - Index at which the error occured
+    /// * `value` - Causal value
+    pub fn new_with_index(pos: Option<usize>, value: Value) -> Self {
+        Self {pos, value}
+    }
+    
+    /// Return the location at which the error occured
+    pub fn value(&self) -> &Value {
+        &self.value
+    }
+    
+    /// Return the location at which the error occured
+    pub fn pos(&self) -> Option<usize> {
+        self.pos
+    }
+}, {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "value out of range: {}", self.value)?;
+        if let Some(pos) = self.pos {
+            write!(f, " at position {}", pos)?;
+        }
+
+        fmt::Result::Ok(())
+    }
+});
 
 /// Occurs when attempting to parse an invalid integer
 #[derive(Debug, Clone)]

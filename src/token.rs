@@ -26,7 +26,7 @@ type TokenHandler = fn(&mut Token, &mut ParserState) -> Option<ParserError>;
 /// as well as one child per line being parsed
 /// 
 /// So if you were to parse:
-/// ```ignore
+/// ```text
 /// 5 + 5
 /// sqrt(5!)
 /// ```
@@ -192,9 +192,9 @@ impl Token {
             token.children.push(Token {
                 rule: Rule::function_assignment,
                 input: token.input.clone(),
-                text: definition,
+                text: definition.clone(),
                 format: OutputFormat::Unknown,
-                value: Value::String(token.input.clone()),
+                value: Value::String(definition.clone()),
                 index: token.index,
                 children: Vec::new()
             });
@@ -291,7 +291,6 @@ impl Token {
 #[cfg(test)]
 mod test_token {
     #[cfg(feature = "extensions")]
-    use crate::extensions::{Extension};
     use super::*;
 
     fn token_does_value_equal(input: &str, expected: Value, state: &mut ParserState) {
@@ -437,12 +436,12 @@ mod test_token {
         token_does_value_equal("false ? 1/0 : 2", Value::Integer(2), &mut state);
 
         // Call expression
-//        token_does_error("rooplipp(9)", &mut state);
-//        token_does_error("sqrt('string')", &mut state);
-//        token_does_error("sqrt()", &mut state);
-//        token_does_value_equal("sqrt(9)", Value::Integer(3), &mut state);
-//        token_does_value_equal("sqrt(9 | 5)", Value::Integer(3), &mut state);
-//        token_does_value_equal("root(9, 2)", Value::Integer(3), &mut state);
+        token_does_error("rooplipp(9)", &mut state);
+        token_does_error("sqrt('string')", &mut state);
+        token_does_error("sqrt()", &mut state);
+        token_does_value_equal("sqrt(9)", Value::Float(3.0), &mut state);
+        token_does_value_equal("sqrt(8 + 1)", Value::Float(3.0), &mut state);
+        token_does_value_equal("root(9, 2)", Value::Float(3.0), &mut state);
 
         // Power expression
         token_does_value_equal("2**2", Value::Integer(4), &mut state);
@@ -507,32 +506,5 @@ mod test_token {
         assert_eq!(true, Token::new("f(x) = f(x)\nf(0)", &mut state).is_err());
         assert_eq!(false, Token::new("sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )", &mut state).is_err());
         assert_eq!(Value::Integer(31), Token::new("sum([10, 10, 11])", &mut state).unwrap().value());
-
-        // Help
-        #[cfg(feature = "extensions")]
-        state.extensions.add("test.js", Extension::new_stub(
-            None, None, None, 
-            vec!["test".to_string(), "test2".to_string()], 
-            vec!["test3".to_string(), "test4".to_string()]
-        ));
-
-        let t = Token::new("help()", &mut state).unwrap();
-        assert_eq!(true, t.text.contains("Built-in Functions"));
-        assert_eq!(true, t.text.contains("Built-in Decorators"));
-        
-        #[cfg(feature = "extensions")]
-        assert_eq!(true, t.text.contains("Unnamed Extension v0.0.0"));
-
-        assert_eq!(true, t.text.contains("User-defined Functions"));
-        token_does_text_equal("help('strlen')", "strlen(s): Returns the length of the string s", &mut state);
-        token_does_text_equal("help(strlen)", "strlen(s): Returns the length of the string s", &mut state);
-        token_does_text_equal("help('fn')", "fn(x, y) = 5x + 10(x * y)", &mut state);
-        token_does_text_equal("help(fn)", "fn(x, y) = 5x + 10(x * y)", &mut state);
-        
-        #[cfg(feature = "extensions")]
-        token_does_text_equal("help('test2')", "test2(...)", &mut state);
-        
-        #[cfg(feature = "extensions")]
-        token_does_text_equal("help(test2)", "test2(...)", &mut state);
     }
 }

@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use super::functions;
 use super::decorators;
 
+use super::network::ApiInstance;
+
 #[cfg(feature = "extensions")]
 use super::extensions;
 
@@ -50,6 +52,7 @@ impl UserFunction {
     }
 }
 
+
 /// Represents the current state of the parser
 /// Holds the functions, decorators, variables and extensions
 /// available for expressions to use
@@ -72,6 +75,9 @@ pub struct ParserState {
     /// Decorators that can be called by expressions
     pub decorators: decorators::DecoratorTable,
 
+    /// Available configured APIs
+    pub apis: HashMap<String, ApiInstance>,
+
     /// Currently loaded extensions
     #[cfg(feature = "extensions")]
     pub extensions: extensions::ExtensionTable,
@@ -86,25 +92,61 @@ impl Default for ParserState {
 impl ParserState {
     /// Create a new parser state
     pub fn new() -> ParserState {
-        let mut state = ParserState {
+        ParserState {
             depth: 0,
             variables: HashMap::new(),
-            constants: HashMap::new(),
+
+            constants: HashMap::from([
+                ("pi".to_string(), Value::Float(std::f64::consts::PI)),
+                ("e".to_string(), Value::Float(std::f64::consts::E)),
+                ("tau".to_string(), Value::Float(std::f64::consts::TAU)),
+            ]),
 
             functions: functions::FunctionTable::new(),
             user_functions: HashMap::new(),
             decorators: decorators::DecoratorTable::new(),
 
+            apis: HashMap::from([
+                ("animechan".to_string(), ApiInstance::new_with_description(
+                    "https://animechan.vercel.app/api/random".to_string(), 
+                    "Get a random quote from an anime or a character".to_string(),
+                    "api('animechan'), api('animechan', 'character?name=naruto'), api('animechan', 'anime?title=[...]')".to_string(), 
+                )),
+
+                ("bible".to_string(), ApiInstance::new_with_description(
+                    "https://bible-api.com".to_string(), 
+                    "Get a bible quote".to_string(), 
+                    "api('bible', 'Mark 14:52')".to_string()
+                )),
+
+                ("profanity".to_string(), ApiInstance::new_with_description(
+                    "https://www.purgomalum.com/service/plain?text=".to_string(), 
+                    "Profanity filter. Add text to censor".to_string(), 
+                    "api('profanity', 'Fuckity Bye')".to_string()
+                )),
+
+                ("dictionary".to_string(), ApiInstance::new_with_description(
+                    "https://api.dictionaryapi.dev/api/v2/entries".to_string(), 
+                    "Dictionary API - return a definition for a word. Use language/word, such as en/fart ".to_string(), 
+                    "api('dictionary', 'en/fart')".to_string()
+                )),
+
+                ("ipify".to_string(), ApiInstance::new_with_description(
+                    "https://api.ipify.org/?format=plain".to_string(), 
+                    "Returns your own IP address. No endpoint needed".to_string(), 
+                    "api('ipify')".to_string()
+                )),
+
+                ("uselessfacts".to_string(), ApiInstance::new_with_description(
+                    "https://uselessfacts.jsph.pl/api/v2/facts/random".to_string(), 
+                    "Get a random factoid. No endpoint needed".to_string(), 
+                    "api('uselessfacts')".to_string()
+                )),
+            ]),
+
             #[cfg(feature = "extensions")]
             extensions: extensions::ExtensionTable::new(),
-        };
-
-        // Set up constants
-        state.constants.insert("pi".to_string(), Value::Float(std::f64::consts::PI));
-        state.constants.insert("e".to_string(), Value::Float(std::f64::consts::E));
-        state.constants.insert("tau".to_string(), Value::Float(std::f64::consts::TAU));
-
-        state
+        }
     }
 
     /// Returns a new parser with the same properties, and the depth incremented
