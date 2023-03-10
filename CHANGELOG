@@ -1,3 +1,10 @@
+0.8.0
+-----
+Update dependencies
+Fix issue with string escape processing
+Add a large number of new functions
+Enhance builtin-function API
+
 0.7.2
 -----
 Update dependencies

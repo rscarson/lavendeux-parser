@@ -410,6 +410,9 @@ mod test_token {
     fn test_grammar_expression() {
         let mut state: ParserState = ParserState::new();
 
+        println!("{}", Token::new("help()", &mut state).unwrap().text());
+        assert_eq!(false, true);
+
         // Unary expression
         token_does_value_equal("~0b101", Value::Integer(2), &mut state);
         token_does_value_equal("~0b11111111", Value::Integer(0), &mut state);
