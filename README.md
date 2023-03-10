@@ -231,6 +231,7 @@ Decorators can be put at the end of a line to change the output format. Valid de
 ```
 
 The following functions are supported by default:
+```text
     Math Functions
     ===============
     abs(n): Returns the absolute value of n
