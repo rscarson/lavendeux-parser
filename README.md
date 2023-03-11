@@ -1,5 +1,10 @@
 # lavendeux-parser
 
+## Lavendeux Parser - Extensible inline parser engine
+[![Crates.io](https://img.shields.io/crates/v/lavendeux-parser.svg)](https://crates.io/crates/lavendeux-parser)
+[![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
+
 lavendeux-parser is an exensible parsing engine for mathematical expressions.
 It supports variable and function assignments, a variety of datatypes, and can
 be extended easily at runtime through extensions written in javascript.
@@ -152,7 +157,7 @@ fn main() -> Result<(), ParserError> {
 
 ### Syntax
 Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
-```javascript
+```
 // Integer, floating point or scientific notation numbers
 5 + 5.56 + .2e+3
 
@@ -180,7 +185,7 @@ concat("foo", "bar")
 ```
 
 Beyond the simpler operators, the following operations are supported:
-```javascript
+```
 5 ** 2 // Exponentiation
 6 % 2 // Modulo
 3! // Factorial
@@ -200,7 +205,7 @@ true || false && true
 
 You can also assign values to variables to be used later:
 They are case sensitive, and can be composed of underscores or alphanumeric characters
-```javascript
+```
 // You can also assign values to variables to be used later
 x = 0xFFA & 0xFF0
 x - 55 // The result will be 200
@@ -222,7 +227,7 @@ factorial(5)
 ```
 
 Decorators can be put at the end of a line to change the output format. Valid decorators include:
-```javascript
+```
 255 @hex // The result will be 0xFF
 8 @oct // The result will be 0o10
 5 @float // The result will be 5.0
@@ -231,7 +236,7 @@ Decorators can be put at the end of a line to change the output format. Valid de
 ```
 
 The following functions are supported by default:
-```text
+```
     Math Functions
     ===============
     abs(n): Returns the absolute value of n
@@ -333,6 +338,7 @@ The following functions are supported by default:
     @usd: Format a number as a dollar amount
     @utc: Interprets an integer as a timestamp, and formats it in UTC standard
     @yen: Format a number as a yen amount
+```
 
 
 License: MIT OR Apache-2.0

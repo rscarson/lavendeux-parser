@@ -155,7 +155,7 @@
 //! 
 //! ## Syntax
 //! Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
-//! ```javascript
+//! ```text
 //! // Integer, floating point or scientific notation numbers
 //! 5 + 5.56 + .2e+3
 //! 
@@ -183,7 +183,7 @@
 //! ```
 //! 
 //! Beyond the simpler operators, the following operations are supported:
-//! ```javascript
+//! ```text
 //! 5 ** 2 // Exponentiation
 //! 6 % 2 // Modulo
 //! 3! // Factorial
@@ -203,7 +203,7 @@
 //! 
 //! You can also assign values to variables to be used later:  
 //! They are case sensitive, and can be composed of underscores or alphanumeric characters
-//! ```javascript
+//! ```text
 //! // You can also assign values to variables to be used later
 //! x = 0xFFA & 0xFF0
 //! x - 55 // The result will be 200
@@ -225,7 +225,7 @@
 //! ```
 //! 
 //! Decorators can be put at the end of a line to change the output format. Valid decorators include:
-//! ```javascript
+//! ```text
 //! 255 @hex // The result will be 0xFF
 //! 8 @oct // The result will be 0o10
 //! 5 @float // The result will be 5.0
@@ -234,6 +234,7 @@
 //! ```
 //! 
 //! The following functions are supported by default:
+//! ```text
 //!     Math Functions
 //!     ===============
 //!     abs(n): Returns the absolute value of n
@@ -335,6 +336,7 @@
 //!     @usd: Format a number as a dollar amount
 //!     @utc: Interprets an integer as a timestamp, and formats it in UTC standard
 //!     @yen: Format a number as a yen amount
+//! ```
 //!
 #![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.8.0")]
 #![warn(missing_docs)]

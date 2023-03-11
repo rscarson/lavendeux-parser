@@ -4,6 +4,7 @@ use super::*;
 
 use rand::prelude::*;
 
+#[cfg(feature = "crypto-functions")]
 const SHA256  : FunctionDefinition = FunctionDefinition {
     name: "sha256",
     category: Some("cryptography"),
@@ -23,6 +24,7 @@ const SHA256  : FunctionDefinition = FunctionDefinition {
     }
 };
 
+#[cfg(feature = "crypto-functions")]
 const MD5  : FunctionDefinition = FunctionDefinition {
     name: "md5",
     category: Some("cryptography"),
@@ -82,8 +84,12 @@ const RAND : FunctionDefinition = FunctionDefinition {
 
 /// Register developper functions
 pub fn register_functions(table: &mut FunctionTable) {
+    #[cfg(feature = "crypto-functions")]
     table.register(SHA256);
+
+    #[cfg(feature = "crypto-functions")]
     table.register(MD5);
+
     table.register(CHOOSE);
     table.register(RAND);
 }
@@ -92,6 +98,7 @@ pub fn register_functions(table: &mut FunctionTable) {
 mod test_builtin_table {
     use super::*;
     
+    #[cfg(feature = "crypto-functions")]
     #[test]
     fn test_sha256() {
         let mut state = ParserState::new();
@@ -103,6 +110,7 @@ mod test_builtin_table {
         assert_eq!("C3AB8FF13720E8AD9047DD39466B3C8974E592C2FA383D4A3960714CAEF0C4F2".to_string(), result);
     }
     
+    #[cfg(feature = "crypto-functions")]
     #[test]
     fn test_md5() {
         let mut state = ParserState::new();

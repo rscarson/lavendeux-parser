@@ -144,9 +144,10 @@ pub fn register_functions(table: &mut FunctionTable) {
 mod test_token {
     use super::*;
 
+    #[cfg(feature = "extensions")]
     use crate::{Extension};
+    
     use std::path::PathBuf;
-
 
     #[test]
     fn test_call() {

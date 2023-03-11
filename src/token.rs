@@ -1,12 +1,10 @@
+use crate::{ParserState, state::UserFunction, Value, errors::*};
+use super::handlers;
+
 extern crate pest;
 extern crate pest_derive;
 use pest::Parser;
 use pest_derive::Parser;
-
-use super::errors::*;
-use super::handlers;
-use super::state::{ParserState, UserFunction};
-use super::value::Value;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -290,7 +288,6 @@ impl Token {
 
 #[cfg(test)]
 mod test_token {
-    #[cfg(feature = "extensions")]
     use super::*;
 
     fn token_does_value_equal(input: &str, expected: Value, state: &mut ParserState) {
@@ -409,9 +406,6 @@ mod test_token {
     #[test]
     fn test_grammar_expression() {
         let mut state: ParserState = ParserState::new();
-
-        println!("{}", Token::new("help()", &mut state).unwrap().text());
-        assert_eq!(false, true);
 
         // Unary expression
         token_does_value_equal("~0b101", Value::Integer(2), &mut state);
