@@ -338,7 +338,7 @@
 //!     @yen: Format a number as a yen amount
 //! ```
 //!
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.8.0")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.8.1")]
 #![warn(missing_docs)]
 
 mod handlers;
