@@ -78,7 +78,7 @@ impl FunctionTable {
     /// Return all included functions sorted by category
     pub fn all_by_category(&self) -> HashMap<&str, Vec<&FunctionDefinition>> {
         let f: Vec<(&str, Vec<&FunctionDefinition>)> = self.all_categories().iter().map(
-            |c| (*c, self.all().iter().filter(|f| f.category() == *c).map(|f|*f).collect::<Vec<&FunctionDefinition>>())
+            |c| (*c, self.all().iter().filter(|f| f.category() == *c).copied().collect::<Vec<&FunctionDefinition>>())
         ).collect();
         let m: HashMap<_, _> = f.into_iter().collect();
         m

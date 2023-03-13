@@ -2,7 +2,7 @@ use crate::{ParserState, Value};
 use crate::errors::*;
 use super::{FunctionArgument, FunctionArgumentCollection, FunctionHandler};
 
-const DEFAULT_CATEGORY : &'static str = "misc";
+const DEFAULT_CATEGORY : &str = "misc";
 
 /// Holds the definition of a builtin callable function
 #[derive(Clone)]
@@ -68,7 +68,7 @@ impl FunctionDefinition {
             return Err(ParserError::General(
                 format!("Ambiguous function arguments in function {}: Can only support one plural argument", self.name())
             ));
-        } else if plural_arguments == 1 && self.args().last().unwrap().plural() == false {
+        } else if plural_arguments == 1 && !self.args().last().unwrap().plural() {
             return Err(ParserError::General(
                 format!("Ambiguous function arguments in function {}: Plural argument must be the last function argument", self.name())
             ));
@@ -81,9 +81,8 @@ impl FunctionDefinition {
 
         // Collect argument values
         let mut arg_iter = args.iter();
-        let mut args_consumed = 0;
         let mut argument_collection = FunctionArgumentCollection::new();
-        for arg in self.args() {
+        for (args_consumed, arg) in self.args().into_iter().enumerate() {
             let values: Vec<Value> = arg_iter.by_ref().take(if arg.plural() {args.len() - args_consumed} else {1}).cloned()
                 .collect();
 
@@ -100,8 +99,6 @@ impl FunctionDefinition {
                     )));
                 }
             }
-
-            args_consumed += 1;
         }
 
         Ok(argument_collection)

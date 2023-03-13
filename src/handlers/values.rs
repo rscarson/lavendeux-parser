@@ -15,10 +15,7 @@ fn parse_radix(input: &str, prefix: &[&str], base: u32) -> Result<IntegerType, s
         trimmed = trimmed.trim_start_matches(p).to_string();
     }
     
-    match IntegerType::from_str_radix(&trimmed, base) {
-        Ok(n) => Ok(n),
-        Err(e) => Err(e)
-    }
+    IntegerType::from_str_radix(&trimmed, base)
 }
 
 pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {

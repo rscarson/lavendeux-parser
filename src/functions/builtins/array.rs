@@ -59,7 +59,7 @@ const PUSH : FunctionDefinition = FunctionDefinition {
     ],
     handler: |_function, _state, args| {
         let mut e = args.get("array").required().as_array();
-        e.push(args.get("element").required().clone());
+        e.push(args.get("element").required());
         Ok(Value::Array(e))
     }
 };
@@ -92,7 +92,7 @@ const ENQUEUE : FunctionDefinition = FunctionDefinition {
     ],
     handler: |_function, _state, args| {
         let mut e = args.get("array").required().as_array();
-        e.push(args.get("element").required().clone());
+        e.push(args.get("element").required());
         Ok(Value::Array(e))
     }
 };

@@ -61,7 +61,7 @@ impl Value {
                 let mut v = (*n * multiplier).round() / multiplier;
 
                 if v == -0.0 { v = 0.0; }
-                let mut f = format!("{:.}", v);
+                let mut f = format!("{:}", v);
                 if !f.contains('.') {
                     f += ".0";
                 }

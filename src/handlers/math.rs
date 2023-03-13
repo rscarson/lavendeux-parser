@@ -150,15 +150,9 @@ fn perform_float_calculation(expression: &Token, l: Value, r: Value, handler: Fl
 /// * `f_handler` - float handler function
 fn perform_binary_calculation(expression: &Token, l: Value, r: Value, i_handler: IntHandler, f_handler: FloatHandler) -> Result<Value, ParserError> {
     if l.as_array().iter().any(|e| e.is_float()) || r.as_array().iter().any(|e| e.is_float()) {
-        match perform_float_calculation(expression, l, r, f_handler) {
-            Ok(n) => Ok(n),
-            Err(e) => Err(e)
-        }
+        perform_float_calculation(expression, l, r, f_handler)
     } else {
-        match perform_int_calculation(expression, l, r, i_handler) {
-            Ok(n) => Ok(n),
-            Err(e) => Err(e)
-        }
+        perform_int_calculation(expression, l, r, i_handler)
     }
 }
 

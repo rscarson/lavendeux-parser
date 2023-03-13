@@ -2,6 +2,8 @@ use crate::value::{Value};
 use crate::errors::*;
 use crate::network::utils::*;
 
+use std::fmt;
+
 /// Represents an instance of an API
 #[derive(Clone)]
 pub struct ApiInstance {
@@ -17,7 +19,7 @@ impl ApiInstance {
     /// # Arguments
     /// * `base_url` - base url for the API
     pub fn new(base_url: String) -> Self {
-        Self { base_url: base_url.trim_end_matches("/").to_string(), description: "".to_string(), examples: "".to_string(), key: None }
+        Self { base_url: base_url.trim_end_matches('/').to_string(), description: "".to_string(), examples: "".to_string(), key: None }
     }
 
     /// Create a new API instance with an API key
@@ -96,8 +98,8 @@ impl ApiInstance {
     /// # Arguments
     /// * `key` - API key
     /// * `headers` - Existing headers
-    fn add_key_header(&self, headers: &Vec<String>) -> Vec<String> {
-        let mut h = headers.clone();
+    fn add_key_header(&self, headers: &[String]) -> Vec<String> {
+        let mut h = headers.to_owned();
         if let Some(key) = self.key.clone() {
             h.push(key);
         }
@@ -114,14 +116,14 @@ impl ApiInstance {
         let url = format!("{}/{}", self.base_url(), endpoint);
         request(&url, body, self.add_key_header(&headers))
     }
+}
 
-    /// Convert this instance to a string
-    /// 
-    /// # Arguments
-    /// * `prefix` - API name to prefix onto the string
-    pub fn to_string(&self) -> String {
-        let description = format!("{}{}", if self.description().len()>0 {"\n\t"} else {""}, self.description());
-        let examples = format!("{}{}", if self.examples().len()>0 {"\n\t"} else {""}, self.examples());
-        format!("{}{}{}", self.base_url(), description, examples)
+impl fmt::Display for ApiInstance {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let description = format!("{}{}", if self.description().is_empty() {""} else {"\n\t"}, self.description());
+        let examples = format!("{}{}", if self.examples().is_empty() {""} else {"\n\t"}, self.examples());
+
+        write!(f, "{}{}{}", self.base_url(), description, examples)
     }
 }

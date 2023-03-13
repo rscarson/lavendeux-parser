@@ -142,7 +142,7 @@ impl FunctionArgumentCollection {
             }
         }
         
-        self.values.push(value.clone());
+        self.values.push(value);
     }
 
     /// Get a value from the table
@@ -174,6 +174,12 @@ impl FunctionArgumentCollection {
     /// Return true if there were no given arguments
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
+    }
+}
+
+impl Default for FunctionArgumentCollection {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -200,7 +200,7 @@ error_type!(PestError, {
     }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "unexpected token in expression")?;
+        write!(f, "unexpected token in expression")?;
         if let Some(pos) = self.pos {
             write!(f, " at position {}", pos)?;
         }
@@ -241,7 +241,7 @@ error_type!(StackError, {
     }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", "recursive function went too deep")?;
+        write!(f, "recursive function went too deep")?;
         if let Some(pos) = self.pos {
             write!(f, " at position {}", pos)?;
         }

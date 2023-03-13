@@ -7,13 +7,12 @@ const LIST : FunctionDefinition = FunctionDefinition {
     name: "api_list",
     category: Some("network"),
     description: "List all registered APIs",
-    arguments: || vec![
-    ],
+    arguments: Vec::new,
     handler: |_function, state, _args| {
         let mut keys = state.apis.keys().collect::<Vec<&String>>();
         keys.sort();
         
-        let definitions = keys.iter().map(|k| format!("{}: {}", k.clone(), state.apis.get(*k).unwrap().to_string()));
+        let definitions = keys.iter().map(|k| format!("{}: {}", k, state.apis.get(*k).unwrap()));
         let t = definitions.collect::<Vec<String>>().join("\n");
         
         Ok(Value::String(t))
@@ -33,7 +32,7 @@ const REGISTER : FunctionDefinition = FunctionDefinition {
         let name = args.get("name").required().as_string();
         let base_url = args.get("base_url").required().as_string();
         
-        let mut instance = ApiInstance::new(base_url.clone());
+        let mut instance = ApiInstance::new(base_url);
         if let Some(s) = args.get("api_key").optional() {
             instance.set_key(s.as_string());
         }

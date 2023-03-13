@@ -147,10 +147,10 @@ impl Token {
     fn from_pair(pair: pest::iterators::Pair<Rule>, handler: TokenHandler, state: &mut ParserState) -> Result<Token, ParserError> {
         // Collapse tree
         let mut next_pair = pair;
-        let mut children : Vec<_> = next_pair.clone().into_inner().into_iter().collect();
+        let mut children : Vec<_> = next_pair.clone().into_inner().collect();
         while children.len() == 1 && next_pair.as_rule() != Rule::script && next_pair.as_rule() != Rule::line {
             next_pair = children[0].clone();
-            children = next_pair.clone().into_inner().into_iter().collect();
+            children = next_pair.clone().into_inner().collect();
         }
 
         // Collect basic properties
@@ -170,7 +170,7 @@ impl Token {
             token = Self::from_pair(if condition.value.as_bool() { children[1].clone() } else { children[2].clone() }, handler, state)?;
         } else if !children.is_empty() && children[0].clone().as_rule() == Rule::function_assignment {
             // Function assignment handler - prevents prematurely executing the new function
-            let mut function_children: Vec<_> = children[0].clone().into_inner().into_iter().collect();
+            let mut function_children: Vec<_> = children[0].clone().into_inner().collect();
             let name = function_children.first().unwrap().as_str().to_string();
             let definition = function_children.last().unwrap().as_str().to_string();
 
@@ -192,7 +192,7 @@ impl Token {
                 input: token.input.clone(),
                 text: definition.clone(),
                 format: OutputFormat::Unknown,
-                value: Value::String(definition.clone()),
+                value: Value::String(definition),
                 index: token.index,
                 children: Vec::new()
             });
