@@ -194,8 +194,9 @@ impl Extension {
         match fs::read_dir(directory) {
             Ok(entries) => {
                 for file in entries.flatten() {
-                    if let Some(filename) = file.path().to_str() && filename.ends_with("js") {
-                        let extension = Extension::new(filename);
+                    if let Some(filename) = file.path().to_str() {
+                        if !filename.ends_with("js") { continue; }
+                        let extension = Extension::new(filename)?;
                         extensions.push(extension);
                     }
                 }
