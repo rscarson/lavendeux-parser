@@ -16,12 +16,12 @@ extensions = ["js-sandbox"]
 crypto-functions = ["md-5", "sha2"]
 
 [dependencies]
-regex = "1.7.1"
+regex = "1.7.2"
 pest = "2.5.6"
 pest_derive = "2.5.6"
-serde = { version = "1.0.153", features = ["derive"] }
+serde = { version = "1.0.158", features = ["derive"] }
 serde_json = "1.0.94"
-reqwest = { version = "0.11.14", features = ["blocking"] }
+reqwest = { version = "0.11.15", features = ["blocking"] }
 chrono = "0.4.23"
 rand = "0.8.5"
 
