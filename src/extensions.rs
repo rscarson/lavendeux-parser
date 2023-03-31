@@ -237,7 +237,10 @@ impl Extension {
                 let result : Result<Value, AnyError> = script.call(fname, &args.to_vec());
                 match result {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+                    Err(e) => {
+                        let error = e.to_string().split(" at ").next().unwrap().to_string();
+                        Err(ParserError::Script(ScriptError::new(&error)))
+                    }
                 }
             },
             Err(e) => Err(e)

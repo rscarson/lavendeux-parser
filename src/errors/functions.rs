@@ -45,7 +45,7 @@ error_macro::error_type!(ScriptError, {
     }
 }, {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "error executing extension: {}", self.error)?;
+        write!(f, "{}", self.error)?;
         if let Some(pos) = self.pos {
             write!(f, " at position {}", pos)?;
         }
