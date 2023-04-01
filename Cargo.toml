@@ -26,7 +26,8 @@ chrono = "0.4.23"
 rand = "0.8.5"
 
 # Feature deps
-js-sandbox = { version = "0.2.0-rc.0", optional = true }
+#js-sandbox = { version = "0.2.0-rc.0", optional = true }
+js-sandbox = {optional = true, git = "https://github.com/rscarson/js-sandbox"}
 md-5 = { version = "0.10.5", optional = true }
 sha2 = { version = "0.10.6", optional = true }
 
