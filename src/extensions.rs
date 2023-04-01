@@ -40,6 +40,7 @@ impl ExtensionTable {
     /// Attempt to load all extensions in a directory
     pub fn load_all(&mut self, path: &str) -> Vec<Result<Extension, Box<dyn Error>>> {
         let e = Extension::load_all(path);
+        self.0.clear();
         for extension in e.iter().flatten() {
             self.0.insert(extension.filename().to_string(), extension.clone());
         }
@@ -202,7 +203,8 @@ impl Extension {
                         if !filename.ends_with("js") { continue; }
                         match Extension::new(filename) {
                             Ok(extension) => extensions.push(Ok(extension)),
-                            Err(e) => extensions.push(Err(Box::new(e)))
+                            Err(e) => {
+                                extensions.push(Err(Box::new(ScriptError::new(&format!("{}: {}", filename, e)))))}
                         }
                     }
                 }
