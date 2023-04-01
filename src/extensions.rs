@@ -2,8 +2,12 @@ use super::value::Value;
 use super::errors::*;
 use js_sandbox::{Script, AnyError};
 use serde::{Deserialize, Serialize};
+use core::time::Duration;
+use std::error::Error;
 use std::collections::HashMap;
 use std::fs;
+
+const SCRIPT_TIMEOUT : u64 = 1000;
 
 /// Holds a set of registered extensions
 #[derive(Deserialize, Serialize, Clone)]
@@ -34,12 +38,12 @@ impl ExtensionTable {
     }
 
     /// Attempt to load all extensions in a directory
-    pub fn load_all(&mut self, path: &str) -> Result<Vec<Extension>, ParserError> {
-        let e = Extension::load_all(path)?;
-        for extension in &e {
+    pub fn load_all(&mut self, path: &str) -> Vec<Result<Extension, Box<dyn Error>>> {
+        let e = Extension::load_all(path);
+        for extension in e.iter().flatten() {
             self.0.insert(extension.filename().to_string(), extension.clone());
         }
-        Ok(e)
+        e
     }
 
     /// Delete an extension
@@ -66,10 +70,10 @@ impl ExtensionTable {
     }
 
     /// Try to call a function in the loaded extensions
-    pub fn call_function(&self, name: &str, args: &[Value]) -> Result<Value, ParserError> {
+    pub fn call_function(&self, name: &str, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
         for mut extension in self.all() {
             if extension.has_function(name) {
-                return extension.call_function(name, args);
+                return extension.call_function(name, args, variables);
             }
         }
         Err(ParserError::FunctionName(FunctionNameError::new(name)))
@@ -188,25 +192,27 @@ impl Extension {
     }
 
     /// Attempt to load all extensions in a directory
-    pub fn load_all(directory: &str) -> Result<Vec<Extension>, std::io::Error> {
-        let mut extensions : Vec<Extension> = Vec::new();
+    pub fn load_all(directory: &str) -> Vec<Result<Extension, Box<dyn Error>>> {
+        let mut extensions : Vec<Result<Extension, Box<dyn Error>>> = Vec::new();
 
         match fs::read_dir(directory) {
             Ok(entries) => {
                 for file in entries.flatten() {
                     if let Some(filename) = file.path().to_str() {
                         if !filename.ends_with("js") { continue; }
-                        let extension = Extension::new(filename)?;
-                        extensions.push(extension);
+                        match Extension::new(filename) {
+                            Ok(extension) => extensions.push(Ok(extension)),
+                            Err(e) => extensions.push(Err(Box::new(e)))
+                        }
                     }
                 }
             },
             Err(e) => {
-                return Err(e);
+                extensions.push(Err(Box::new(e)));
             }
         }
 
-        Ok(extensions)
+        extensions
     }
 
     /// Determine if a function exists in the extension
@@ -230,15 +236,36 @@ impl Extension {
     /// # Arguments
     /// * `name` - Function name
     /// * `args` - Values to pass in
-    pub fn call_function(&mut self, name: &str, args: &[Value]) -> Result<Value, ParserError> {
+    pub fn call_function(&mut self, name: &str, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
         match self.load_script() {
             Ok(mut script) => {
                 let fname = self.functions.get(name).ok_or_else(|| ParserError::FunctionName(FunctionNameError::new(name)))?;
-                let result : Result<Value, AnyError> = script.call(fname, &args.to_vec());
+                let result : Result<serde_json::Value, AnyError> = script.call(fname, (&args.to_vec(), &variables));
                 match result {
-                    Ok(v) => Ok(v),
+                    Ok(json_value) => {
+                        match serde_json::from_value::<Value>(json_value.clone()) {
+                            Ok(value) => {
+                                Ok(value)
+                            },
+                            Err(_) => {
+                                match serde_json::from_value::<(Value,HashMap<String,Value>)>(json_value) {
+                                    Ok(tuple) => {
+                                        variables.clear();
+                                        for k in tuple.1.keys() {
+                                            variables.insert(k.to_string(), tuple.1.get(k).unwrap().clone());
+                                        }
+                                        Ok(tuple.0)
+                                    },
+                                    Err(_) => {
+                                        let error = format!("function {} returned unexpected type", name);
+                                        Err(ParserError::Script(ScriptError::new(&error)))
+                                    }
+                                }
+                            }
+                        }
+                    },
                     Err(e) => {
-                        let error = e.to_string().split(" at ").next().unwrap().to_string();
+                        let error = e.to_string().split('\n').next().unwrap().to_string();
                         Err(ParserError::Script(ScriptError::new(&error)))
                     }
                 }
@@ -264,7 +291,7 @@ impl Extension {
         match self.load_script() {
             Ok(mut script) => {
                 let fname = self.decorators.get(name).ok_or_else(|| ParserError::DecoratorName(DecoratorNameError::new(name)))?;
-                let result : Result<String, AnyError> = script.call(fname, &arg);
+                let result : Result<String, AnyError> = script.call(fname, (arg,));
                 match result {
                     Ok(v) => Ok(v),
                     Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
@@ -310,11 +337,19 @@ impl Extension {
 /// # Arguments
 /// * `code` - JS source as string
 fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError> {
-    let mut script = Script::from_string(code)?;
-    let mut e : Extension = script.call("extension", &())?;
-    e.contents = code.to_string();
-    e.filename = filename.to_string();
-    Ok(e)
+    match Script::from_string(code) {
+        Ok(script) => {
+            let mut e : Extension = script.with_timeout(Duration::from_millis(SCRIPT_TIMEOUT))
+                .call("extension", ())?;
+            e.contents = code.to_string();
+            e.filename = filename.to_string();
+            Ok(e)
+        },
+        Err(e) => {
+            let error = e.to_string().split('\n').next().unwrap().to_string();
+            return Err(AnyError::new(ScriptError::new(&error)));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -343,14 +378,22 @@ mod test_extensions {
     #[test]
     fn test_call_function() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)]).unwrap());
-        assert_eq!(Value::Integer(0xFFF), e.call_function("color", &[Value::String("white".to_string())]).unwrap());
+        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
+        assert_eq!(Value::Integer(0xFFF), e.call_function("color", &[Value::String("white".to_string())], &mut HashMap::new()).unwrap());
+    }
+    
+    #[test]
+    fn test_maintains_state() {
+        let mut e = Extension::new("example_extensions/stateful_functions.js").unwrap();
+        let mut state: HashMap<String, Value> = HashMap::new();
+        assert_eq!(Value::Integer(0xFFAA00), e.call_function("set", &[Value::String("test".to_string()), Value::Integer(0xFFAA00)], &mut state).unwrap());
+        assert_eq!(true, state.contains_key("test") && state.get("test").unwrap().as_int().unwrap() == 0xFFAA00);
     }
     
     #[test]
     fn test_can_fail() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(true, matches!(e.call_function("complement", &[]), Err(_)));
+        assert_eq!(true, matches!(e.call_function("complement", &[], &mut HashMap::new()), Err(_)));
     }
     
     #[test]
@@ -368,13 +411,13 @@ mod test_extensions {
     
     #[test]
     fn test_load_all() {
-        let e = Extension::load_all("example_extensions").unwrap();
+        let e = Extension::load_all("example_extensions");
         assert_eq!(true, e.len() > 0);
     }
     
     #[test]
     fn test_color() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)]).unwrap());
+        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
     }
 }

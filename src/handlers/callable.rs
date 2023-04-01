@@ -44,7 +44,7 @@ pub fn call_expression_handler(token: &mut Token, state: &mut ParserState) -> Op
         // Extension functions
         #[cfg(feature = "extensions")]
         if state.extensions.has_function(name) {
-            match state.extensions.call_function(name, &args[..]) {
+            match state.extensions.call_function(name, &args[..], &mut state.variables) {
                 Ok(v) => {
                     token.set_value(v);
                     return None;

@@ -97,7 +97,8 @@
 //!         version: "0.0.0",
 //!         
 //!         functions: {,
-//!             "callable_name": "js_function_name"
+//!             "callable_name": "js_function_name",
+//!             "stateful_function": "js_stateful_fn"
 //!         },
 //!         
 //!         decorators: {,
@@ -116,6 +117,16 @@
 //!     return {
 //!         "Integer": 5,
 //!     };
+//! }
+//! 
+//! /**
+//! * Functions can also be stateful, gaining access to the parser's variables
+//! * It takes in arguments and a state, a hash of strings and values
+//! * @returns a single value, or a [value, state] pair to mutate the parser state
+//! */
+//! function js_stateful_fn(args, state) }
+//!     state.foobar = {"Integer": 5};
+//!     return [state.foobar, state];
 //! }
 //! 
 //! /**
@@ -142,8 +153,8 @@
 //!     // Load one extension
 //!     state.extensions.load("example_extensions/colour_utils.js")?;
 //! 
-//!     // Load a whole directory
-//!     state.extensions.load_all("./example_extensions")?;
+//!     // Load a whole directory - this will return a vec of Extension/Error results
+//!     state.extensions.load_all("./example_extensions");
 //! 
 //!     // Once loaded, functions and @decorators decribed in the extensions
 //!     // can be called in expressions being parsed
@@ -338,7 +349,7 @@
 //!     @yen: Format a number as a yen amount
 //! ```
 //!
-#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.8.1")]
+#![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.9.0")]
 #![warn(missing_docs)]
 
 mod handlers;
