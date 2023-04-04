@@ -46,7 +46,7 @@ fn expression_handler(token: &mut Token, state: &mut ParserState) -> Option<Pars
                         // Extension decorators
                         #[cfg(feature = "extensions")]
                         if state.extensions.has_decorator(name) {
-                            match state.extensions.call_decorator(name, &token.value()) {
+                            match state.extensions.call_decorator(name, &token.value(), &mut state.variables) {
                                 Ok(s) => {
                                     token.set_text(&s);
                                     return None;

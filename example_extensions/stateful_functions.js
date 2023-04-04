@@ -23,7 +23,7 @@ function extension() {
  * @param {Value} args 
  * @returns {Value} result
  */
-function functionSet(args, state) {
+function functionSet(args) {
     if (args.length != 2) {
         throw new Error("set(<string>, <any>): expected 2 arguments");
     } else if (!args[0].String) {
@@ -32,5 +32,9 @@ function functionSet(args, state) {
 
     let name = args[0].String, value = args[1];
     state[name] = value;
-    return [value, state];
+
+    console.log("@@@");
+    console.log(JSON.stringify(state));
+
+    return value;
 }
