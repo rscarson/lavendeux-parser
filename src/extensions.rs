@@ -233,26 +233,6 @@ impl Extension {
         }
     }
 
-    fn call_sandbox_function<A, T>(&self, script: &mut Script, function: &str, args: A) -> Result<T, ParserError>
-    where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
-        let result : Result<serde_json::Value, AnyError> = script.call(function, args);
-        match result {
-            Ok(json_value) => {
-                match serde_json::from_value::<T>(json_value.clone()) {
-                    Ok(value) => Ok(value),
-                    Err(_) => {
-                        let error = format!("function {} returned unexpected type", function);
-                        Err(ParserError::Script(ScriptError::new(&error)))
-                    }
-                }
-            },
-            Err(e) => {
-                let error = e.to_string().split('\n').next().unwrap().to_string();
-                Err(ParserError::Script(ScriptError::new(&error)))
-            }
-        }
-    }
-
     /// Call a function from the extension
     /// 
     /// # Arguments
@@ -262,14 +242,14 @@ impl Extension {
         match self.load_script() {
             Ok(mut script) => {
                 // Inject parser state
-                self.call_sandbox_function::<(&&mut HashMap<std::string::String, Value>,), ()>(&mut script, "setState", (&variables,)).ok();
+                call_sandbox_function(&mut script, "setState", (&variables,))?;
         
                 // Call function
                 let fname = self.functions.get(name).ok_or_else(|| ParserError::FunctionName(FunctionNameError::new(name)))?;
-                let result: Value = self.call_sandbox_function(&mut script, fname, (&args.to_vec(),))?;
+                let result: Value = call_sandbox_function(&mut script, fname, (&args.to_vec(),))?;
         
                 // Pull out modified state
-                let state_result : Result<HashMap<String, Value>, ParserError> = self.call_sandbox_function(&mut script, "getState", ());
+                let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
                 match state_result {
                     Ok(new_state) => {
                         variables.clear();
@@ -303,14 +283,14 @@ impl Extension {
         match self.load_script() {
             Ok(mut script) => {
                 // Inject parser state
-                self.call_sandbox_function::<(&&mut HashMap<std::string::String, Value>,), ()>(&mut script, "setState", (&variables,)).ok();
+                call_sandbox_function(&mut script, "setState", (&variables,))?;
         
                 // Call decorator
                 let fname = self.decorators.get(name).ok_or_else(|| ParserError::DecoratorName(DecoratorNameError::new(name)))?;
-                let result: String = self.call_sandbox_function(&mut script, fname, (arg,))?;
+                let result: String = call_sandbox_function(&mut script, fname, (arg,))?;
         
                 // Pull out modified state
-                let state_result : Result<HashMap<String, Value>, ParserError> = self.call_sandbox_function(&mut script, "getState", ());
+                let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
                 match state_result {
                     Ok(new_state) => {
                         variables.clear();
@@ -372,7 +352,7 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
 
             // Append state information
             e.contents = format!("{}\n\n{}",
-                "let state = {}; function setState(s) { state = s; } function getState() { return state; } ",
+                "let state = {}; globalThis.setState = (s) => { state = s; } globalThis.getState = () => { return state; } ",
                 e.contents
             );
 
@@ -381,6 +361,26 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
         Err(e) => {
             let error = e.to_string().split('\n').next().unwrap().to_string();
             return Err(AnyError::new(ScriptError::new(&error)));
+        }
+    }
+}
+
+fn call_sandbox_function<A, T>(script: &mut Script, function: &str, args: A) -> Result<T, ParserError>
+where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
+    let result : Result<serde_json::Value, AnyError> = script.call(function, args);
+    match result {
+        Ok(json_value) => {
+            match serde_json::from_value::<T>(json_value.clone()) {
+                Ok(value) => Ok(value),
+                Err(_) => {
+                    let error = format!("function {} returned unexpected type", function);
+                    Err(ParserError::Script(ScriptError::new(&error)))
+                }
+            }
+        },
+        Err(e) => {
+            let error = e.to_string().split('\n').next().unwrap().to_string();
+            Err(ParserError::Script(ScriptError::new(&error)))
         }
     }
 }
