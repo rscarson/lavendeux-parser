@@ -352,7 +352,7 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
 
             // Append state information
             e.contents = format!("{}\n\n{}",
-                "let state = {}; globalThis.setState = (s) => { state = s; } globalThis.getState = () => { return state; } ",
+                "let state = {}; globalThis.setState = (s) => { state = s; }; globalThis.getState = () => { return state; } ",
                 e.contents
             );
 
