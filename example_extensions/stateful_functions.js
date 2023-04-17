@@ -17,9 +17,6 @@ function extension() {
 
 /**
  * Functions can also be stateful, gaining access to the parser's variables
- * It takes in arguments and a state, a hash of strings and values
- * 
- * It then returns a single value, or a [value, state] pair to mutate the parser state
  * @param {Value} args 
  * @returns {Value} result
  */
@@ -31,10 +28,9 @@ function functionSet(args) {
     }
 
     let name = args[0].String, value = args[1];
+    const state = getState();
     state[name] = value;
-
-    console.log("@@@");
-    console.log(JSON.stringify(state));
+    setState(state);
 
     return value;
 }

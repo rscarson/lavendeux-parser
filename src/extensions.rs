@@ -352,7 +352,7 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
 
             // Append state information
             e.contents = format!("{}\n\n{}",
-                "let state = {}; globalThis.setState = (s) => { state = s; }; globalThis.getState = () => { return state; } ",
+                "let state = {}; globalThis.setState = (s) => { state = s; }; globalThis.getState = () => { return state; }; ",
                 e.contents
             );
 
@@ -370,6 +370,7 @@ where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
     let result : Result<serde_json::Value, AnyError> = script.call(function, args);
     match result {
         Ok(json_value) => {
+           // println!("{:?}", json_value);
             match serde_json::from_value::<T>(json_value.clone()) {
                 Ok(value) => Ok(value),
                 Err(_) => {
