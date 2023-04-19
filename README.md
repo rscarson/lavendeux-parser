@@ -1,6 +1,6 @@
 # lavendeux-parser
 
-## Lavendeux Parser - Extensible inline parser engine
+## Extensible inline parser engine
 [![Crates.io](https://img.shields.io/crates/v/lavendeux-parser.svg)](https://crates.io/crates/lavendeux-parser)
 [![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
@@ -86,6 +86,9 @@ Javascript extensions give a flexible way of adding functionality at runtime.
 Extensions are run in a sandboxed environment, with no network or host access.
 An extension must implement an extension() function taking no arguments and returning an object describing the extension - see example below
 
+Extensions can also access parser variables through getState, and mutate the state with setState
+Always check if getState is defined prior to use, to maintain compatibility with older versions of the parser.
+
 ```javascript
 /**
 * This function tells Lavendeux about this extension.
@@ -99,7 +102,8 @@ function extension() }
         version: "0.0.0",
 
         functions: {,
-            "callable_name": "js_function_name"
+            "callable_name": "js_function_name",
+            "stateful_function": "js_stateful_fn"
         },
 
         decorators: {,
@@ -118,6 +122,16 @@ function js_function_name(args) }
     return {
         "Integer": 5,
     };
+}
+
+/**
+* Functions can also be stateful, gaining access to the parser's variables
+* It takes in arguments and a state, a hash of strings and values
+* @returns a single value, or a [value, state] pair to mutate the parser state
+*/
+function js_stateful_fn(args, state) }
+    state.foobar = {"Integer": 5};
+    return [state.foobar, state];
 }
 
 /**
@@ -144,8 +158,8 @@ fn main() -> Result<(), ParserError> {
     // Load one extension
     state.extensions.load("example_extensions/colour_utils.js")?;
 
-    // Load a whole directory
-    state.extensions.load_all("./example_extensions")?;
+    // Load a whole directory - this will return a vec of Extension/Error results
+    state.extensions.load_all("./example_extensions");
 
     // Once loaded, functions and @decorators decribed in the extensions
     // can be called in expressions being parsed
