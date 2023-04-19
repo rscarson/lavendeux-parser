@@ -61,7 +61,7 @@ mod test_builtin_table {
 
     fn hardy_net_test(test: fn() -> Result<Value, ParserError>) -> Value {
         let results = [
-            test(), test(), test()
+            test(), test(), test(), test(), test()
         ];
         assert_eq!(true, results.iter().filter(|r| r.is_ok()).count() > 0);
         return results.iter().filter(|r| r.is_ok()).next().unwrap().clone().unwrap();

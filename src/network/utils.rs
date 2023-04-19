@@ -27,7 +27,7 @@ pub fn resolve(hostname: &str) -> Result<Value, ParserError> {
 /// * `body` - Body if POST
 /// * `headers` - Array of header=value strings
 pub fn request(url: &str, body: Option<String>, headers: Vec<String>) -> Result<Value, ParserError> {
-    match reqwest::blocking::Client::builder().timeout(Duration::from_millis(500)).build() {
+    match reqwest::blocking::Client::builder().timeout(Duration::from_millis(1500)).build() {
         Ok(client) => {
             let mut request = match body {
                 None => client.get(url),

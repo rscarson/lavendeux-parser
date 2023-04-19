@@ -250,14 +250,11 @@ impl Extension {
         
                 // Pull out modified state
                 let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
-                match state_result {
-                    Ok(new_state) => {
-                        variables.clear();
-                        for k in new_state.keys() {
-                            variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
-                        }
-                    },
-                    Err(_) => { }
+                if let Ok(new_state) = state_result {
+                    variables.clear();
+                    for k in new_state.keys() {
+                        variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
+                    }
                 }
         
                 Ok(result)
@@ -291,14 +288,11 @@ impl Extension {
         
                 // Pull out modified state
                 let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
-                match state_result {
-                    Ok(new_state) => {
-                        variables.clear();
-                        for k in new_state.keys() {
-                            variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
-                        }
-                    },
-                    Err(_) => { }
+                if let Ok(new_state) = state_result {
+                    variables.clear();
+                    for k in new_state.keys() {
+                        variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
+                    }
                 }
         
                 Ok(result)
@@ -360,7 +354,7 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
         },
         Err(e) => {
             let error = e.to_string().split('\n').next().unwrap().to_string();
-            return Err(AnyError::new(ScriptError::new(&error)));
+            Err(AnyError::new(ScriptError::new(&error)))
         }
     }
 }
@@ -370,7 +364,7 @@ where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
     let result : Result<serde_json::Value, AnyError> = script.call(function, args);
     match result {
         Ok(json_value) => {
-            match serde_json::from_value::<T>(json_value.clone()) {
+            match serde_json::from_value::<T>(json_value) {
                 Ok(value) => Ok(value),
                 Err(_) => {
                     let error = format!("function {} returned unexpected type", function);
