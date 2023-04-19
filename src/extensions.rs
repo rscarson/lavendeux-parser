@@ -370,11 +370,9 @@ where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
     let result : Result<serde_json::Value, AnyError> = script.call(function, args);
     match result {
         Ok(json_value) => {
-            println!("{:?}", json_value);
             match serde_json::from_value::<T>(json_value.clone()) {
                 Ok(value) => Ok(value),
-                Err(e) => {
-                    println!("{}", e);
+                Err(_) => {
                     let error = format!("function {} returned unexpected type", function);
                     Err(ParserError::Script(ScriptError::new(&error)))
                 }

@@ -83,6 +83,9 @@
 //! Javascript extensions give a flexible way of adding functionality at runtime.
 //! Extensions are run in a sandboxed environment, with no network or host access.  
 //! An extension must implement an extension() function taking no arguments and returning an object describing the extension - see example below
+//! 
+//! Extensions can also access parser variables through getState, and mutate the state with setState
+//! Always check if getState is defined prior to use, to maintain compatibility with older versions of the parser.
 //!
 //! ```javascript
 //! /**

@@ -105,6 +105,14 @@ pub fn register_functions(table: &mut FunctionTable) {
 mod test_builtin_functions {
     use super::*;
 
+    fn hardy_net_test(test: fn() -> Result<Value, ParserError>) -> Value {
+        let results = [
+            test(), test(), test()
+        ];
+        assert_eq!(true, results.iter().filter(|r| r.is_ok()).count() > 0);
+        return results.iter().filter(|r| r.is_ok()).next().unwrap().clone().unwrap();
+    }
+
     #[test]
     fn test_register() {
         let mut state = ParserState::new();
@@ -148,14 +156,15 @@ mod test_builtin_functions {
     }
 
     #[test]
-    fn test_call() {
-        let mut state = ParserState::new();
-        let name = "dictionary".to_string();
-
-        assert_eq!(true, CALL.call(&mut state, &[
-            Value::String(name.clone()),
-            Value::String("en/fart".to_string())
-        ]).unwrap().as_string().contains("the anus"));
+    fn test_call() {        
+        assert_eq!(true, hardy_net_test(|| {
+            let mut state = ParserState::new();
+            let name = "dictionary".to_string();
+            return CALL.call(&mut state, &[
+                Value::String(name.clone()),
+                Value::String("en/fart".to_string())
+            ]);
+        }).as_string().contains("the anus"));
 
     }
 }

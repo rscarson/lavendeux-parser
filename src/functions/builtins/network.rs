@@ -58,23 +58,29 @@ pub fn register_functions(table: &mut FunctionTable) {
 #[cfg(test)]
 mod test_builtin_table {
     use super::*;
+
+    fn hardy_net_test(test: fn() -> Result<Value, ParserError>) -> Value {
+        let results = [
+            test(), test(), test()
+        ];
+        assert_eq!(true, results.iter().filter(|r| r.is_ok()).count() > 0);
+        return results.iter().filter(|r| r.is_ok()).next().unwrap().clone().unwrap();
+    }
     
     #[test]
     fn test_get() {
-        let mut state = ParserState::new();
-
-        let result = GET.call(&mut state, 
-            &[Value::String("https://google.com".to_string()), Value::String("authorization=5".to_string())]).unwrap();
-        assert_eq!(true, result.as_string().to_lowercase().starts_with("<!doctype"));
+        assert_eq!(true, hardy_net_test(|| {
+            let mut state = ParserState::new();
+            return GET.call(&mut state, &[Value::String("https://google.com".to_string()), Value::String("authorization=5".to_string())]);
+        }).as_string().to_lowercase().starts_with("<!doctype"));
     }
     
     #[test]
     fn test_post() {
-        let mut state = ParserState::new();
-
-        let result = POST.call(&mut state, 
-            &[Value::String("https://google.com".to_string()), Value::String("body".to_string())]).unwrap();
-        assert_eq!(true, result.as_string().to_lowercase().starts_with("<!doctype"));
+        assert_eq!(true, hardy_net_test(|| {
+            let mut state = ParserState::new();
+            return POST.call(&mut state,  &[Value::String("https://google.com".to_string()), Value::String("body".to_string())]);
+        }).as_string().to_lowercase().starts_with("<!doctype"));
     }
     
     #[test]
