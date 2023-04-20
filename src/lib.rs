@@ -3,7 +3,8 @@
 //! [![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
 //! [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
 //! 
-//! lavendeux-parser is an exensible parsing engine for mathematical expressions.
+//! lavendeux-parser is rust library that provides an extensible parsing engine for mathematical expressions.
+//! It enables the parsing of user-supplied expressions to operate on a variety of types of data.
 //! It supports variable and function assignments, a variety of datatypes, and can
 //! be extended easily at runtime through extensions written in javascript.
 //! 
