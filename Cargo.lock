@@ -706,7 +706,7 @@ checksum = "453ad9f582a441959e5f0d088b02ce04cfe8d51a8eaf077f12ac6d3e94164ca6"
 [[package]]
 name = "js-sandbox"
 version = "0.2.0-rc.1"
-source = "git+https://github.com/rscarson/js-sandbox#f05d29c9c363d66b6b2fedd6bce55239dbd77ddf"
+source = "git+https://github.com/rscarson/js-sandbox#af0e3cdf7bd816048e0bece50cd6b11160020775"
 dependencies = [
  "deno_core",
  "js-sandbox-macros",
@@ -717,7 +717,7 @@ dependencies = [
 [[package]]
 name = "js-sandbox-macros"
 version = "0.2.0-rc.1"
-source = "git+https://github.com/rscarson/js-sandbox#f05d29c9c363d66b6b2fedd6bce55239dbd77ddf"
+source = "git+https://github.com/rscarson/js-sandbox#af0e3cdf7bd816048e0bece50cd6b11160020775"
 dependencies = [
  "proc-macro2",
  "quote",
