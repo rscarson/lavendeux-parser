@@ -12,7 +12,7 @@ const CONTAINS : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("source", ExpectedTypes::Any),
         FunctionArgument::new_required("s", ExpectedTypes::Any)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let source = args.get("source").required();
         let s = args.get("s").required();
         match source.is_array() {
@@ -29,7 +29,7 @@ const CONCAT : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_plural("s", ExpectedTypes::String, true)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         Ok(Value::String(args.iter().map(|v|v.as_string()).collect::<String>()))
     }
 };
@@ -41,7 +41,7 @@ const STRLEN : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("s", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let s = args.get("s").required().as_string();
         Ok(Value::Integer(s.len() as IntegerType))
     }
@@ -54,7 +54,7 @@ const UPPERCASE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("s", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let s = args.get("s").required().as_string();
         Ok(Value::String(s.to_uppercase()))
     }
@@ -67,7 +67,7 @@ const LOWERCASE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("s", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let s = args.get("s").required().as_string();
         Ok(Value::String(s.to_lowercase()))
     }
@@ -80,7 +80,7 @@ const TRIM : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("s", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let s = args.get("s").required().as_string();
         Ok(Value::String(s.trim().to_string()))
     }
@@ -95,7 +95,7 @@ const SUBSTR : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("start", ExpectedTypes::IntOrFloat),
         FunctionArgument::new_optional("length", ExpectedTypes::IntOrFloat)
     ],
-    handler: |function, _state, args| {
+    handler: |function, token, _state, args| {
         let s = args.get("s").required().as_string();
         let start = args.get("start").required().as_int().unwrap_or(0);
         let default_len = s.len() as IntegerType - start;
@@ -105,9 +105,9 @@ const SUBSTR : FunctionDefinition = FunctionDefinition {
         }.as_int().unwrap_or(default_len);
         
         if start >= s.len() as IntegerType || start < 0 {
-            return Err(ParserError::FunctionArgOverFlow(FunctionArgOverFlowError::new(&function.signature(), 2)));
+            return Err(FunctionOverflowError::new(token, &function.signature(), 2).into());
         } else if length < 0 || length > (s.len() - start as usize) as IntegerType {
-            return Err(ParserError::FunctionArgOverFlow(FunctionArgOverFlowError::new(&function.signature(), 3)));
+            return Err(FunctionOverflowError::new(token, &function.signature(), 3).into());
         }
 
         Ok(Value::String(s.chars().skip(start as usize).take(length as usize).collect()))
@@ -123,7 +123,7 @@ const REGEX : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("subject", ExpectedTypes::String),
         FunctionArgument::new_optional("group", ExpectedTypes::Int)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let pattern = args.get("pattern").required().as_string();
         let subject = args.get("subject").required().as_string();
         let group = match args.get("group").optional() {
@@ -133,7 +133,7 @@ const REGEX : FunctionDefinition = FunctionDefinition {
 
         let re = Regex::new(&pattern);
         if let Err(e) = re {
-            return Err(ParserError::General(format!("Invalid regular expression: {}", e)));
+            return Err(ParsingError::new(token, "regex", &e.to_string()).into());
         }
     
         if let Some(caps) = re.unwrap().captures(&subject) {
@@ -174,24 +174,24 @@ mod test_builtin_functions {
     fn test_regex() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Boolean(false), REGEX.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("test".to_string()), Value::String("bar".to_string())
         ]).unwrap());
-        assert_eq!(Value::String("foo".to_string()), REGEX.call(&mut state, &[
+        assert_eq!(Value::String("foo".to_string()), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("foo".to_string()), Value::String("foobar".to_string())
         ]).unwrap());
-        assert_eq!(Value::String("foobar".to_string()), REGEX.call(&mut state, &[
+        assert_eq!(Value::String("foobar".to_string()), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("foo.*".to_string()), Value::String("foobar".to_string())
         ]).unwrap());
-        assert_eq!(Value::String("bar".to_string()), REGEX.call(&mut state, &[
+        assert_eq!(Value::String("bar".to_string()), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
             Value::Integer(1)
         ]).unwrap());
-        assert_eq!(Value::String("foobar".to_string()), REGEX.call(&mut state, &[
+        assert_eq!(Value::String("foobar".to_string()), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
             Value::Integer(0)
         ]).unwrap());
-        assert_eq!(Value::Boolean(false), REGEX.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), REGEX.call(&Token::dummy(""), &mut state, &[
             Value::String("foo(.*)".to_string()), Value::String("foobar".to_string()), 
             Value::Integer(6)
         ]).unwrap());
@@ -201,9 +201,9 @@ mod test_builtin_functions {
     fn test_strlen() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(0), STRLEN.call(&mut state, 
+        assert_eq!(Value::Integer(0), STRLEN.call(&Token::dummy(""), &mut state, 
             &[Value::String("".to_string())]).unwrap());
-        assert_eq!(Value::Integer(3), STRLEN.call(&mut state, 
+        assert_eq!(Value::Integer(3), STRLEN.call(&Token::dummy(""), &mut state, 
             &[Value::String("   ".to_string())]).unwrap());
     }
 
@@ -211,9 +211,9 @@ mod test_builtin_functions {
     fn test_uppercase() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::String("TEST".to_string()), UPPERCASE.call(&mut state, 
+        assert_eq!(Value::String("TEST".to_string()), UPPERCASE.call(&Token::dummy(""), &mut state, 
             &[Value::String("test".to_string())]).unwrap());
-        assert_eq!(Value::String(" TEST  ".to_string()), UPPERCASE.call(&mut state, 
+        assert_eq!(Value::String(" TEST  ".to_string()), UPPERCASE.call(&Token::dummy(""), &mut state, 
             &[Value::String(" test  ".to_string())]).unwrap());
     }
 
@@ -222,9 +222,9 @@ mod test_builtin_functions {
     fn test_lowercase() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::String("test".to_string()), LOWERCASE.call(&mut state, 
+        assert_eq!(Value::String("test".to_string()), LOWERCASE.call(&Token::dummy(""), &mut state, 
             &[Value::String("TEST".to_string())]).unwrap());
-        assert_eq!(Value::String(" test  ".to_string()), LOWERCASE.call(&mut state, 
+        assert_eq!(Value::String(" test  ".to_string()), LOWERCASE.call(&Token::dummy(""), &mut state, 
             &[Value::String(" TEST  ".to_string())]).unwrap());
     }
 
@@ -233,9 +233,9 @@ mod test_builtin_functions {
     fn test_trim() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::String("test".to_string()), TRIM.call(&mut state, 
+        assert_eq!(Value::String("test".to_string()), TRIM.call(&Token::dummy(""), &mut state, 
             &[Value::String("test".to_string())]).unwrap());
-        assert_eq!(Value::String("TEST".to_string()), TRIM.call(&mut state, 
+        assert_eq!(Value::String("TEST".to_string()), TRIM.call(&Token::dummy(""), &mut state, 
             &[Value::String(" TEST  ".to_string())]).unwrap());
     }
 
@@ -244,10 +244,12 @@ mod test_builtin_functions {
         let mut state = ParserState::new();
 
         assert_eq!(Value::String(" ".to_string()), CONCAT.call(
+            &Token::dummy(""), 
             &mut state, &[Value::String("".to_string()), 
             Value::String(" ".to_string())
         ]).unwrap());
         assert_eq!(Value::String("test4false".to_string()), CONCAT.call(
+            &Token::dummy(""), 
             &mut state, &[Value::String("test".to_string()), 
             Value::Integer(4),
             Value::Boolean(false)
@@ -259,10 +261,10 @@ mod test_builtin_functions {
         let mut state = ParserState::new();
 
         assert_eq!(Value::String("t".to_string()), 
-            SUBSTR.call(&mut state, &[Value::String("test".to_string()), Value::Integer(3)]).unwrap()
+            SUBSTR.call(&Token::dummy(""), &mut state, &[Value::String("test".to_string()), Value::Integer(3)]).unwrap()
         );
         assert_eq!(Value::String("tes".to_string()), 
-            SUBSTR.call(&mut state, &[Value::String("test".to_string()), Value::Integer(0), Value::Integer(3)]).unwrap()
+            SUBSTR.call(&Token::dummy(""), &mut state, &[Value::String("test".to_string()), Value::Integer(0), Value::Integer(3)]).unwrap()
         );
     }
     
@@ -270,17 +272,17 @@ mod test_builtin_functions {
     fn test_contains() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Boolean(true), CONTAINS.call(&mut state, &[
+        assert_eq!(Value::Boolean(true), CONTAINS.call(&Token::dummy(""), &mut state, &[
             Value::String("test".to_string()),
             Value::String("e".to_string())
         ]).unwrap());
 
-        assert_eq!(Value::Boolean(false), CONTAINS.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), CONTAINS.call(&Token::dummy(""), &mut state, &[
             Value::String("test".to_string()),
             Value::String("fff".to_string())
         ]).unwrap());
 
-        assert_eq!(Value::Boolean(true), CONTAINS.call(&mut state, &[
+        assert_eq!(Value::Boolean(true), CONTAINS.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5),
                 Value::Integer(3),
@@ -288,7 +290,7 @@ mod test_builtin_functions {
             Value::Integer(5)
         ]).unwrap());
 
-        assert_eq!(Value::Boolean(false), CONTAINS.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), CONTAINS.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5),
                 Value::Integer(3),

@@ -60,7 +60,7 @@ function function_colour(args) {
  * @param {Value} args 
  * @returns {Value} result
  */
-function function_complement(args) {
+function function_complement(args) {    
     if (args.length != 1) {
         throw "complement(n): expected 1 argument";
     } else if (!args[0].Integer) {

@@ -6,13 +6,16 @@ use crate::value::{Value, IntegerType, ArrayType};
 const LEN : FunctionDefinition = FunctionDefinition {
     name: "len",
     category: Some("arrays"),
-    description: "Returns the length of the given array",
+    description: "Returns the length of the given array or object",
     arguments: || vec![
-        FunctionArgument::new_required("array", ExpectedTypes::Array)
+        FunctionArgument::new_required("input", ExpectedTypes::Array)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         Ok(Value::Integer(
-            args.get("array").required().as_array().len() as IntegerType
+            match args.get("input").required() {
+                Value::Object(v) => v.keys().len() as IntegerType,
+                _ => args.get("input").required().as_array().len() as IntegerType
+            }
         ))
     }
 };
@@ -20,13 +23,16 @@ const LEN : FunctionDefinition = FunctionDefinition {
 const IS_EMPTY : FunctionDefinition = FunctionDefinition {
     name: "is_empty",
     category: Some("arrays"),
-    description: "Returns true if the given array is empty",
+    description: "Returns true if the given array or object is empty",
     arguments: || vec![
-        FunctionArgument::new_required("array", ExpectedTypes::Array)
+        FunctionArgument::new_required("input", ExpectedTypes::Array)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         Ok(Value::Boolean(
-            args.get("array").required().as_array().is_empty()
+            match args.get("input").required() {
+                Value::Object(v) => v.is_empty(),
+                _ => args.get("input").required().as_array().is_empty()
+            }
         ))
     }
 };
@@ -38,10 +44,10 @@ const POP : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("array", ExpectedTypes::Array)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let mut e = args.get("array").required().as_array();
         if e.is_empty() {
-            Err(ParserError::ArrayLength(ArrayLengthError::new()))
+            Err(ArrayEmptyError::new(token).into())
         } else {
             e.pop();
             Ok(Value::Array(e))
@@ -57,7 +63,7 @@ const PUSH : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("array", ExpectedTypes::Array),
         FunctionArgument::new_required("element", ExpectedTypes::Any)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let mut e = args.get("array").required().as_array();
         e.push(args.get("element").required());
         Ok(Value::Array(e))
@@ -71,10 +77,10 @@ const DEQUEUE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("array", ExpectedTypes::Array)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let mut e = args.get("array").required().as_array();
         if e.is_empty() {
-            Err(ParserError::ArrayLength(ArrayLengthError::new()))
+            Err(ArrayEmptyError::new(token).into())
         } else {
             e.remove(0);
             Ok(Value::Array(e))
@@ -90,7 +96,7 @@ const ENQUEUE : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("array", ExpectedTypes::Array),
         FunctionArgument::new_required("element", ExpectedTypes::Any)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let mut e = args.get("array").required().as_array();
         e.push(args.get("element").required());
         Ok(Value::Array(e))
@@ -102,17 +108,25 @@ const REMOVE : FunctionDefinition = FunctionDefinition {
     category: Some("arrays"),
     description: "Removes an element from an array",
     arguments: || vec![
-        FunctionArgument::new_required("array", ExpectedTypes::Array),
+        FunctionArgument::new_required("input", ExpectedTypes::Array),
         FunctionArgument::new_required("index", ExpectedTypes::Int)
     ],
-    handler: |_function, _state, args| {
-        let mut a = args.get("array").required().as_array();
-        let idx = args.get("index").required().as_int().unwrap();
-        if idx < 0 || idx >= a.len() as IntegerType {
-            Err(ParserError::ArrayIndex(ArrayIndexError::new(idx as usize)))
-        } else {
-            a.remove(idx as usize);
-            Ok(Value::Array(a))
+    handler: |_function, token, _state, args| {
+        match args.get("input").required() {
+            Value::Object(mut v) => {
+                v.remove(&args.get("index").required());
+                Ok(args.get("input").required())
+            },
+            _ => {
+                let mut a = args.get("input").required().as_array();
+                let idx = args.get("index").required().as_int().unwrap();
+                if idx < 0 || idx >= a.len() as IntegerType {
+                    Err(ArrayIndexError::new(token, idx as usize).into())
+                } else {
+                    a.remove(idx as usize);
+                    Ok(Value::Array(a))
+                }
+            }
         }
     }
 };
@@ -120,35 +134,85 @@ const REMOVE : FunctionDefinition = FunctionDefinition {
 const ELEMENT : FunctionDefinition = FunctionDefinition {
     name: "element",
     category: Some("arrays"),
-    description: "Return an element from a location in an array",
+    description: "Return an element from a location in an array or object",
     arguments: || vec![
-        FunctionArgument::new_required("array", ExpectedTypes::Array),
+        FunctionArgument::new_required("input", ExpectedTypes::Array),
         FunctionArgument::new_required("index", ExpectedTypes::Int)
     ],
-    handler: |_function, _state, args| {
-        let a = args.get("array").required().as_array();
-        let idx = args.get("index").required().as_int().unwrap();
-        if idx < 0 || idx >= a.len() as IntegerType {
-            Err(ParserError::ArrayIndex(ArrayIndexError::new(idx as usize)))
-        } else {
-            Ok(a[idx as usize].clone())
+    handler: |_function, token, _state, args| {
+        match args.get("input").required() {
+            Value::Object(v) => {
+                match v.get(&args.get("index").required()) {
+                    None => Err(ObjectKeyError::new(token, &args.get("index").required().as_string()).into()),
+                    Some(v) => Ok(v.clone())
+                }
+            },
+            _ => {
+                let a = args.get("input").required().as_array();
+                let idx = args.get("index").required().as_int().unwrap();
+                if idx < 0 || idx > a.len() as IntegerType {
+                    Err(ArrayIndexError::new(token, idx as usize).into())
+                } else {
+                    Ok(a[idx as usize].clone())
+                }
+            }
         }
     }
 };
 
-const MERGE :FunctionDefinition = FunctionDefinition {
+const MERGE : FunctionDefinition = FunctionDefinition {
     name: "merge",
     category: Some("arrays"),
-    description: "Merge all given arrays",
+    description: "Merge all given arrays or objects",
     arguments: || vec![
-        FunctionArgument::new_plural("arrays", ExpectedTypes::Any, false)
+        FunctionArgument::new("target", ExpectedTypes::Any, false),
+        FunctionArgument::new_plural("inputs", ExpectedTypes::Any, false)
     ],
-    handler: |_function, _state, args| {
-        let mut result : ArrayType = vec![];
-        for arg in args.get("arrays").plural() {
-            result.append(&mut arg.as_array());
+    handler: |_function, _token, _state, args| {
+        match args.get("target").required() {
+            Value::Object(mut v) => {
+                for arg in args.get("inputs").plural() {
+                    v.extend(arg.as_object());
+                }
+                Ok(Value::Object(v))
+            },
+
+            _ => {
+                let mut result : ArrayType = args.get("target").required().as_array();
+                for arg in args.get("inputs").plural() {
+                    result.append(&mut arg.as_array());
+                }
+                Ok(Value::Array(result))
+            }
         }
-        Ok(Value::Array(result))
+    }
+};
+
+const KEYS : FunctionDefinition =  FunctionDefinition {
+    name: "keys",
+    category: Some("arrays"),
+    description: "Get a list of keys in the object or array",
+    arguments: || vec![
+        FunctionArgument::new("input", ExpectedTypes::Any, false)
+    ],
+    handler: |_function, _token, _state, args| {
+        let mut a = args.get("input").required().as_object().keys().cloned().collect::<ArrayType>();
+        a.sort();
+        Ok(Value::Array(a))
+    }
+};
+
+const VALUES : FunctionDefinition =  FunctionDefinition {
+    name: "values",
+    category: Some("arrays"),
+    description: "Get a list of values in the object or array",
+    arguments: || vec![
+        FunctionArgument::new("input", ExpectedTypes::Any, false)
+    ],
+    handler: |_function, _token, _state, args| {
+        let mut a = args.get("input").required().as_object().values().cloned().collect::<ArrayType>();
+        a.sort();
+        Ok(Value::Array(a))
     }
 };
 
@@ -163,22 +227,26 @@ pub fn register_functions(table: &mut FunctionTable) {
     table.register(REMOVE);
     table.register(ELEMENT);
     table.register(MERGE);
+    table.register(KEYS);
+    table.register(VALUES);
 }
 
 #[cfg(test)]
 mod test_builtin_functions {
+    use std::collections::HashMap;
+
     use super::*;
 
     #[test]
     fn test_len() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(1), LEN.call(&mut state, &[
+        assert_eq!(Value::Integer(1), LEN.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
             ])
         ]).unwrap());
-        assert_eq!(Value::Integer(3), LEN.call(&mut state, &[
+        assert_eq!(Value::Integer(3), LEN.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
                 Value::Float(2.0), 
@@ -191,12 +259,12 @@ mod test_builtin_functions {
     fn test_is_empty() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Boolean(false), IS_EMPTY.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), IS_EMPTY.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
             ])
         ]).unwrap());
-        assert_eq!(Value::Boolean(true), IS_EMPTY.call(&mut state, &[
+        assert_eq!(Value::Boolean(true), IS_EMPTY.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
             ])
         ]).unwrap());
@@ -208,7 +276,7 @@ mod test_builtin_functions {
 
         assert_eq!(Value::Array(vec![
             Value::Integer(5)
-        ]), POP.call(&mut state, &[
+        ]), POP.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ])
@@ -221,7 +289,7 @@ mod test_builtin_functions {
 
         assert_eq!(Value::Array(vec![
             Value::Integer(5), Value::Integer(3), 
-        ]), PUSH.call(&mut state, &[
+        ]), PUSH.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
             ]), Value::Integer(3)
@@ -234,7 +302,7 @@ mod test_builtin_functions {
 
         assert_eq!(Value::Array(vec![
             Value::Integer(3), 
-        ]), DEQUEUE.call(&mut state, &[
+        ]), DEQUEUE.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ])
@@ -247,7 +315,7 @@ mod test_builtin_functions {
 
         assert_eq!(Value::Array(vec![
             Value::Integer(5), Value::Integer(3), 
-        ]), ENQUEUE.call(&mut state, &[
+        ]), ENQUEUE.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
             ]), Value::Integer(3)
@@ -258,19 +326,19 @@ mod test_builtin_functions {
     fn test_remove() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Array(vec![Value::Integer(3)]), REMOVE.call(&mut state, &[
+        assert_eq!(Value::Array(vec![Value::Integer(3)]), REMOVE.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ]),
             Value::Integer(0)
         ]).unwrap());
-        assert_eq!(Value::Array(vec![Value::Integer(5)]), REMOVE.call(&mut state, &[
+        assert_eq!(Value::Array(vec![Value::Integer(5)]), REMOVE.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ]),
             Value::Integer(1)
         ]).unwrap());
-        assert_eq!(true, REMOVE.call(&mut state, &[
+        assert_eq!(true, REMOVE.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), Value::Integer(3), 
             ]),
@@ -282,7 +350,7 @@ mod test_builtin_functions {
     fn test_element() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(3), ELEMENT.call(&mut state, &[
+        assert_eq!(Value::Integer(3), ELEMENT.call(&Token::dummy(""), &mut state, &[
             Value::Array(vec![
                 Value::Integer(5), 
                 Value::Integer(3), 
@@ -297,10 +365,38 @@ mod test_builtin_functions {
 
         assert_eq!(Value::Array(
             vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)]), 
-            MERGE.call(&mut state, &[
+            MERGE.call(&Token::dummy(""), &mut state, &[
                 Value::Array(vec![Value::Integer(1)]), 
                 Value::Array(vec![Value::Integer(2), Value::Integer(3)]), 
                 Value::Integer(4)
+            ]).unwrap());
+    }
+
+    #[test]
+    fn test_keys() {
+        let mut state = ParserState::new();
+
+        assert_eq!(Value::Array(
+            vec![Value::Integer(1), Value::String("2".to_string())]), 
+            KEYS.call(&Token::dummy(""), &mut state, &[
+                Value::Object(HashMap::from([
+                    (Value::Integer(1), Value::Integer(3)),
+                    (Value::String("2".to_string()), Value::String("4".to_string())),
+                ]))
+            ]).unwrap());
+    }
+
+    #[test]
+    fn test_values() {
+        let mut state = ParserState::new();
+
+        assert_eq!(Value::Array(
+            vec![Value::Integer(3), Value::String("4".to_string())]), 
+            VALUES.call(&Token::dummy(""), &mut state, &[
+                Value::Object(HashMap::from([
+                    (Value::Integer(1), Value::Integer(3)),
+                    (Value::String("2".to_string()), Value::String("4".to_string())),
+                ]))
             ]).unwrap());
     }
 }

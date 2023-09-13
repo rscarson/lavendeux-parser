@@ -1,14 +1,15 @@
 //! Builtin functions for API manipulation
-
 use crate::{ApiInstance, Value};
 use super::*;
+
+use std::collections::HashMap;
 
 const LIST : FunctionDefinition = FunctionDefinition {
     name: "api_list",
     category: Some("network"),
     description: "List all registered APIs",
     arguments: Vec::new,
-    handler: |_function, state, _args| {
+    handler: |_function, _token, state, _args| {
         let mut keys = state.apis.keys().collect::<Vec<&String>>();
         keys.sort();
         
@@ -28,7 +29,7 @@ const REGISTER : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("base_url", ExpectedTypes::String),
         FunctionArgument::new_optional("api_key", ExpectedTypes::String),
     ],
-    handler: |_function, state, args| {
+    handler: |_function, token, state, args| {
         let name = args.get("name").required().as_string();
         let base_url = args.get("base_url").required().as_string();
         
@@ -39,7 +40,7 @@ const REGISTER : FunctionDefinition = FunctionDefinition {
 
         state.apis.insert(name, instance);
 
-        let list = LIST.call(state, &[]).unwrap().as_string();
+        let list = LIST.call(token, state, &[]).unwrap().as_string();
         Ok(Value::String(list))
     }
 };
@@ -51,11 +52,11 @@ const DELETE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("name", ExpectedTypes::String)
     ],
-    handler: |_function, state, args| {
+    handler: |_function, token, state, args| {
         let name = args.get("name").required().as_string();
         state.apis.remove(&name);
         
-        let list = LIST.call(state, &[]).unwrap().as_string();
+        let list = LIST.call(token, state, &[]).unwrap().as_string();
         Ok(Value::String(list))
     }
 };
@@ -68,26 +69,24 @@ const CALL : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("name", ExpectedTypes::String),
         FunctionArgument::new_optional("endpoint", ExpectedTypes::String)
     ],
-    handler: |_function, state, args| {
+    handler: |_function, token, state, args| {
         let api_name = args.get("name").required().as_string();
         let endpoint = args.get("endpoint").optional_or(Value::String("".to_string())).as_string();
 
         match state.apis.get(&api_name) {
             Some(api) => {
-                match api.request(&endpoint, None, vec!["Accept=text/plain".to_string()]) {
+                match api.request(&endpoint, None, HashMap::from([("Accept".to_string(),"text/plain".to_string())])) {
                     Ok(result) => {
                         Ok(Value::String(result.as_string()))
                     },
                     Err(e) => {
-                        Err(e)
+                        Err(NetworkError::from_reqwesterror(token, e).into())
                     }
                 }
             },
 
             None => {
-                Err(ParserError::General(
-                    format!("API {} was not found. Add it with api_register(name, base_url, [optional api key]) first!", api_name)
-                ))
+                Err(IOError::new(token, "API {} was not found. Add it with api_register(name, base_url, [optional api key])").into())
             }
         }
     }
@@ -110,7 +109,7 @@ mod test_builtin_functions {
             test(), test(), test(), test(), test()
         ];
         assert_eq!(true, results.iter().filter(|r| r.is_ok()).count() > 0);
-        return results.iter().filter(|r| r.is_ok()).next().unwrap().clone().unwrap();
+        return results.iter().filter(|r| r.is_ok()).next().unwrap().as_ref().unwrap().clone()
     }
 
     #[test]
@@ -121,7 +120,7 @@ mod test_builtin_functions {
 
         assert_eq!(false, state.apis.contains_key(&name));
 
-        assert_eq!(true, REGISTER.call(&mut state, &[
+        assert_eq!(true, REGISTER.call(&Token::dummy(""), &mut state, &[
             Value::String(name.clone()),
             Value::String(url)
         ]).unwrap().as_string().contains(&name));
@@ -137,7 +136,7 @@ mod test_builtin_functions {
 
         assert_eq!(true, state.apis.contains_key(&name));
 
-        assert_eq!(false, DELETE.call(&mut state, &[
+        assert_eq!(false, DELETE.call(&Token::dummy(""), &mut state, &[
             Value::String(name.clone())
         ]).unwrap().as_string().contains(&name));
 
@@ -150,7 +149,7 @@ mod test_builtin_functions {
         let mut state = ParserState::new();
         let name = "dictionary".to_string();
 
-        assert_eq!(true, LIST.call(&mut state, &[
+        assert_eq!(true, LIST.call(&Token::dummy(""), &mut state, &[
         ]).unwrap().as_string().contains(&name));
 
     }
@@ -160,7 +159,7 @@ mod test_builtin_functions {
         assert_eq!(true, hardy_net_test(|| {
             let mut state = ParserState::new();
             let name = "dictionary".to_string();
-            return CALL.call(&mut state, &[
+            return CALL.call(&Token::dummy(""), &mut state, &[
                 Value::String(name.clone()),
                 Value::String("en/fart".to_string())
             ]);

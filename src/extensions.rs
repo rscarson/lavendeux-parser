@@ -1,6 +1,6 @@
-use super::value::Value;
-use super::errors::*;
-use js_sandbox::{Script, AnyError};
+use crate::{Value, errors::*, Token};
+
+use js_sandbox::{Script, JsError};
 use serde::{Deserialize, Serialize};
 use core::time::Duration;
 use std::error::Error;
@@ -31,7 +31,7 @@ impl ExtensionTable {
     /// 
     /// # Arguments
     /// * `filename` - File name
-    pub fn load(&mut self, filename: &str) -> Result<Extension, ParserError> {
+    pub fn load(&mut self, filename: &str) -> Result<Extension, std::io::Error> {
         let e = Extension::new(filename)?;
         self.0.insert(filename.to_string(), e.clone());
         Ok(e)
@@ -53,15 +53,17 @@ impl ExtensionTable {
     }
 
     /// Returns the full list of extensions available
-    pub fn all(&self) -> Vec<Extension> {
-        Vec::from_iter(self.0.values().cloned())
+    pub fn all(&mut self) -> Vec<&mut Extension> {
+        let mut a = Vec::from_iter(self.0.values_mut());
+        a.sort_by(|f1, f2|f1.name().cmp(f2.name()));
+        a
     }
 
     /// Determine if a function exists in the extension
     /// 
     /// # Arguments
     /// * `name` - Function name
-    pub fn has_function(&self, name: &str) -> bool {
+    pub fn has_function(&mut self, name: &str) -> bool {
         for extension in self.all() {
             if extension.has_function(name) {
                 return true;
@@ -71,20 +73,20 @@ impl ExtensionTable {
     }
 
     /// Try to call a function in the loaded extensions
-    pub fn call_function(&self, name: &str, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
-        for mut extension in self.all() {
+    pub fn call_function(&mut self, name: &str, token: &Token, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
+        for extension in self.all() {
             if extension.has_function(name) {
-                return extension.call_function(name, args, variables);
+                return extension.call_function(name, token, args, variables);
             }
         }
-        Err(ParserError::FunctionName(FunctionNameError::new(name)))
+        Err(FunctionNameError::new(token, name).into())
     }
 
     /// Determine if a decorator exists in the extension
     /// 
     /// # Arguments
     /// * `name` - Decorator name
-    pub fn has_decorator(&self, name: &str) -> bool {
+    pub fn has_decorator(&mut self, name: &str) -> bool {
         for extension in self.all() {
             if extension.has_decorator(name) {
                 return true;
@@ -94,13 +96,13 @@ impl ExtensionTable {
     }
 
     /// Try to call a decorator in the loaded extensions
-    pub fn call_decorator(&self, name: &str, arg: &Value, variables: &mut HashMap<String, Value>) -> Result<String, ParserError> {
-        for mut extension in self.all() {
+    pub fn call_decorator(&mut self, name: &str, token: &Token, variables: &mut HashMap<String, Value>) -> Result<String, ParserError> {
+        for extension in self.all() {
             if extension.has_decorator(name) {
-                return extension.call_decorator(name, arg, variables);
+                return extension.call_decorator(name, token, variables);
             }
         }
-        Err(ParserError::FunctionName(FunctionNameError::new(&format!("@{}", name))))
+        Err(FunctionNameError::new(token, &format!("@{}", name)).into())
     }
 }
 impl Default for ExtensionTable {
@@ -159,7 +161,7 @@ impl Extension {
             Ok(s) => {
                 match script_from_string(filename, &s) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
+                    Err(e) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("{}: {}", filename, e.to_string())))
                 }
             },
             Err(e) => Err(e)
@@ -203,8 +205,7 @@ impl Extension {
                         if !filename.ends_with("js") { continue; }
                         match Extension::new(filename) {
                             Ok(extension) => extensions.push(Ok(extension)),
-                            Err(e) => {
-                                extensions.push(Err(Box::new(ScriptError::new(&format!("{}: {}", filename, e)))))}
+                            Err(e) => {extensions.push(Err(Box::new(e)))}
                         }
                     }
                 }
@@ -226,10 +227,10 @@ impl Extension {
     }
 
     /// Load the script from string
-    pub fn load_script(&self) -> Result<Script, ParserError> {
+    pub fn load_script(&self) -> Result<Script, JsError> {
         match Script::from_string(&self.contents) {
             Ok(s) => Ok(s),
-            Err(e) => Err(ParserError::Script(ScriptError::new(&e.to_string())))
+            Err(e) => Err(e)
         }
     }
 
@@ -238,28 +239,26 @@ impl Extension {
     /// # Arguments
     /// * `name` - Function name
     /// * `args` - Values to pass in
-    pub fn call_function(&mut self, name: &str, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
+    pub fn call_function(&mut self, name: &str, token: &Token, args: &[Value], variables: &mut HashMap<String, Value>) -> Result<Value, ParserError> {
         match self.load_script() {
             Ok(mut script) => {
                 // Inject parser state
-                call_sandbox_function(&mut script, "setState", (&variables,))?;
+                self.call_js_function(&mut script, "setState", token, (&variables,))?;
         
                 // Call function
-                let fname = self.functions.get(name).ok_or_else(|| ParserError::FunctionName(FunctionNameError::new(name)))?;
-                let result: Value = call_sandbox_function(&mut script, fname, (&args.to_vec(),))?;
+                let fname = self.functions.get(name).ok_or_else(|| FunctionNameError::new(token, name).into())?;
+                let result: Value = self.call_js_function(&mut script, fname, token, (&args.to_vec(),))?;
         
                 // Pull out modified state
-                let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
-                if let Ok(new_state) = state_result {
-                    variables.clear();
-                    for k in new_state.keys() {
-                        variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
-                    }
+                let state : HashMap<String, Value> = self.call_js_function(&mut script, "getState", token, (&variables,))?;
+                variables.clear();
+                for k in state.keys() {
+                    variables.insert(k.to_string(), state.get(k).unwrap().clone());
                 }
         
                 Ok(result)
             },
-            Err(e) => Err(e)
+            Err(e) => Err(ScriptError::from_jserror(token, self.filename(), e).into())
         }
     }
 
@@ -276,28 +275,26 @@ impl Extension {
     /// # Arguments
     /// * `name` - Decorator name
     /// * `arg` - Value to pass in
-    pub fn call_decorator(&mut self, name: &str, arg: &Value, variables: &mut HashMap<String, Value>) -> Result<String, ParserError> {
+    pub fn call_decorator(&mut self, name: &str, token: &Token, variables: &mut HashMap<String, Value>) -> Result<String, ParserError> {
         match self.load_script() {
             Ok(mut script) => {
                 // Inject parser state
-                call_sandbox_function(&mut script, "setState", (&variables,))?;
+                self.call_js_function(&mut script, "setState", token, (&variables,))?;
         
                 // Call decorator
-                let fname = self.decorators.get(name).ok_or_else(|| ParserError::DecoratorName(DecoratorNameError::new(name)))?;
-                let result: String = call_sandbox_function(&mut script, fname, (arg,))?;
+                let fname = self.decorators.get(name).ok_or_else(|| DecoratorNameError::new(token, name).into())?;
+                let result: String = self.call_js_function(&mut script, fname, token, (token.value(),))?;
         
                 // Pull out modified state
-                let state_result : Result<HashMap<String, Value>, ParserError> = call_sandbox_function(&mut script, "getState", ());
-                if let Ok(new_state) = state_result {
-                    variables.clear();
-                    for k in new_state.keys() {
-                        variables.insert(k.to_string(), new_state.get(k).unwrap().clone());
-                    }
+                let state : HashMap<String, Value> = self.call_js_function(&mut script, "getState", token, (&variables,))?;
+                variables.clear();
+                for k in state.keys() {
+                    variables.insert(k.to_string(), state.get(k).unwrap().clone());
                 }
         
                 Ok(result)
             },
-            Err(e) => Err(e)
+            Err(e) => Err(ScriptError::from_jserror(token, self.filename(), e).into())
         }
     }
 
@@ -323,12 +320,24 @@ impl Extension {
 
     /// Return the list of all functions in the extension
     pub fn functions(&self) -> Vec<String> {
-        self.functions.keys().cloned().collect()
+        let mut a : Vec<String> = self.functions.keys().cloned().collect();
+        a.sort();
+        a
     }
 
     /// Return the list of all decorators in the extension
     pub fn decorators(&self) -> Vec<String> {
-        self.decorators.keys().cloned().collect()
+        let mut a : Vec<String> = self.decorators.keys().cloned().collect();
+        a.sort();
+        a
+    }
+
+    fn call_js_function<A,T>(&self, script: &mut Script, function: &str, token: &Token, args: A) -> Result<T, ParserError>
+    where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
+        match script.call::<A, T>(function, args) {
+            Ok(r) => Ok(r),
+            Err(e) => Err(ScriptError::from_jserror(token, self.filename(), e).into())
+        }
     }
 } 
 
@@ -336,7 +345,7 @@ impl Extension {
 /// 
 /// # Arguments
 /// * `code` - JS source as string
-fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError> {
+fn script_from_string(filename: &str, code: &str) -> Result<Extension, JsError> {
     match Script::from_string(code) {
         Ok(script) => {
             let mut e : Extension = script.with_timeout(Duration::from_millis(SCRIPT_TIMEOUT))
@@ -352,30 +361,7 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, AnyError>
 
             Ok(e)
         },
-        Err(e) => {
-            let error = e.to_string().split('\n').next().unwrap().to_string();
-            Err(AnyError::new(ScriptError::new(&error)))
-        }
-    }
-}
-
-fn call_sandbox_function<A, T>(script: &mut Script, function: &str, args: A) -> Result<T, ParserError>
-where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
-    let result : Result<serde_json::Value, AnyError> = script.call(function, args);
-    match result {
-        Ok(json_value) => {
-            match serde_json::from_value::<T>(json_value) {
-                Ok(value) => Ok(value),
-                Err(_) => {
-                    let error = format!("function {} returned unexpected type", function);
-                    Err(ParserError::Script(ScriptError::new(&error)))
-                }
-            }
-        },
-        Err(e) => {
-            let error = e.to_string().split('\n').next().unwrap().to_string();
-            Err(ParserError::Script(ScriptError::new(&error)))
-        }
+        Err(e) => Err(e)
     }
 }
 
@@ -405,8 +391,8 @@ mod test_extensions {
     #[test]
     fn test_call_function() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
-        assert_eq!(Value::Integer(0xFFF), e.call_function("color", &[Value::String("white".to_string())], &mut HashMap::new()).unwrap());
+        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &Token::dummy(""), &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
+        assert_eq!(Value::Integer(0xFFF), e.call_function("color", &Token::dummy(""), &[Value::String("white".to_string())], &mut HashMap::new()).unwrap());
     }
     
     #[test]
@@ -414,14 +400,14 @@ mod test_extensions {
         let mut e = Extension::new("example_extensions/stateful_functions.js").unwrap();
         let mut state: HashMap<String, Value> = HashMap::new();
         state.insert("foo".to_string(), Value::String("bar".to_string()));
-        assert_eq!(Value::Integer(0xFFAA00), e.call_function("set", &[Value::String("test".to_string()), Value::Integer(0xFFAA00)], &mut state).unwrap());
+        assert_eq!(Value::Integer(0xFFAA00), e.call_function("set", &Token::dummy(""), &[Value::String("test".to_string()), Value::Integer(0xFFAA00)], &mut state).unwrap());
         assert_eq!(true, state.contains_key("test") && state.get("test").unwrap().as_int().unwrap() == 0xFFAA00);
     }
     
     #[test]
     fn test_can_fail() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(true, matches!(e.call_function("complement", &[], &mut HashMap::new()), Err(_)));
+        assert_eq!(true, matches!(e.call_function("complement", &Token::dummy(""), &[], &mut HashMap::new()), Err(_)));
     }
     
     #[test]
@@ -435,7 +421,9 @@ mod test_extensions {
     fn test_call_decorator() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
         let mut state: HashMap<String, Value> = HashMap::new();
-        assert_eq!("#ff0000", e.call_decorator("color", &Value::Integer(0xFF), &mut state).unwrap());
+        let mut token = Token::dummy("");
+        token.set_value(Value::Integer(0xFF));
+        assert_eq!("#ff0000", e.call_decorator("color", &token, &mut state).unwrap());
     }
     
     #[test]
@@ -447,6 +435,6 @@ mod test_extensions {
     #[test]
     fn test_color() {
         let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
+        assert_eq!(Value::Integer(0x00FFFF), e.call_function("complement", &Token::dummy(""), &[Value::Integer(0xFFAA00)], &mut HashMap::new()).unwrap());
     }
 }

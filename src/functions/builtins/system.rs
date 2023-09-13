@@ -1,18 +1,7 @@
 //! Builtin functions for lower level ops
 
-use crate::{Token};
+use crate::{Token, help::Help};
 use super::*;
-
-fn inline_sort<T>(mut v: Vec<T>) -> Vec<T> where T: std::cmp::Ord {
-    v.sort();
-    v
-}
-
-fn inline_sortby<T>(mut v: Vec<T>, f: fn(&T, &T) -> std::cmp::Ordering) -> Vec<T> {
-    v.sort_by(f);
-    v
-}
-
 const HELP : FunctionDefinition = FunctionDefinition {
     name: "help",
     category: None,
@@ -20,7 +9,7 @@ const HELP : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_optional("function_name", ExpectedTypes::String),
     ],
-    handler: |_function, state, args| {
+    handler: |_function, token, state, args| {
         match args.get("function_name").optional() {
             Some(f) => {
                 let target = f.as_string();
@@ -42,55 +31,41 @@ const HELP : FunctionDefinition = FunctionDefinition {
                     return Ok(Value::String(f.signature()));
                 }
         
-                Err(ParserError::FunctionName(FunctionNameError::new(&target)))
+                Err(FunctionNameError::new(token, &target).into())
             },
 
             None => {
-                // List all functions and decorators
-                let mut output = "".to_string();
-                let divider = "===============";
-        
-                // Builtin functions
-                for (category, functions) in state.functions.all_by_category() {
-                    let mut c = category.chars();
-                    let uppercase: String = c.next().unwrap_or(' ').to_uppercase().chain(c).collect();
-                    let functions_help = inline_sortby(functions, |f1, f2|f1.name().cmp(f2.name())).into_iter().map(|f|
-                        f.help()
-                    ).collect::<Vec<String>>().join("\n");
-        
-                    output += format!("{} Functions\n{}\n{}\n\n", uppercase, divider, functions_help).as_str();
-                }
+                let mut help = Help::new();
+
+                help.add_block("Syntax Examples")
+                    .add_entry("Assigns the result of '60*60*24' to a variable, and outputs the result as a float:")
+                    .add_entry("    one_day = 60 * 60 * 24 @float // A comment")
+                    .add_entry("Creates a function called 'factorial' taking 1 argument:")
+                    .add_entry("    factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )")
+                    .add_entry("Creates a function called that uses arrays:")
+                    .add_entry("    sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )")
+                    .add_entry("Performs arithmetic between arrays, and scalars: ")
+                    .add_entry("   [10, 12] + 2 * [1.2, 1.3]");
                 
-                // Builtin decorators
-                output += format!("\n\nBuilt-in Decorators\n{}\n", divider).as_str();
-                output += inline_sort(state.decorators.all()).into_iter().map(|f|
-                    format!("@{}: {}", f, state.decorators.get(f).unwrap().description())
-                ).collect::<Vec<String>>().join("\n").as_str();
+                help.add_block("Operators")
+                    .add_entry("   Bitwise: AND (0xF & 0xA), OR (0xA | 0xF), XOR (0xA ^ 0xF), NOT (~0xA), SHIFT (0xF >> 1, 0xA << 1)")
+                    .add_entry("   Boolean: AND (true && false), OR (true || false), CMP (1 < 2, 4 >= 5), EQ (1 == 1, 2 != 5)")
+                    .add_entry("Arithmetic: Add/Sub (+, -), Mul/Div (*, /), Exponentiation (**), Modulo (%), Implied Mul ((5)(5), 5x)")
+                    .add_entry("     Unary: Factorial (5!!), Negation (-1, -(1+1))");
                 
-                // Extension features
-                #[cfg(feature = "extensions")]
-                if !state.extensions.all().is_empty() {
-                    for extension in inline_sortby(state.extensions.all(), |a,b|a.name().cmp(b.name())) {
-                        output += format!("\n\n{} v{}\nAuthor: {}\n{}\n", 
-                            extension.name(), 
-                            extension.version(), 
-                            extension.author(), 
-                            divider
-                        ).as_str();
-                        let e_functions = inline_sort(extension.functions()).join(", ");
-                        let e_decorators = inline_sort(extension.decorators()).into_iter().map(|f|
-                            format!("@{}", f)
-                        ).collect::<Vec<String>>().join(", ");
-                        output += format!("functions: {}\ndecorators: {}\n", e_functions, e_decorators).as_str();
-                    }
-                }
-                
-                if !state.user_functions.is_empty() {
-                    output += format!("\n\nUser-defined Functions\n{}\n", divider).as_str();
-                    output += inline_sort(state.user_functions.values().map(|f| f.signature()).collect::<Vec<String>>()).join("\n").as_str();
-                }
-        
-                Ok(Value::String(output))
+                help.add_block("Data Types")
+                    .add_entry("  String: Text delimited by 'quotes' or \"double-quotes\"")
+                    .add_entry(" Boolean: A truth value (true or false)")
+                    .add_entry(" Integer: A whole number. Can also be base2 (0b111), base8 (0o777), or base16 (0xFF)")
+                    .add_entry("   Float: A decimal number. Can also be in scientific notation(5.3e+4, 4E-2)")
+                    .add_entry("Currency: A decimal number - does not apply any exhange rates ($5.00)")
+                    .add_entry("   Array: A comma separated list of values in square brackets; [1, 'test']")
+                    .add_entry("  Object: A comma separated list of key/value pairs in curly braces; {'test': 5}")
+                    .add_entry("Variable: An identifier representing a value. Set it with x=5, then use it in an expression (5x)")
+                    .add_entry(" Contant: A preset read-only variable representing a common value, such as pi, e, and tau");
+
+                help.add_std(state);
+                Ok(Value::String(help.to_string()))
             }
         }
     }
@@ -103,7 +78,7 @@ const RUN : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("expression", ExpectedTypes::String),
     ],
-    handler: |_function, state, args| {
+    handler: |_function, _token, state, args| {
         let expression = args.get("expression").required().as_string();
         match Token::new(&expression, state) {
             Ok(t) => Ok(t.value()),
@@ -119,7 +94,7 @@ const CALL : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("filename", ExpectedTypes::String),
     ],
-    handler: |_function, state, args| {
+    handler: |_function, token, state, args| {
         let filename = args.get("filename").required().as_string();
         match std::fs::read_to_string(filename) {
             Ok(script) => {
@@ -128,7 +103,7 @@ const CALL : FunctionDefinition = FunctionDefinition {
                     Err(e) => Err(e)
                 }
             },
-            Err(e) => Err(ParserError::General(e.to_string()))
+            Err(e) => Err(IOError::new(token, &e.to_string()).into())
         }
     }
 };
@@ -145,7 +120,7 @@ mod test_token {
     use super::*;
 
     #[cfg(feature = "extensions")]
-    use crate::{Extension};
+    use crate::Extension;
     
     use std::path::PathBuf;
 
@@ -159,11 +134,11 @@ mod test_token {
         d.push("populate_state.lav");
         let path = d.display().to_string().replace("\\", "\\\\");
 
-        assert_eq!(true, CALL.call(&mut state, &[
+        assert_eq!(true, CALL.call(&Token::dummy(""), &mut state, &[
             Value::String("not a real path.oops".to_string())
         ]).is_err());
 
-        assert_eq!(false, CALL.call(&mut state, &[
+        assert_eq!(false, CALL.call(&Token::dummy(""), &mut state, &[
             Value::String(path)
         ]).is_err());
 
@@ -175,15 +150,15 @@ mod test_token {
     fn test_run() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Boolean(false), RUN.call(&mut state, &[
+        assert_eq!(Value::Boolean(false), RUN.call(&Token::dummy(""), &mut state, &[
             Value::String("contains(help(), 'factorial(')".to_string())
         ]).unwrap());
 
-        assert_eq!(Value::String("0".to_string()), RUN.call(&mut state, &[
+        assert_eq!(Value::String("0".to_string()), RUN.call(&Token::dummy(""), &mut state, &[
             Value::String("factorial(x) = 0".to_string())
         ]).unwrap());
 
-        assert_eq!(Value::Boolean(true), RUN.call(&mut state, &[
+        assert_eq!(Value::Boolean(true), RUN.call(&Token::dummy(""), &mut state, &[
             Value::String("contains(help(), 'factorial(')".to_string())
         ]).unwrap());
     }
@@ -200,18 +175,18 @@ mod test_token {
             vec!["test3".to_string(), "test4".to_string()]
         ));
 
-        assert_eq!(true, HELP.call(&mut state, &[
+        assert_eq!(true, HELP.call(&Token::dummy(""), &mut state, &[
         ]).unwrap().as_string().contains("Math Functions"));
 
-        assert_eq!(true, HELP.call(&mut state, &[
+        assert_eq!(true, HELP.call(&Token::dummy(""), &mut state, &[
         ]).unwrap().as_string().contains("Built-in Decorators"));
         
         #[cfg(feature = "extensions")]
 
-        assert_eq!(true, HELP.call(&mut state, &[
+        assert_eq!(true, HELP.call(&Token::dummy(""), &mut state, &[
         ]).unwrap().as_string().contains("Unnamed Extension v0.0.0"));
 
-        assert_eq!("strlen(s): Returns the length of the string s", HELP.call(&mut state, &[
+        assert_eq!("strlen(s): Returns the length of the string s", HELP.call(&Token::dummy(""), &mut state, &[
             Value::String("strlen".to_string())
         ]).unwrap().as_string());
 

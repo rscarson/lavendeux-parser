@@ -1,54 +1,63 @@
-atomic_value = {hex|bin|oct|currency|sci|float|int|boolean|string|identifier|array}
-    hex = @{(^"0x") ~ ('a'..'f' | 'A'..'F' | '0'..'9')+}
-    bin = @{(^"0b") ~ ('0'..'1')+}
-    oct = @{(^"0o" | "0") ~ ('0'..'7')+}
-    sci = @{(float | int) ~ ^"e" ~ ("+"|"-")? ~ ('0'..'9')+}
-    float = @{int? ~ "." ~ ('0'..'9')+}
-    boolean = @{^"true" | ^"false"}
-    int = @{('0'..'9'){4,} | (('0'..'9'){1,3} ~ ("," ~ ('0'..'9'){3})*)}
-    string = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))* ~ "\"") | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))* ~ "\'")}
-    identifier = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
-    array = {lbracket ~ rbracket | lbracket ~ toplevel_expression ~ rbracket | lbracket ~ expression_list ~ rbracket}
+atomic_value = {
+    hex|bin|oct|currency|sci|float|int|boolean|string|variable|array|object|errors
+}
+hex = @{(^"0x") ~ ('a'..'f' | 'A'..'F' | '0'..'9')+}
+bin = @{(^"0b") ~ ('0'..'1')+}
+oct = @{(^"0o" | "0") ~ ('0'..'7')+}    
+sci = @{(float | int) ~ ^"e" ~ ("+"|"-")? ~ ('0'..'9')+}
+float = @{int? ~ "." ~ ('0'..'9')+}
+boolean = @{^"true" | ^"false"}
+int = @{('0'..'9'){4,} | (('0'..'9'){1,3} ~ ("," ~ ('0'..'9'){3})*)}
+string = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))* ~ "\"") | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))* ~ "\'")}
+variable = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
+identifier = @{('a'..'z' | 'A'..'Z' | "_") ~ ('a'..'z' | 'A'..'Z' | '0'..'9' | "_")*}
+array = {lbracket ~ rbracket | lbracket ~ toplevel_expression ~ rbracket | lbracket ~ expression_list ~ rbracket}
+object = {lbrace ~ rbrace | lbrace ~ property_list ~ rbrace}
 
 currency_symbol = @{"$" | "€" | "£" | "¥"}
-currency = @{currency_symbol ~ int ~ ("." ~ ('0'..'9')+)?}
+currency = {((float | int) ~ currency_symbol) | (currency_symbol ~ (float | int))}
 
-plus = {"+"}
-minus = {"-"}
-multiply = {"*"}
-divide = {"/"}
-modulus = {"%"}
+expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
+property_list = {toplevel_expression ~ ":" ~ toplevel_expression ~ (comma ~ toplevel_expression ~ ":" ~ toplevel_expression)*}
+
+plus = @{"+"}
+minus = @{"-"}
+multiply = @{"*"}
+divide = @{"/"}
+modulus = @{"%"}
 power = @{"**"}
 bool_and = @{"&&"}
 bool_or = @{"||"}
-and = {"&"}
-or = {"|"}
-xor = {"^"}
+and = @{"&"}
+or = @{"|"}
+xor = @{"^"}
 lshift = @{"<<"}
 rshift = @{">>"}
-lt = {"<"}
-gt = {">"}
+lt = @{"<"}
+gt = @{">"}
 ge = @{">="}
 le = @{"<="}
 eq = @{"=="}
 ne = @{"!="}
-factorial = {"!"}
-not = {"~"}
-comma = {","}
-decorator = {"@"}
-equal = {"="}
-lparen = {"("}
-rparen = {")"}
-lbracket = {"["}
-rbracket = {"]"}
+factorial = @{"!"}
+not = @{"~"}
+comma = @{","}
+decorator = @{"@"}
+equal = @{"="}
+lparen = @{"("}
+rparen = @{")"}
+lbracket = @{"["}
+rbracket = @{"]"}
+lbrace = @{"{"}
+rbrace = @{"}"}
 
 function_assignment = {((identifier ~ lparen ~ rparen) | identifier ~ lparen ~ identifier ~ (comma ~ identifier)* ~ rparen) ~ equal ~ toplevel_expression}
-
-expression_list = {toplevel_expression ~ (comma ~ toplevel_expression)+}
+assignment_prefix = {identifier ~ equal ~ !"="}
+index_assignment_prefix = {identifier ~ (lbracket ~ toplevel_expression ~ rbracket)+ ~ equal ~ !"="}
 
 toplevel_expression = {ternary_expression}
 
-ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression)*}
+ternary_expression = {bool_or_expression ~ ("?" ~ bool_or_expression ~ ":" ~ bool_or_expression )*}
 bool_or_expression = {bool_and_expression ~ (bool_or ~ bool_and_expression)*}
 bool_and_expression = {bool_cmp_expression ~ (bool_and ~ bool_cmp_expression)*}
 bool_cmp_expression = {or_expression ~ ((ge|le|lt|gt|eq|ne) ~ or_expression)*}
@@ -62,13 +71,33 @@ implied_mul_expression = {power_expression ~ (!minus ~ power_expression)*}
 power_expression = {call_expression ~ (power ~ call_expression)*}
 call_expression = {identifier ~ lparen ~ toplevel_expression ~ rparen | identifier ~ lparen ~ expression_list? ~ rparen | prefix_unary_expression}
 prefix_unary_expression = {(not|minus)+ ~ postfix_unary_expression | postfix_unary_expression}
-postfix_unary_expression = {term ~ (factorial ~ !"=")+ | term}
+postfix_unary_expression = {index_expression ~ (factorial ~ !"=")+ | index_expression}
+index_expression = {variable ~ (lbracket ~ term ~ rbracket)+ | term}
 term = {lparen ~ toplevel_expression ~ rparen | atomic_value}
 
-assignment_expression = {(identifier ~ equal ~ !"=")? ~ toplevel_expression}
+assignment_expression = {(assignment_prefix | index_assignment_prefix) ~ toplevel_expression}
+expression = {function_assignment|assignment_expression|toplevel_expression}
 comment = _{"//" ~ (!eol ~ ANY)*}
-eol = {NEWLINE+|EOI}
-line = {(comment | ((function_assignment|assignment_expression) ~ (decorator ~ identifier)? ~ comment?)) ~ eol }
+eol = @{NEWLINE+|";"|EOI}
+line = {(comment | (expression ~ (decorator ~ identifier)? ~ comment?)) ~ eol}
 script = {eol? ~ line+ | eol}
 
-WHITESPACE = _{" " | "\t"}
+// Value errors
+errors = {
+    error_unterminated_literal
+    | error_unterminated_linebreak
+    | error_unterminated_array
+    | error_unterminated_object
+    | error_unterminated_paren
+    | error_unexpected_decorator
+    | error_unexpected_postfix
+}
+error_unterminated_literal = @{("\"" ~ ("\\"~ANY | (!"\"" ~ ANY))*) | ("\'" ~ ("\\"~ANY | (!"\'" ~ ANY))*)}
+error_unterminated_linebreak = @{"\\" ~ EOI}
+error_unterminated_array = @{lbracket ~ ANY*}
+error_unterminated_object = @{lbrace ~ ANY*}
+error_unterminated_paren = @{lparen ~ ANY*}
+error_unexpected_decorator = @{decorator ~ identifier ~ WHITESPACE* ~ (!WHITESPACE~!eol~ANY)+ | SOI ~ decorator ~ ANY*}
+error_unexpected_postfix =  @{(factorial ~ !"=") ~ ANY*}
+
+WHITESPACE = _{" " | "\t" | "\\\n"}

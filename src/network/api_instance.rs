@@ -1,7 +1,7 @@
 use crate::value::{Value};
-use crate::errors::*;
 use crate::network::utils::*;
 
+use std::collections::HashMap;
 use std::fmt;
 
 /// Represents an instance of an API
@@ -93,28 +93,15 @@ impl ApiInstance {
         &self.key
     }
 
-    /// Add the key header to the supplied list
-    /// 
-    /// # Arguments
-    /// * `key` - API key
-    /// * `headers` - Existing headers
-    fn add_key_header(&self, headers: &[String]) -> Vec<String> {
-        let mut h = headers.to_owned();
-        if let Some(key) = self.key.clone() {
-            h.push(key);
-        }
-        h
-    }
-
     /// Make a request to the API
     /// 
     /// # Arguments
     /// * `endpoint` - Endpoint to call
     /// * `body` - Supply a body for POST, or None for GET
     /// * `headers` - Vec of extra headers to supply to the API
-    pub fn request(&self, endpoint: &str, body: Option<String>, headers: Vec<String>) -> Result<Value, ParserError> {
+    pub fn request(&self, endpoint: &str, body: Option<String>, headers: HashMap<String, String>) -> Result<Value, reqwest::Error> {
         let url = format!("{}/{}", self.base_url(), endpoint);
-        request(&url, body, self.add_key_header(&headers))
+        request(&url, body, headers)
     }
 }
 

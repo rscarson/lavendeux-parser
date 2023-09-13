@@ -1,6 +1,6 @@
 use crate::value::{Value};
-use crate::errors::*;
 
+use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::time::Duration;
 
@@ -8,7 +8,7 @@ use std::time::Duration;
 /// 
 /// # Arguments
 /// * `hostname` - Host to resolve
-pub fn resolve(hostname: &str) -> Result<Value, ParserError> {
+pub fn resolve(hostname: &str) -> Result<Value, std::io::Error> {
     match (hostname, 0).to_socket_addrs() {
         Ok(mut addresses) => {
             let address = addresses.next().unwrap().to_string();
@@ -16,7 +16,7 @@ pub fn resolve(hostname: &str) -> Result<Value, ParserError> {
 
             Ok(Value::String(address.replace(&suffix, "")))
         },
-        Err(e) => Err(ParserError::General(e.to_string()))
+        Err(e) => Err(e)
     }
 }
 
@@ -26,7 +26,7 @@ pub fn resolve(hostname: &str) -> Result<Value, ParserError> {
 /// * `url` - Target URL
 /// * `body` - Body if POST
 /// * `headers` - Array of header=value strings
-pub fn request(url: &str, body: Option<String>, headers: Vec<String>) -> Result<Value, ParserError> {
+pub fn request(url: &str, body: Option<String>, headers: HashMap<String, String>) -> Result<Value, reqwest::Error> {
     match reqwest::blocking::Client::builder().timeout(Duration::from_millis(1500)).build() {
         Ok(client) => {
             let mut request = match body {
@@ -34,24 +34,20 @@ pub fn request(url: &str, body: Option<String>, headers: Vec<String>) -> Result<
                 Some(s) => client.post(url).body(s)
             };
 
-            for header in headers.iter() {
-                let header = header.split('=').map(|e|e.to_string()).collect::<Vec<String>>();
-                if header.len() < 2 { return Err(ParserError::General("malformed header".to_string())); }
-                request = request.header(header[0].clone(), header[1..].join("="));
+            for (header, value) in headers.iter() {
+                request = request.header(header, value);
             }
 
             match request.send() {
                 Ok(res) => {
                     match res.text() {
                         Ok(s) => Ok(Value::String(s)),
-                        Err(e) => Err(ParserError::General(e.to_string()))
+                        Err(e) => Err(e)
                     }
                 },
-                Err(e) => {
-                    Err(ParserError::General(e.to_string()))
-                }
+                Err(e) => Err(e)
             }
         },
-        Err(e) => Err(ParserError::General(e.to_string()))
+        Err(e) => Err(e)
     }
 }

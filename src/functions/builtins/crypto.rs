@@ -12,7 +12,7 @@ const SHA256  : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_plural("input", ExpectedTypes::Any, false)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         use sha2::{Sha256, Digest};
         let input = args.get("input").required().as_string();
 
@@ -32,7 +32,7 @@ const MD5  : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_plural("input", ExpectedTypes::Any, false)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         use md5::{Md5, Digest};
         let input = args.get("input").required().as_string();
 
@@ -51,7 +51,7 @@ const CHOOSE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_plural("option", ExpectedTypes::Any, false)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let mut rng = rand::thread_rng();
         let arg = rng.gen_range(0..args.len());
         Ok(args[arg].clone())
@@ -66,7 +66,7 @@ const RAND : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_optional("m", ExpectedTypes::Int),
         FunctionArgument::new_optional("n", ExpectedTypes::Int)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let mut rng = rand::thread_rng();
         let m = args.get("m").optional_or(Value::Integer(0)).as_int().unwrap_or(0);
         let n = args.get("n").optional_or(Value::Integer(0)).as_int().unwrap_or(0);
@@ -103,7 +103,7 @@ mod test_builtin_table {
     fn test_sha256() {
         let mut state = ParserState::new();
 
-        let result = SHA256.call(&mut state, &[
+        let result = SHA256.call(&Token::dummy(""), &mut state, &[
             Value::String("foobar".to_string())
         ]).unwrap().as_string();
 
@@ -115,7 +115,7 @@ mod test_builtin_table {
     fn test_md5() {
         let mut state = ParserState::new();
 
-        let result = MD5.call(&mut state, &[
+        let result = MD5.call(&Token::dummy(""), &mut state, &[
             Value::String("foobar".to_string())
         ]).unwrap().as_string();
 
@@ -128,7 +128,7 @@ mod test_builtin_table {
 
         let mut result;
         for _ in 0..30 {
-            result = CHOOSE.call(&mut state, &[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
+            result = CHOOSE.call(&Token::dummy(""), &mut state, &[Value::String("test".to_string()), Value::Integer(5)]).unwrap();
             assert_eq!(true, result.is_string() || result == Value::Integer(5).is_int());
         }
     }
@@ -140,17 +140,17 @@ mod test_builtin_table {
         let mut result;
 
         for _ in 0..30 {
-            result = RAND.call(&mut state, &[]).unwrap();
+            result = RAND.call(&Token::dummy(""), &mut state, &[]).unwrap();
             assert_eq!(true, result.as_float().unwrap() >= 0.0 && result.as_float().unwrap() <= 1.0);
         }
 
         for _ in 0..30 {
-            result = RAND.call(&mut state, &[Value::Integer(5)]).unwrap();
+            result = RAND.call(&Token::dummy(""), &mut state, &[Value::Integer(5)]).unwrap();
             assert_eq!(true, result.as_int().unwrap() >= 0 && result.as_int().unwrap() <= 5);
         }
 
         for _ in 0..30 {
-            result = RAND.call(&mut state, &[Value::Integer(5), Value::Integer(10)]).unwrap();
+            result = RAND.call(&Token::dummy(""), &mut state, &[Value::Integer(5), Value::Integer(10)]).unwrap();
             assert_eq!(true, result.as_int().unwrap() >= 5 && result.as_int().unwrap() <= 10);
         }
     }

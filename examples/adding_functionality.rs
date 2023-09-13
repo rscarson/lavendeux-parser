@@ -1,4 +1,4 @@
-use lavendeux_parser::{ParserState, ParserError, Token, Value};
+use lavendeux_parser::{ParserState, Token, Value};
 use lavendeux_parser::{DecoratorDefinition, FunctionDefinition, FunctionArgument};
 use lavendeux_parser::errors::*;
 
@@ -14,7 +14,7 @@ fn main() -> Result<(), ParserError> {
         arguments: || vec![
             FunctionArgument::new_required("input", ExpectedTypes::String),
         ],
-        handler: |_function, _state, args| {
+        handler: |_function, _token, _state, args| {
             Ok(Value::String(args.get("input").required().as_string()))
         }
     });
@@ -24,7 +24,7 @@ fn main() -> Result<(), ParserError> {
         name: &["upper", "uppercase"],
         description: "Outputs an uppercase version of the input",
         argument: ExpectedTypes::Any,
-        handler: |_, input| Ok(input.as_string().to_uppercase())
+        handler: |_, _token, input| Ok(input.as_string().to_uppercase())
     });
     
     // Now we can use the new functions and @decorators

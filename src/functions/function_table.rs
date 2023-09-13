@@ -1,4 +1,4 @@
-use crate::{ParserState, Value};
+use crate::{ParserState, Value, Token};
 use crate::errors::*;
 use std::collections::HashMap;
 
@@ -64,7 +64,9 @@ impl FunctionTable {
 
     /// Get a collection of all included functions
     pub fn all(&self) -> Vec<&FunctionDefinition> {
-        self.0.values().collect()
+        let mut a: Vec<&FunctionDefinition>  = self.0.values().collect();
+        a.sort_by(|f1, f2|f1.name().cmp(f2.name()));
+        a
     }
 
     /// Return all included function categories, sorted in alphabetical order
@@ -78,7 +80,13 @@ impl FunctionTable {
     /// Return all included functions sorted by category
     pub fn all_by_category(&self) -> HashMap<&str, Vec<&FunctionDefinition>> {
         let f: Vec<(&str, Vec<&FunctionDefinition>)> = self.all_categories().iter().map(
-            |c| (*c, self.all().iter().filter(|f| f.category() == *c).copied().collect::<Vec<&FunctionDefinition>>())
+            |c| (*c, 
+                self.all()
+                .iter()
+                .filter(|f| f.category() == *c)
+                .copied()
+                .collect::<Vec<&FunctionDefinition>>()
+            )
         ).collect();
         let m: HashMap<_, _> = f.into_iter().collect();
         m
@@ -89,10 +97,10 @@ impl FunctionTable {
     /// # Arguments
     /// * `name` - Function name
     /// * `args` - Function arguments
-    pub fn call(&self, name: &str, state: &mut ParserState, args: &[Value]) -> Result<Value, ParserError> {
+    pub fn call(&self, name: &str, token: &Token, state: &mut ParserState, args: &[Value]) -> Result<Value, ParserError> {
         match self.0.get(name) {
-            Some(f) => f.call(state, args),
-            None => Err(ParserError::FunctionName(FunctionNameError::new(name)))
+            Some(f) => f.call(token, state, args),
+            None => Err(FunctionNameError::new(token, name).into())
         }
     }
 

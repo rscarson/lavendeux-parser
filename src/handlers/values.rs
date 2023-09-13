@@ -1,7 +1,14 @@
-use crate::token::{Rule, Token, OutputFormat};
-use crate::value::{Value, IntegerType, FloatType};
-use crate::state::ParserState;
-use crate::errors::*;
+use std::collections::HashMap;
+
+use super::RuleHandler;
+use crate::{
+    token::{Rule, Token, OutputFormat},
+    state::ParserState,
+    Value,
+    IntegerType,
+    FloatType,
+    errors::*, value::ObjectType
+};
 
 /// Parse a string as an integer of a given base
 /// 
@@ -18,127 +25,242 @@ fn parse_radix(input: &str, prefix: &[&str], base: u32) -> Result<IntegerType, s
     IntegerType::from_str_radix(&trimmed, base)
 }
 
-pub fn value_handler(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
-    match token.rule() {
-        Rule::hex => {
-            match parse_radix(token.text(), &["0x","0X"], 16) {
-                Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
-            }
-        },
+pub fn handler_table() -> HashMap<Rule, RuleHandler> {
+    HashMap::from([
+        (Rule::atomic_value, rule_atomic_value as RuleHandler),
+        (Rule::object, rule_object as RuleHandler),
+        (Rule::array, rule_array as RuleHandler),
+        (Rule::variable, rule_variable as RuleHandler),
+        (Rule::string, rule_string as RuleHandler),
+        (Rule::int, rule_int as RuleHandler),
+        (Rule::currency, rule_currency as RuleHandler),
+        (Rule::boolean, rule_boolean as RuleHandler),
+        (Rule::float, rule_float as RuleHandler),
+        (Rule::sci, rule_float as RuleHandler),
+        (Rule::oct, rule_oct as RuleHandler),
+        (Rule::bin, rule_bin as RuleHandler),
+        (Rule::hex, rule_hex as RuleHandler),
+        (Rule::index_expression, rule_index_expression as RuleHandler),
+    ])
+}
 
-        Rule::bin => {
-            match parse_radix(token.text(), &["0b","0B"], 2) {
-                Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
-            }
-        },
+/// A single value
+fn rule_atomic_value(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    token.set_value(token.child(0).unwrap().value());
+    if matches!(token.value(), Value::None) {
+        return Some(VariableNameError::new(token, token.text()).into());
+    }
+    None
+}
 
-        Rule::oct => {
-            match parse_radix(token.text(), &["0o","0O"], 8) {
-                Ok(n) => token.set_value(Value::Integer(n)),
-                Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string())))
-            }
-        },
-
-        Rule::sci|Rule::float => match token.text().replace(',', "").parse::<FloatType>() {
-            Ok(n) => token.set_value(Value::Float(n)),
-            Err(e) => return Some(ParserError::ParseFloat(ParseFloatingPointError::new_with_index(Some(token.index()), &e.to_string()))),
-        },
-
-        Rule::boolean => {
-            if token.text().to_lowercase() == *"true" {
-                token.set_value(Value::Boolean(true));
-            } else if token.text().to_lowercase() == *"false" {
-                token.set_value(Value::Boolean(false));
-            }
-        },
-
-        Rule::currency => match token.text().chars().skip(1).take(token.text().len()-1).collect::<String>().replace(',', "").parse::<FloatType>() {
-            Ok(n) => {
-                token.set_value(Value::Float(n));
-                if token.text().starts_with('$') {
-                    token.set_format(OutputFormat::Dollars);
-                } else if token.text().starts_with('€') {
-                    token.set_format(OutputFormat::Euros);
-                } else if token.text().starts_with('£') {
-                    token.set_format(OutputFormat::Pounds);
-                } else if token.text().starts_with('¥') {
-                    token.set_format(OutputFormat::Yen);
-                }
-            },
-            Err(e) => return Some(ParserError::ParseFloat(ParseFloatingPointError::new_with_index(Some(token.index()), &e.to_string()))),
-        },
-
-        Rule::int => match token.text().replace(',', "").parse::<IntegerType>() {
-            Ok(n) => token.set_value(Value::Integer(n)),
-            Err(e) => return Some(ParserError::ParseInt(ParseIntegerError::new_with_index(Some(token.index()), &e.to_string()))),
-        },
-
-        Rule::string => {
-            // Remove the first and last characters - the quotes around our string
-            // This would not work great with graphemes like é, but we know that it's
-            // either ' or " so this should be safe
-            let mut c = token.text().chars();
-            c.next();
-            c.next_back();
-
-            // Now we split along our \\ backslash escapes, and rejoin after
-            // to prevent going over them twice. This method isn't super
-            // neat, there's likely a better way
-            let string = c.as_str().split("\\\\").map(|s|s
-                .replace("\\'", "\'")
-                .replace("\\\"", "\"")
-                .replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t"))
-            .collect::<Vec<String>>().join("\\");
-
-            token.set_value(Value::String(string));
-        },
-
-        Rule::identifier => {
-            if let Some(v) = state.constants.get(token.text()) {
-                token.set_value(v.clone());
-            } else if let Some(v) = state.variables.get(token.text()) {
-                token.set_value(v.clone());
-            } else {
-                token.set_value(Value::Identifier(token.text().to_string()));
-            }
-            match state.constants.get(token.text()) {
-                Some(v) => token.set_value(v.clone()),
-                None => if let Some(v) = state.variables.get(token.text()) {
-                    token.set_value(v.clone());
-                }
-            }
-        },
-
-        Rule::array => {
-            let child_container = token.child(1).unwrap().clone();
-            if matches!(child_container.rule(), Rule::expression_list) {
-                token.set_value(Value::Array(
-                    child_container.children().iter()
-                    .filter(|e| !matches!(e.rule(), Rule::comma))
-                    .map(|e| e.value())
-                    .collect::<Vec<Value>>()
-                ));
-            } else if matches!(child_container.rule(), Rule::rbracket)  {
-                token.set_value(Value::Array(vec![]));
-            } else  {
-                token.set_value(Value::Array(vec![child_container.value()]));
-            }
-        },
-        
-        Rule::atomic_value => {
-            token.set_value(token.child(0).unwrap().value());
-            if matches!(token.value(), Value::None) {
-                return Some(ParserError::VariableName(VariableNameError::new(token.text())));
-            }
-        },
-
-        _ => { }
+/// Array value
+/// [5,2,'test']
+fn rule_array(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    let child_container = token.child(1).unwrap().clone();
+    if matches!(child_container.rule(), Rule::expression_list) {
+        token.set_value(Value::Array(
+            child_container.children().iter()
+            .filter(|e| !matches!(e.rule(), Rule::comma))
+            .map(|e| e.value())
+            .collect::<Vec<Value>>()
+        ));
+    } else if matches!(child_container.rule(), Rule::rbracket)  {
+        token.set_value(Value::Array(vec![]));
+    } else  {
+        token.set_value(Value::Array(vec![child_container.value()]));
     }
 
+    None
+}
+
+/// Object value
+/// ['test': 1, 3: 5]
+fn rule_object(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    let child_container = token.child(1).unwrap().clone();
+    if matches!(child_container.rule(), Rule::property_list) {
+        let mut object = ObjectType::new();
+        let mut buffer : Vec<Value> = vec![];
+        for child in child_container.children() {
+            if child.text() == "," {
+                object.insert(buffer[0].clone(), buffer[1].clone());
+                buffer.clear();
+            } else {
+                buffer.push(child.value());
+            }
+        }
+
+        if !buffer.is_empty() {
+            object.insert(buffer[0].clone(), buffer[1].clone());
+        }
+
+        token.set_value(Value::Object(object));
+    } else if matches!(child_container.rule(), Rule::rbrace)  {
+        token.set_value(Value::Object(HashMap::new()));
+    }
+
+    None
+}
+
+/// An identifier
+/// x
+/// pi
+fn rule_variable(token: &mut Token, state: &mut ParserState) -> Option<ParserError> {
+    if let Some(v) = state.constants.get(token.text()) {
+        token.set_value(v.clone());
+    } else if let Some(v) = state.variables.get(token.text()) {
+        token.set_value(v.clone());
+    } else {
+        token.set_value(Value::Identifier(token.text().to_string()));
+    }
+
+    None
+}
+
+/// String value
+/// "test"
+/// 'test\n'
+fn rule_string(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    // Remove the first and last characters - the quotes around our string
+    // This would not work great with graphemes like é, but we know that it's
+    // either ' or " so this should be safe
+    let mut c = token.text().chars();
+    c.next();
+    c.next_back();
+
+    // Now we split along our \\ backslash escapes, and rejoin after
+    // to prevent going over them twice. This method isn't super
+    // neat, there's likely a better way
+    let string = c.as_str().split("\\\\").map(|s|s
+        .replace("\\'", "\'")
+        .replace("\\\"", "\"")
+        .replace("\\n", "\n")
+        .replace("\\r", "\r")
+        .replace("\\t", "\t"))
+    .collect::<Vec<String>>().join("\\");
+
+    token.set_value(Value::String(string));
+    None
+}
+
+/// Integer value
+/// 10
+/// 10,000
+fn rule_int(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    match token.text().replace(',', "").parse::<IntegerType>() {
+        Ok(n) => token.set_value(Value::Integer(n)),
+        Err(e) => return Some(ParseValueError::new(token, &e.to_string(), ExpectedTypes::Int).into()),
+    }
+    None
+}
+
+/// Currency value
+/// <symbol><float>
+fn rule_currency(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    for child in token.clone().children() {
+        if child.rule() == Rule::currency_symbol {
+            token.set_format(match child.text() {
+                "$" => OutputFormat::Dollars,
+                "€" => OutputFormat::Euros,
+                "£" => OutputFormat::Pounds,
+                "¥" => OutputFormat::Yen,
+                &_ => return Some(InternalError::new(token).into())
+            });
+        } else {
+            token.set_value(child.value());
+        }
+    }
+
+    None
+}
+
+/// Boolean value
+/// true
+/// false
+fn rule_boolean(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    if token.text().to_lowercase() == *"true" {
+        token.set_value(Value::Boolean(true));
+    } else if token.text().to_lowercase() == *"false" {
+        token.set_value(Value::Boolean(false));
+    }
+    None
+}
+
+/// Floating point value
+/// 8.3
+/// 8.3e-10
+fn rule_float(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    match token.text().replace(',', "").parse::<FloatType>() {
+        Ok(n) => token.set_value(Value::Float(n)),
+        Err(e) => return Some(ParseValueError::new(token, &e.to_string(), ExpectedTypes::Float).into()),
+    }
+    None
+}
+
+/// Base 8 value
+/// 0x77
+fn rule_oct(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    match parse_radix(token.text(), &["0o","0O"], 8) {
+        Ok(n) => token.set_value(Value::Integer(n)),
+        Err(e) => return Some(ParseValueError::new(token, &e.to_string(), ExpectedTypes::Int).into())
+    }
+    None
+}
+
+/// Base 2 value
+/// 0b11
+fn rule_bin(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    match parse_radix(token.text(), &["0b","0B"], 2) {
+        Ok(n) => token.set_value(Value::Integer(n)),
+        Err(e) => return Some(ParseValueError::new(token, &e.to_string(), ExpectedTypes::Int).into())
+    }
+    None
+}
+
+/// Base 16 value
+/// 0xFF
+fn rule_hex(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    match parse_radix(token.text(), &["0x","0X"], 16) {
+        Ok(n) => token.set_value(Value::Integer(n)),
+        Err(e) => return Some(ParseValueError::new(token, &e.to_string(), ExpectedTypes::Int).into())
+    }
+    None
+}
+
+/// indexing operator
+/// x[5]
+fn rule_index_expression(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
+    let mut source = token.child(0).unwrap().value();
+    for child in token.children().iter().skip(2) {
+        if child.rule() == Rule::lbracket || child.rule() == Rule::rbracket {
+            continue;
+        }
+
+        let index = child.value();
+        match source {
+            Value::Object(v) => {
+                match v.get(&index) {
+                    Some(v) => source = v.clone(),
+                    None => return Some(ObjectKeyError::new(token, &index.as_string()).into())
+                }
+            },
+    
+            _ => {
+                match index.as_int() {
+                    Some(i) => {
+                        let array = source.as_array();
+                        if i as usize >= array.len() || i < 0 {
+                            return Some(ArrayIndexError::new(token, i as usize).into());
+                        }
+    
+                        source = array[i as usize].clone();
+                    },
+                    None => return Some(ValueTypeError::new(token, ExpectedTypes::Int).into())
+                }
+            }
+        }
+    }
+    
+    token.set_value(source);
     None
 }
 
@@ -206,9 +328,9 @@ mod test_token {
         let mut state = ParserState::new();
         assert_eq!(Value::Float(10000.0), Token::new("$10,000.00", &mut state).unwrap().value());
         assert_eq!(Value::Float(1.0), Token::new("$1.0", &mut state).unwrap().value());
-        assert_eq!(Value::Float(1.0), Token::new("£1", &mut state).unwrap().value());
-        assert_eq!(Value::Float(1.0), Token::new("€1", &mut state).unwrap().value());
-        assert_eq!(Value::Float(1.0), Token::new("¥1", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("£1", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("€1", &mut state).unwrap().value());
+        assert_eq!(Value::Integer(1), Token::new("¥1", &mut state).unwrap().value());
     }
 
     #[test]
@@ -246,7 +368,7 @@ mod test_token {
         let mut state = ParserState::new();
         Token::new("x=4", &mut state).unwrap();
         assert_eq!(Value::Integer(4), Token::new("x", &mut state).unwrap().value());
-        assert_eq!(Value::Identifier("y".to_string()), Token::new("y", &mut state).unwrap().value());
+        assert_eq!(true, Token::new("y + 1", &mut state).is_err());
     }
 
     #[test]
@@ -262,5 +384,15 @@ mod test_token {
         ]), Token::new("[5]", &mut state).unwrap().value());
         assert_eq!(Value::Array(vec![
         ]), Token::new("[]", &mut state).unwrap().value());
+    }
+
+    #[test]
+    fn test_rule_index_expression() {
+        let mut state = ParserState::new();
+        Token::new("array = [1,2,3]", &mut state).unwrap();
+        assert_eq!(Value::Integer(3), Token::new("array[2]", &mut state).unwrap().value());
+        assert_eq!(true, Token::new("array[-1]", &mut state).is_err());
+        assert_eq!(true, Token::new("array['test']", &mut state).is_err());
+        assert_eq!(true, Token::new("array[3]", &mut state).is_err());
     }
 }

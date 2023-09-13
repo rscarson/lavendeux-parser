@@ -15,7 +15,7 @@ const TIME : FunctionDefinition = FunctionDefinition {
     category: None,
     description: "Returns a unix timestamp for the current system time",
     arguments: Vec::new,
-    handler: |_function, _state, _args| {
+    handler: |_function, _token, _state, _args| {
         match SystemTime::now().duration_since(UNIX_EPOCH) {
             Ok(n) => Ok(Value::Integer(n.as_secs() as IntegerType)),
             Err(_) => Ok(Value::Integer(0))
@@ -32,32 +32,60 @@ const TAIL : FunctionDefinition = FunctionDefinition {
         FunctionArgument::new_required("filename", ExpectedTypes::String),
         FunctionArgument::new_optional("lines", ExpectedTypes::Int),
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
+        let mut lines : Vec<String> = Vec::new();
         let n_lines: IntegerType = args.get("lines").optional_or(Value::Integer(DEFAULT_TAIL_LINES))
             .as_int().unwrap_or(DEFAULT_TAIL_LINES);
 
-        let f = File::open(args.get("filename").required().as_string())?;
-        let mut lines : Vec<String> = Vec::new();
-        for line in BufReader::new(f).lines() {
-            lines.push(line?);
-            if lines.len() as IntegerType > n_lines {
-                lines.remove(0);
-            }
+        match File::open(args.get("filename").required().as_string()) {
+            Ok(f) => {
+                for result in BufReader::new(f).lines() {
+                    match result {
+                        Ok(line) => {
+                            lines.push(line);
+                            if lines.len() as IntegerType > n_lines {
+                                lines.remove(0);
+                            }
+                        },
+                        Err(e) => return Err(IOError::new(token, &e.to_string()).into())
+                    }
+                }
+            },
+            Err(e) => return Err(IOError::new(token, &e.to_string()).into())
         }
 
         Ok(Value::String(lines.join("\n")))
     }
 };
 
+const PRETTYJSON : FunctionDefinition = FunctionDefinition {
+    name: "prettyjson",
+    category: None,
+    description: "Beautify a JSON input string",
+    arguments: || vec![
+        FunctionArgument::new_required("input", ExpectedTypes::String)
+    ],
+    handler: |_function, token, _state, args| {
+        let input = args.get("input").required().as_string();
+        match serde_json::from_str::<serde_json::Value>(&input) {
+            Ok(json) => match serde_json::to_string_pretty(&json) {
+                Ok(output) => Ok(Value::String(output)),
+                Err(e) => Err(ParsingError::new(token, "JSON", &e.to_string()).into())
+            },
+            Err(e) => Err(ParsingError::new(token, "JSON", &e.to_string()).into())
+        }
+    }
+};
+
 #[cfg(feature = "encoding-functions")]
-const URLENCODE  : FunctionDefinition = FunctionDefinition {
+const URLENCODE : FunctionDefinition = FunctionDefinition {
     name: "urlencode",
     category: None,
     description: "Escape characters in a string for use in a URL",
     arguments: || vec![
         FunctionArgument::new_required("input", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let input = args.get("input").required().as_string();
         Ok(Value::String(urlencoding::encode(&input).into_owned()))
     }
@@ -71,11 +99,11 @@ const URLDECODE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("input", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let input = args.get("input").required().as_string();
         match urlencoding::decode(&input) {
             Ok(s) => Ok(Value::String(s.into_owned())),
-            Err(_) => Err(ParserError::General("Value was not a valid urlencoded string".to_string()))
+            Err(e) => Err(ParsingError::new(token, "url", &e.to_string()).into())
         }
     }
 };
@@ -88,7 +116,7 @@ const BASE64ENCODE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("input", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let input = args.get("input").required().as_string();
         let mut buf = String::new();
         general_purpose::STANDARD.encode_string(&input, &mut buf);
@@ -104,15 +132,17 @@ const BASE64DECODE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("input", ExpectedTypes::String)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let input = args.get("input").required().as_string();
-        if let Ok(bytes) = general_purpose::STANDARD.decode(input) {
-            if let Ok(s) = std::str::from_utf8(&bytes) {
-                return Ok(Value::String(s.to_string()))
-            }
+        match general_purpose::STANDARD.decode(input) {
+            Ok(bytes) => {
+                match std::str::from_utf8(&bytes) {
+                    Ok(s) => Ok(Value::String(s.to_string())),
+                    Err(e) => Err(ParsingError::new(token, "base64", &e.to_string()).into())
+                }
+            },
+            Err(e) => Err(ParsingError::new(token, "base64", &e.to_string()).into())
         }
-
-        Err(ParserError::General("Value was not a valid base64 string".to_string()))
     }
 };
 
@@ -120,6 +150,7 @@ const BASE64DECODE : FunctionDefinition = FunctionDefinition {
 pub fn register_functions(table: &mut FunctionTable) {
     table.register(TIME);
     table.register(TAIL);
+    table.register(PRETTYJSON);
     table.register(URLDECODE);
     table.register(URLENCODE);
     table.register(BASE64DECODE);
@@ -135,7 +166,7 @@ mod test_builtin_table {
     fn test_time() {
         let mut state = ParserState::new();
 
-        let result = TIME.call(&mut state, &[]).unwrap();
+        let result = TIME.call(&Token::dummy(""), &mut state, &[]).unwrap();
         assert_eq!(true, result.as_int().unwrap() > WAS_NOW);
     }
     
@@ -143,8 +174,16 @@ mod test_builtin_table {
     fn test_tail() {
         let mut state = ParserState::new();
 
-        let result = TAIL.call(&mut state, &[Value::String("README.md".to_string()), Value::Integer(5)]).unwrap();
+        let result = TAIL.call(&Token::dummy(""), &mut state, &[Value::String("README.md".to_string()), Value::Integer(5)]).unwrap();
         assert_eq!(4, result.as_string().matches("\n").count());
+    }
+    
+    #[test]
+    fn test_prettyjson() {
+        let mut state = ParserState::new();
+
+        let result = PRETTYJSON.call(&Token::dummy(""), &mut state, &[Value::String("{\"test\":[1,2,3,[1,{\"2\": 3}]]}".to_string())]).unwrap();
+        assert_eq!("{\n  \"test\": [\n    1,\n    2,\n    3,\n    [\n      1,\n      {\n        \"2\": 3\n      }\n    ]\n  ]\n}", result.as_string());
     }
     
     #[cfg(feature = "encoding-functions")]
@@ -152,10 +191,10 @@ mod test_builtin_table {
     fn test_urlencode_decode() {
         let mut state = ParserState::new();
 
-        let result = URLENCODE.call(&mut state, &[Value::String("TES % T =".to_string())]).unwrap();
+        let result = URLENCODE.call(&Token::dummy(""), &mut state, &[Value::String("TES % T =".to_string())]).unwrap();
         assert_eq!("TES%20%25%20T%20%3D", result.as_string());
 
-        let result = URLDECODE.call(&mut state, &[Value::String("TES%20%25%20T%20%3D".to_string())]).unwrap();
+        let result = URLDECODE.call(&Token::dummy(""), &mut state, &[Value::String("TES%20%25%20T%20%3D".to_string())]).unwrap();
         assert_eq!("TES % T =", result.as_string());
     }
     
@@ -164,10 +203,10 @@ mod test_builtin_table {
     fn test_base64encode_decode() {
         let mut state = ParserState::new();
 
-        let result = BASE64ENCODE.call(&mut state, &[Value::String("TES % T =".to_string())]).unwrap();
+        let result = BASE64ENCODE.call(&Token::dummy(""), &mut state, &[Value::String("TES % T =".to_string())]).unwrap();
         assert_eq!("VEVTICUgVCA9", result.as_string());
 
-        let result = BASE64DECODE.call(&mut state, &[Value::String("VEVTICUgVCA9".to_string())]).unwrap();
+        let result = BASE64DECODE.call(&Token::dummy(""), &mut state, &[Value::String("VEVTICUgVCA9".to_string())]).unwrap();
         assert_eq!("TES % T =", result.as_string());
     }
 }

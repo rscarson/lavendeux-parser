@@ -20,7 +20,7 @@ mod trig_fn_macro {
                 arguments: || vec![
                     FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
                 ],
-                handler: |_function, _state, args| builtin_trig(FloatType::$b, args)
+                handler: |_function, _token, _state, args| builtin_trig(FloatType::$b, args)
             };
         };
     }
@@ -45,7 +45,7 @@ const TO_RADIANS : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let n = args.get("n").required().as_float().unwrap();
         Ok(Value::Float(n * (std::f64::consts::PI / 180.0)))
     }
@@ -58,7 +58,7 @@ const TO_DEGREES : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         let n = args.get("n").required().as_float().unwrap();
         Ok(Value::Float(n * 180.0 / std::f64::consts::PI))
     }
@@ -94,8 +94,8 @@ mod test_builtin_functions {
                 #[test]
                 fn $test_name() {
                     let mut state = ParserState::new();
-                    let vr1 = $test_fn.call(&mut state, &[Value::Float($vr1)]).unwrap().as_float().unwrap();
-                    let vr2 = $test_fn.call(&mut state, &[Value::Float($vr2)]).unwrap().as_float().unwrap();
+                    let vr1 = $test_fn.call(&Token::dummy(""), &mut state, &[Value::Float($vr1)]).unwrap().as_float().unwrap();
+                    let vr2 = $test_fn.call(&Token::dummy(""), &mut state, &[Value::Float($vr2)]).unwrap().as_float().unwrap();
     
                     assert_eq!(Value::Float($vl1), (100.0 * vr1).floor() / 100.0);
                     assert_eq!(Value::Float($vl2), (100.0 * vr2).floor() / 100.0);
@@ -108,16 +108,16 @@ mod test_builtin_functions {
     fn test_to_radians() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(std::f64::consts::PI), TO_RADIANS.call(&mut state, &[Value::Integer(180)]).unwrap());
-        assert_eq!(Value::Float(4.0 * std::f64::consts::PI), TO_RADIANS.call(&mut state, &[Value::Integer(720)]).unwrap());
+        assert_eq!(Value::Float(std::f64::consts::PI), TO_RADIANS.call(&Token::dummy(""), &mut state, &[Value::Integer(180)]).unwrap());
+        assert_eq!(Value::Float(4.0 * std::f64::consts::PI), TO_RADIANS.call(&Token::dummy(""), &mut state, &[Value::Integer(720)]).unwrap());
     }
         
     #[test]
     fn test_to_degrees() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(180.0), TO_DEGREES.call(&mut state, &[Value::Float(std::f64::consts::PI)]).unwrap());
-        assert_eq!(Value::Float(90.0), TO_DEGREES.call(&mut state, &[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
+        assert_eq!(Value::Float(180.0), TO_DEGREES.call(&Token::dummy(""), &mut state, &[Value::Float(std::f64::consts::PI)]).unwrap());
+        assert_eq!(Value::Float(90.0), TO_DEGREES.call(&Token::dummy(""), &mut state, &[Value::Float(std::f64::consts::PI / 2.0)]).unwrap());
     }
 
     trig_test_fn!(test_tan, TAN, 

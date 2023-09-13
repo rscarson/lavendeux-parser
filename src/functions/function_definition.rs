@@ -1,4 +1,4 @@
-use crate::{ParserState, Value};
+use crate::{ParserState, Value, Token};
 use crate::errors::*;
 use super::{FunctionArgument, FunctionArgumentCollection, FunctionHandler};
 
@@ -57,7 +57,7 @@ impl FunctionDefinition {
     /// 
     /// # Arguments
     /// * `args` - Function arguments
-    pub fn collect(&self, args: &[Value]) -> Result<FunctionArgumentCollection, ParserError> {
+    pub fn collect(&self, token: &Token, args: &[Value]) -> Result<FunctionArgumentCollection, ParserError> {
         let optional_arguments = self.args().iter().filter(|e| e.optional()).count();
         let plural_arguments = self.args().iter().filter(|e| e.plural()).count();
         let max_arguments = self.args().len();
@@ -65,18 +65,14 @@ impl FunctionDefinition {
 
         // Prevent ambiguities resulting from plural args
         if plural_arguments > 1 {
-            return Err(ParserError::General(
-                format!("Ambiguous function arguments in function {}: Can only support one plural argument", self.name())
-            ));
+            return Err(AmbiguousFunctionError::new(token, self.name(), "only one plural argument allowed in a function").into());
         } else if plural_arguments == 1 && !self.args().last().unwrap().plural() {
-            return Err(ParserError::General(
-                format!("Ambiguous function arguments in function {}: Plural argument must be the last function argument", self.name())
-            ));
+            return Err(AmbiguousFunctionError::new(token, self.name(), "plural argument must be the last function argument").into());
         }
 
         // Argument count
         if args.len() < min_arguments || (plural_arguments == 0 && args.len() > max_arguments) {
-            return Err(ParserError::FunctionNArg(FunctionNArgError::new(&self.signature(), min_arguments, max_arguments)))
+            return Err(FunctionNArgsError::new(token, &self.signature(), min_arguments, max_arguments).into())
         }
 
         // Collect argument values
@@ -92,11 +88,12 @@ impl FunctionDefinition {
                 if arg.validate_value(&value) {
                     argument_collection.add(arg.name().to_string(), value.clone());
                 } else {
-                    return Err(ParserError::FunctionArgType(FunctionArgTypeError::new(
+                    return Err(FunctionArgTypeError::new(
+                        token,
                         &self.signature(), 
                         args_consumed+1, 
                         arg.expected().clone()
-                    )));
+                    ).into());
                 }
             }
         }
@@ -108,9 +105,9 @@ impl FunctionDefinition {
     /// 
     /// # Arguments
     /// * `args` - Function arguments
-    pub fn call(&self, state: &mut ParserState, args: &[Value]) -> Result<Value, ParserError> {
-        match self.collect(args) {
-            Ok(a) => (self.handler)(self, state, a),
+    pub fn call(&self, token: &Token, state: &mut ParserState, args: &[Value]) -> Result<Value, ParserError> {
+        match self.collect(token, args) {
+            Ok(a) => (self.handler)(self, token, state, a),
             Err(e) => Err(e)
         }
     }

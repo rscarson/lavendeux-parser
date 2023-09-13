@@ -62,7 +62,7 @@
 //!     name: &["upper", "uppercase"],
 //!     description: "Outputs an uppercase version of the input",
 //!     argument: ExpectedTypes::Any,
-//!     handler: |_, input| Ok(input.as_string().to_uppercase())
+//!     handler: |_, _token, input| Ok(input.as_string().to_uppercase())
 //! });
 //! 
 //! // Functions take in an array of values, and return a single value
@@ -73,7 +73,7 @@
 //!     arguments: || vec![
 //!         FunctionArgument::new_required("input", ExpectedTypes::String),
 //!     ],
-//!     handler: |_function, _state, args| {
+//!     handler: |_function, _token, _state, args| {
 //!         Ok(Value::String(args.get("input").required().as_string()))
 //!     }
 //! });
@@ -155,7 +155,7 @@
 //!     let mut state : ParserState = ParserState::new();
 //! 
 //!     // Load one extension
-//!     state.extensions.load("example_extensions/colour_utils.js")?;
+//!     state.extensions.load("example_extensions/colour_utils.js");
 //! 
 //!     // Load a whole directory - this will return a vec of Extension/Error results
 //!     state.extensions.load_all("./example_extensions");
@@ -191,10 +191,16 @@
 //! // Strings are also supported
 //! concat("foo", "bar")
 //! 
-//! // Arrays can be composed of any combination of types
-//! [10, 12] + [1.2, 1.3]
+//! [1, 2, "test"] // Arrays can be composed of any combination of types
+//! [10, 12] + [1.2, 1.3] // Operations can be performed between arrays of the same size
 //! 2 * [10, 5] // Operations can also be applied between scalar values and arrays
 //! [false, 0, true] == true // An array evaluates to true if any element is true
+//! a = [1, 2, "test"]
+//! a[1] // You can use indexing on array elements
+//! 
+//! // Objects are also supported:
+//! b = {3: "test", "plumbus": true}
+//! b["plumbus"]
 //! ```
 //! 
 //! Beyond the simpler operators, the following operations are supported:
@@ -356,10 +362,14 @@
 #![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.9.0")]
 #![warn(missing_docs)]
 
+mod help;
 mod handlers;
 mod token;
 mod value;
 mod state;
+
+#[macro_use]
+pub mod test;
 
 mod network;
 pub use network::*;
@@ -382,6 +392,7 @@ pub use errors::ParserError;
 pub use token::Token;
 pub use state::ParserState;
 pub use value::Value;
+pub use value::ArrayType;
 pub use value::IntegerType;
 pub use value::FloatType;
 

@@ -12,6 +12,8 @@ be extended easily at runtime through extensions written in javascript.
 Extensions are run in a sandboxed environment with no host or network access.
 This project is the engine behind [Lavendeux](https://rscarson.github.io/lavendeux/).
 
+Try it out using ```cargo run --example interactive_console```
+
 ### Getting Started
 To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 ```rust
@@ -243,6 +245,7 @@ factorial(5)
 Decorators can be put at the end of a line to change the output format. Valid decorators include:
 ```
 255 @hex // The result will be 0xFF
+1647950086 @utc // 2022-03-22 11:54:46
 8 @oct // The result will be 0o10
 5 @float // The result will be 5.0
 5 @usd // Also works with @dollars @cad, @aud, @yen, @pounds, or @euros

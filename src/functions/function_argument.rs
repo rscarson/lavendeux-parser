@@ -60,6 +60,7 @@ impl FunctionArgument {
             ExpectedTypes::String => true, 
             ExpectedTypes::Boolean => true, 
             ExpectedTypes::Array => true, 
+            ExpectedTypes::Object => true, 
             ExpectedTypes::Any => true
         }
     }

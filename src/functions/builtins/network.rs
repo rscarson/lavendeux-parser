@@ -1,7 +1,8 @@
 //! Builtin functions for network OPs
-
 use super::*;
-use crate::network::*;
+use crate::{network::*, value::ObjectType};
+
+use std::collections::HashMap;
 
 const RESOLVE : FunctionDefinition = FunctionDefinition {
     name: "resolve",
@@ -10,9 +11,12 @@ const RESOLVE : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("hostname", ExpectedTypes::String),
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let hostname = args.get("hostname").required().as_string();
-        resolve(&hostname)
+        match resolve(&hostname) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(IOError::new(token, &e.to_string()).into())
+        }
     }
 };
 
@@ -22,12 +26,22 @@ const GET : FunctionDefinition = FunctionDefinition {
     description: "Return the resulting text-format body of an HTTP GET call",
     arguments: || vec![
         FunctionArgument::new_required("url", ExpectedTypes::String),
-        FunctionArgument::new_plural("headers", ExpectedTypes::String, true)
+        FunctionArgument::new_optional("headers", ExpectedTypes::Object)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let url = args.get("url").required().as_string();
-        let headers = args.get("headers").plural().iter().map(|v| v.as_string()).collect();
-        request(&url, None, headers)
+        let arg_headers = match args.get("headers").optional() {
+            Some(v) => v.as_object(),
+            None => ObjectType::new()
+        };
+        let headers = HashMap::from_iter(
+            arg_headers.iter().map(|(k,v)| (k.to_string(), v.to_string()))
+        );
+
+        match request(&url, None, headers) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(NetworkError::from_reqwesterror(token, e).into())
+        }
     }
 };
 
@@ -38,13 +52,23 @@ const POST : FunctionDefinition = FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("url", ExpectedTypes::String),
         FunctionArgument::new_required("body", ExpectedTypes::String),
-        FunctionArgument::new_plural("header-name=value", ExpectedTypes::String, true)
+        FunctionArgument::new_optional("headers", ExpectedTypes::Object)
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, token, _state, args| {
         let url = args.get("url").required().as_string();
         let body = args.get("body").required().as_string();
-        let headers = args.get("headers").plural().iter().map(|v| v.as_string()).collect();
-        request(&url, Some(body), headers) // Once told me
+        let arg_headers = match args.get("headers").optional() {
+            Some(v) => v.as_object(),
+            None => ObjectType::new()
+        };
+        let headers = HashMap::from_iter(
+            arg_headers.iter().map(|(k,v)| (k.to_string(), v.to_string()))
+        );
+
+        match request(&url, Some(body), headers) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(NetworkError::from_reqwesterror(token, e).into())
+        }
     }
 };
 
@@ -64,14 +88,14 @@ mod test_builtin_table {
             test(), test(), test(), test(), test()
         ];
         assert_eq!(true, results.iter().filter(|r| r.is_ok()).count() > 0);
-        return results.iter().filter(|r| r.is_ok()).next().unwrap().clone().unwrap();
+        return results.iter().filter(|r| r.is_ok()).next().unwrap().as_ref().unwrap().clone()
     }
     
     #[test]
     fn test_get() {
         assert_eq!(true, hardy_net_test(|| {
             let mut state = ParserState::new();
-            return GET.call(&mut state, &[Value::String("https://google.com".to_string()), Value::String("authorization=5".to_string())]);
+            return GET.call(&Token::dummy(""), &mut state, &[Value::String("https://google.com".to_string()), Value::String("authorization=5".to_string())]);
         }).as_string().to_lowercase().starts_with("<!doctype"));
     }
     
@@ -79,7 +103,7 @@ mod test_builtin_table {
     fn test_post() {
         assert_eq!(true, hardy_net_test(|| {
             let mut state = ParserState::new();
-            return POST.call(&mut state,  &[Value::String("https://google.com".to_string()), Value::String("body".to_string())]);
+            return POST.call(&Token::dummy(""), &mut state,  &[Value::String("https://google.com".to_string()), Value::String("body".to_string())]);
         }).as_string().to_lowercase().starts_with("<!doctype"));
     }
     
@@ -87,7 +111,7 @@ mod test_builtin_table {
     fn test_resolve() {
         let mut state = ParserState::new();
 
-        let result = RESOLVE.call(&mut state, 
+        let result = RESOLVE.call(&Token::dummy(""), &mut state, 
             &[Value::String("localhost".to_string())]).unwrap().as_string();
         assert_eq!(true, result == "127.0.0.1" || result == "[::1]");
     }
