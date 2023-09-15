@@ -259,20 +259,20 @@
 //! Operators
 //! =========
 //! Bitwise: AND (0xF & 0xA), OR (0xA | 0xF), XOR (0xA ^ 0xF), NOT (~0xA), SHIFT (0xF >> 1, 0xA << 1)
-//!    Boolean: AND (true && false), OR (true || false), CMP (1 < 2, 4 >= 5), EQ (1 == 1, 2 != 5)
-//!    Arithmetic: Add/Sub (+, -), Mul/Div (*, /), Exponentiation (**), Modulo (%), Implied Mul ((5)(5), 5x)
+//! Boolean: AND (true && false), OR (true || false), CMP (1 < 2, 4 >= 5), EQ (1 == 1, 2 != 5)
+//! Arithmetic: Add/Sub (+, -), Mul/Div (*, /), Exponentiation (**), Modulo (%), Implied Mul ((5)(5), 5x)
 //! Unary: Factorial (5!!), Negation (-1, -(1+1))
 //! 
 //! Data Types
 //! ==========
 //! String: Text delimited by 'quotes' or "double-quotes"
-//!   Boolean: A truth value (true or false)
-//!  Integer: A whole number. Can also be base2 (0b111), base8 (0o777), or base16 (0xFF)
-//!  Float: A decimal number. Can also be in scientific notation(5.3e+4, 4E-2)
-//!    Currency: A decimal number - does not apply any exhange rates ($5.00)
+//! Boolean: A truth value (true or false)
+//! Integer: A whole number. Can also be base2 (0b111), base8 (0o777), or base16 (0xFF)
+//! Float: A decimal number. Can also be in scientific notation(5.3e+4, 4E-2)
+//! Currency: A decimal number - does not apply any exhange rates ($5.00)
 //! Array: A comma separated list of values in square brackets; [1, 'test']
-//!    Object: A comma separated list of key/value pairs in curly braces; {'test': 5}
-//!   Variable: An identifier representing a value. Set it with x=5, then use it in an expression (5x)
+//! Object: A comma separated list of key/value pairs in curly braces; {'test': 5}
+//! Variable: An identifier representing a value. Set it with x=5, then use it in an expression (5x)
 //! Contant: A preset read-only variable representing a common value, such as pi, e, and tau
 //! 
 //! Misc Functions
