@@ -151,15 +151,15 @@ mod test_token {
         let mut state = ParserState::new();
 
         assert_eq!(Value::Boolean(false), RUN.call(&Token::dummy(""), &mut state, &[
-            Value::String("contains(help(), 'factorial(')".to_string())
+            Value::String("contains(help(), 'foobar(')".to_string())
         ]).unwrap());
 
         assert_eq!(Value::String("0".to_string()), RUN.call(&Token::dummy(""), &mut state, &[
-            Value::String("factorial(x) = 0".to_string())
+            Value::String("foobar(x) = 0".to_string())
         ]).unwrap());
 
         assert_eq!(Value::Boolean(true), RUN.call(&Token::dummy(""), &mut state, &[
-            Value::String("contains(help(), 'factorial(')".to_string())
+            Value::String("contains(help(), 'foobar(')".to_string())
         ]).unwrap());
     }
 

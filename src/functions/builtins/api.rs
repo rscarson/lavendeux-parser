@@ -1,5 +1,5 @@
 //! Builtin functions for API manipulation
-use crate::{ApiInstance, Value};
+use crate::{network::ApiInstance, Value};
 use super::*;
 
 use std::collections::HashMap;

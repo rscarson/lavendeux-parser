@@ -1,4 +1,4 @@
-use crate::value::{Value};
+use crate::value::Value;
 use crate::network::utils::*;
 
 use std::collections::HashMap;

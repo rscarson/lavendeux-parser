@@ -118,7 +118,7 @@ impl std::hash::Hash for Value {
             Value::Array(a) => a.hash(state),
             Value::Object(o) => {
                 let mut v: Vec<(&Value, &Value)> = o.iter().collect();
-                v.sort_by_key(|(k, _)| k.clone());
+                v.sort_by_key(|(k, _)| (*k).clone());
                 v.hash(state);
             }
         }

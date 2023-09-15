@@ -161,7 +161,10 @@ impl Extension {
             Ok(s) => {
                 match script_from_string(filename, &s) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("{}: {}", filename, e.to_string())))
+                    Err(e) => Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData, 
+                        e.to_string().replace("sandboxed.js", filename)
+                    ))
                 }
             },
             Err(e) => Err(e)
@@ -336,7 +339,7 @@ impl Extension {
     where T: serde::de::DeserializeOwned, A: js_sandbox::CallArgs {
         match script.call::<A, T>(function, args) {
             Ok(r) => Ok(r),
-            Err(e) => Err(ScriptError::from_jserror(token, self.filename(), e).into())
+            Err(e) => Err(ScriptError::from_jserror(token, &format!("{}:{}", self.filename(), function), e).into())
         }
     }
 } 
@@ -355,7 +358,10 @@ fn script_from_string(filename: &str, code: &str) -> Result<Extension, JsError> 
 
             // Append state information
             e.contents = format!("{}\n\n{}",
-                "let state = {}; globalThis.setState = (s) => { state = s; }; globalThis.getState = () => { return state; }; ",
+                "
+                    let lavendeux_state = {}; 
+                    const setState = (s) => {lavendeux_state = s}; 
+                    const getState = () => lavendeux_state;",
                 e.contents
             );
 

@@ -7,7 +7,7 @@ fn main() -> Result<(), ParserError> {
 
     for result in results {
         if let Err(err) = result {
-            println!("Error: {}", err);
+            println!("{}", err);
         }
     }
     
