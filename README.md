@@ -5,14 +5,13 @@
 [![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
 
-lavendeux-parser is an exensible parsing engine for mathematical expressions.
+lavendeux-parser is rust library that provides an extensible parsing engine for mathematical expressions.
+It enables the parsing of user-supplied expressions to operate on a variety of types of data.
 It supports variable and function assignments, a variety of datatypes, and can
 be extended easily at runtime through extensions written in javascript.
 
 Extensions are run in a sandboxed environment with no host or network access.
 This project is the engine behind [Lavendeux](https://rscarson.github.io/lavendeux/).
-
-Try it out using ```cargo run --example interactive_console```
 
 ### Getting Started
 To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
@@ -65,7 +64,7 @@ state.decorators.register(DecoratorDefinition {
     name: &["upper", "uppercase"],
     description: "Outputs an uppercase version of the input",
     argument: ExpectedTypes::Any,
-    handler: |_, input| Ok(input.as_string().to_uppercase())
+    handler: |_, _token, input| Ok(input.as_string().to_uppercase())
 });
 
 // Functions take in an array of values, and return a single value
@@ -76,7 +75,7 @@ state.functions.register(FunctionDefinition {
     arguments: || vec![
         FunctionArgument::new_required("input", ExpectedTypes::String),
     ],
-    handler: |_function, _state, args| {
+    handler: |_function, _token, _state, args| {
         Ok(Value::String(args.get("input").required().as_string()))
     }
 });
@@ -158,7 +157,7 @@ fn main() -> Result<(), ParserError> {
     let mut state : ParserState = ParserState::new();
 
     // Load one extension
-    state.extensions.load("example_extensions/colour_utils.js")?;
+    state.extensions.load("example_extensions/colour_utils.js");
 
     // Load a whole directory - this will return a vec of Extension/Error results
     state.extensions.load_all("./example_extensions");
@@ -194,10 +193,16 @@ true || false
 // Strings are also supported
 concat("foo", "bar")
 
-// Arrays can be composed of any combination of types
-[10, 12] + [1.2, 1.3]
+[1, 2, "test"] // Arrays can be composed of any combination of types
+[10, 12] + [1.2, 1.3] // Operations can be performed between arrays of the same size
 2 * [10, 5] // Operations can also be applied between scalar values and arrays
 [false, 0, true] == true // An array evaluates to true if any element is true
+a = [1, 2, "test"]
+a[1] // You can use indexing on array elements
+
+// Objects are also supported:
+b = {3: "test", "plumbus": true}
+b["plumbus"]
 ```
 
 Beyond the simpler operators, the following operations are supported:
@@ -245,116 +250,145 @@ factorial(5)
 Decorators can be put at the end of a line to change the output format. Valid decorators include:
 ```
 255 @hex // The result will be 0xFF
-1647950086 @utc // 2022-03-22 11:54:46
 8 @oct // The result will be 0o10
 5 @float // The result will be 5.0
 5 @usd // Also works with @dollars @cad, @aud, @yen, @pounds, or @euros
 1647950086 @utc // 2022-03-22 11:54:46
 ```
 
-The following functions are supported by default:
+Full list of built-in types, operators and functions:
 ```
-    Math Functions
-    ===============
-    abs(n): Returns the absolute value of n
-    acos(n): Calculate the arccosine of n
-    array(n): Returns a value as an array
-    asin(n): Calculate the arcsine of n
-    atan(n): Calculate the arctangent of n
-    bool(n): Returns a value as a boolean
-    ceil(n): Returns the nearest whole integer larger than n
-    cos(n): Calculate the cosine of n
-    cosh(n): Calculate the hyperbolic cosine of n
-    float(n): Returns a value as a float
-    floor(n): Returns the nearest whole integer smaller than n
-    int(n): Returns a value as an integer
-    ln(n): Returns the natural log of n
-    log(n, base): Returns the logarithm of n in any base
-    log10(n): Returns the base 10 log of n
-    max(n1, n2): Returns the largest numeric value from the supplied arguments
-    min(n1, n2): Returns the smallest numeric value from the supplied arguments
-    root(n, base): Returns a root of n of any base
-    round(n, [precision]): Returns n, rounded to [precision] decimal places
-    sin(n): Calculate the sine of n
-    sinh(n): Calculate the hyperbolic sine of n
-    sqrt(n): Returns the square root of n
-    tan(n): Calculate the tangent of n
-    tanh(n): Calculate the hyperbolic tangent of n
-    to_degrees(n): Convert the given radian value into degrees
-    to_radians(n): Convert the given degree value into radians
+Operators
+=========
+Bitwise: AND (0xF & 0xA), OR (0xA | 0xF), XOR (0xA ^ 0xF), NOT (~0xA), SHIFT (0xF >> 1, 0xA << 1)
+   Boolean: AND (true && false), OR (true || false), CMP (1 < 2, 4 >= 5), EQ (1 == 1, 2 != 5)
+   Arithmetic: Add/Sub (+, -), Mul/Div (*, /), Exponentiation (**), Modulo (%), Implied Mul ((5)(5), 5x)
+Unary: Factorial (5!!), Negation (-1, -(1+1))
 
-    Misc Functions
-    ===============
-    call(filename): Run the contents of a file as a script
-    help([function_name]): Display a help message
-    run(expression): Run a string as an expression
-    tail(filename, [lines]): Returns the last [lines] lines from a given file
-    time(): Returns a unix timestamp for the current system time
+Data Types
+==========
+String: Text delimited by 'quotes' or "double-quotes"
+  Boolean: A truth value (true or false)
+ Integer: A whole number. Can also be base2 (0b111), base8 (0o777), or base16 (0xFF)
+ Float: A decimal number. Can also be in scientific notation(5.3e+4, 4E-2)
+   Currency: A decimal number - does not apply any exhange rates ($5.00)
+Array: A comma separated list of values in square brackets; [1, 'test']
+   Object: A comma separated list of key/value pairs in curly braces; {'test': 5}
+  Variable: An identifier representing a value. Set it with x=5, then use it in an expression (5x)
+Contant: A preset read-only variable representing a common value, such as pi, e, and tau
 
-    Network Functions
-    ===============
-    api(name, [endpoint]): Make a call to a registered API
-    api_delete(name): Remove a registered API from the list
-    api_list(): List all registered APIs
-    api_register(name, base_url, [api_key]): Register a new API for quick usage
-    get(url, [headers1, headers2]): Return the resulting text-format body of an HTTP GET call
-    post(url, body, [header-name=value1, header-name=value2]): Return the resulting text-format body of an HTTP POST call
-    resolve(hostname): Returns the IP address associated to a given hostname
+Misc Functions
+==============
+atob(input): Convert a string into a base64 encoded string
+btoa(input): Convert a base64 encoded string to an ascii encoded string
+call(filename): Run the contents of a file as a script
+help([function_name]): Display a help message
+prettyjson(input): Beautify a JSON input string
+run(expression): Run a string as an expression
+tail(filename, [lines]): Returns the last [lines] lines from a given file
+time(): Returns a unix timestamp for the current system time
+urldecode(input): Decode urlencoded character escape sequences in a string
+urlencode(input): Escape characters in a string for use in a URL
 
-    Cryptography Functions
-    ===============
-    choose(option1, option2): Returns any one of the provided arguments at random
-    md5(input1, input2): Returns the MD5 hash of a given string
-    rand([m], [n]): With no arguments, return a float from 0 to 1. Otherwise return an integer from 0 to m, or m to n
-    sha256(input1, input2): Returns the SHA256 hash of a given string
+Network Functions
+=================
+api(name, [endpoint]): Make a call to a registered API
+api_delete(name): Remove a registered API from the list
+api_list(): List all registered APIs
+api_register(name, base_url, [api_key]): Register a new API for quick usage
+get(url, [headers]): Return the resulting text-format body of an HTTP GET call
+post(url, body, [headers]): Return the resulting text-format body of an HTTP POST call
+resolve(hostname): Returns the IP address associated to a given hostname
 
-    Arrays Functions
-    ===============
-    dequeue(array): Remove the first element from an array
-    element(array, index): Return an element from a location in an array
-    enqueue(array, element): Add an element to the end of an array
-    is_empty(array): Returns true if the given array is empty
-    len(array): Returns the length of the given array
-    merge(arrays1, arrays2): Merge all given arrays
-    pop(array): Remove the last element from an array
-    push(array, element): Add an element to the end of an array
-    remove(array, index): Removes an element from an array
+Arrays Functions
+================
+dequeue(array): Remove the first element from an array
+element(input, index): Return an element from a location in an array or object
+enqueue(array, element): Add an element to the end of an array
+is_empty(input): Returns true if the given array or object is empty
+keys(input): Get a list of keys in the object or array
+len(input): Returns the length of the given array or object
+merge(target, inputs1, inputs2): Merge all given arrays or objects
+pop(array): Remove the last element from an array
+push(array, element): Add an element to the end of an array
+remove(input, index): Removes an element from an array
+values(input): Get a list of values in the object or array
 
-    Strings Functions
-    ===============
-    concat([s1, s2]): Concatenate a set of strings
-    contains(source, s): Returns true if array or string [source] contains [s]
-    lowercase(s): Converts the string s to lowercase
-    regex(pattern, subject, [group]): Returns a regular expression match from [subject], or false
-    strlen(s): Returns the length of the string s
-    substr(s, start, [length]): Returns a substring from s, beginning at [start], and going to the end, or for [length] characters
-    trim(s): Trim whitespace from a string
-    uppercase(s): Converts the string s to uppercase
+Strings Functions
+=================
+concat([s1, s2]): Concatenate a set of strings
+contains(source, s): Returns true if array or string [source] contains [s]
+lowercase(s): Converts the string s to lowercase
+regex(pattern, subject, [group]): Returns a regular expression match from [subject], or false
+strlen(s): Returns the length of the string s
+substr(s, start, [length]): Returns a substring from s, beginning at [start], and going to the end, or for [length] characters
+trim(s): Trim whitespace from a string
+uppercase(s): Converts the string s to uppercase
 
-    Built-in Decorators
-    ===============
-    @array: Format a number as an array
-    @aud: Format a number as a dollar amount
-    @bin: Base 2 number formatting, such as 0b11
-    @bool: Format a number as a boolean
-    @boolean: Format a number as a boolean
-    @cad: Format a number as a dollar amount
-    @default: Default formatter, type dependent
-    @dollar: Format a number as a dollar amount
-    @dollars: Format a number as a dollar amount
-    @euro: Format a number as a euro amount
-    @euros: Format a number as a euro amount
-    @float: Format a number as floating point
-    @hex: Base 16 number formatting, such as 0xFF
-    @int: Format a number as an integer
-    @integer: Format a number as an integer
-    @oct: Base 8 number formatting, such as 0b77
-    @pound: Format a number as a pound amount
-    @pounds: Format a number as a pound amount
-    @sci: Scientific number formatting, such as 1.2Ee-3
-    @usd: Format a number as a dollar amount
-    @utc: Interprets an integer as a timestamp, and formats it in UTC standard
-    @yen: Format a number as a yen amount
+Cryptography Functions
+======================
+choose(option1, option2): Returns any one of the provided arguments at random
+md5(input1, input2): Returns the MD5 hash of a given string
+rand([m], [n]): With no arguments, return a float from 0 to 1. Otherwise return an integer from 0 to m, or m to n
+sha256(input1, input2): Returns the SHA256 hash of a given string
+
+Math Functions
+==============
+abs(n): Returns the absolute value of n
+acos(n): Calculate the arccosine of n
+array(n): Returns a value as an array
+asin(n): Calculate the arcsine of n
+atan(n): Calculate the arctangent of n
+bool(n): Returns a value as a boolean
+ceil(n): Returns the nearest whole integer larger than n
+cos(n): Calculate the cosine of n
+cosh(n): Calculate the hyperbolic cosine of n
+float(n): Returns a value as a float
+floor(n): Returns the nearest whole integer smaller than n
+int(n): Returns a value as an integer
+ln(n): Returns the natural log of n
+log(n, base): Returns the logarithm of n in any base
+log10(n): Returns the base 10 log of n
+max(n1, n2): Returns the largest numeric value from the supplied arguments
+min(n1, n2): Returns the smallest numeric value from the supplied arguments
+root(n, base): Returns a root of n of any base
+round(n, [precision]): Returns n, rounded to [precision] decimal places
+sin(n): Calculate the sine of n
+sinh(n): Calculate the hyperbolic sine of n
+sqrt(n): Returns the square root of n
+tan(n): Calculate the tangent of n
+tanh(n): Calculate the hyperbolic tangent of n
+to_degrees(n): Convert the given radian value into degrees
+to_radians(n): Convert the given degree value into radians
+
+Built-in Decorators
+===================
+@array: Format a number as an array
+@bin: Base 2 number formatting, such as 0b11
+@bool/@boolean: Format a number as a boolean
+@bool/@boolean: Format a number as a boolean
+@default: Default formatter, type dependent
+@dollar/@dollars/@usd/@aud/@cad: Format a number as a dollar amount
+@dollar/@dollars/@usd/@aud/@cad: Format a number as a dollar amount
+@dollar/@dollars/@usd/@aud/@cad: Format a number as a dollar amount
+@dollar/@dollars/@usd/@aud/@cad: Format a number as a dollar amount
+@dollar/@dollars/@usd/@aud/@cad: Format a number as a dollar amount
+@euro/@euros: Format a number as a euro amount
+@euro/@euros: Format a number as a euro amount
+@float: Format a number as floating point
+@hex: Base 16 number formatting, such as 0xFF
+@int/@integer: Format a number as an integer
+@int/@integer: Format a number as an integer
+@object: Format a number as an object
+@oct: Base 8 number formatting, such as 0b77
+@percentage/@percent: Format a floating point number as a percentage
+@percentage/@percent: Format a floating point number as a percentage
+@pound/@pounds: Format a number as a pound amount
+@pound/@pounds: Format a number as a pound amount
+@roman: Format an integer as a roman numeral
+@sci: Scientific number formatting, such as 1.2Ee-3
+@utc: Interprets an integer as a timestamp, and formats it in UTC standard
+@yen: Format a number as a yen amount
 ```
 
 
