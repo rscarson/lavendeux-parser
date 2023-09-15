@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a missing parentheses
@@ -26,16 +25,9 @@ impl UnterminatedParenError {
     }
 }
 
-impl Error for UnterminatedParenError {}
 impl Display for UnterminatedParenError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "missing ')' {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for UnterminatedParenError {
-    fn into(self) -> ParserError {
-        ParserError::UnterminatedParen(self)
     }
 }

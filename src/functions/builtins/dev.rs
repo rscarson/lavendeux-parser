@@ -151,9 +151,17 @@ pub fn register_functions(table: &mut FunctionTable) {
     table.register(TIME);
     table.register(TAIL);
     table.register(PRETTYJSON);
+    
+    #[cfg(feature = "encoding-functions")]
     table.register(URLDECODE);
+    
+    #[cfg(feature = "encoding-functions")]
     table.register(URLENCODE);
+    
+    #[cfg(feature = "encoding-functions")]
     table.register(BASE64DECODE);
+    
+    #[cfg(feature = "encoding-functions")]
     table.register(BASE64ENCODE);
 }
 

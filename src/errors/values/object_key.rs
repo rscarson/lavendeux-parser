@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to use an invalid object key
@@ -34,16 +33,9 @@ impl ObjectKeyError {
     }
 }
 
-impl Error for ObjectKeyError {}
 impl Display for ObjectKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "object key {} not found {}", self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ObjectKeyError {
-    fn into(self) -> ParserError {
-        ParserError::ObjectKey(self)
     }
 }

@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to use an empty array
@@ -26,16 +25,9 @@ impl ArrayEmptyError {
     }
 }
 
-impl Error for ArrayEmptyError {}
 impl Display for ArrayEmptyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "array is empty {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ArrayEmptyError {
-    fn into(self) -> ParserError {
-        ParserError::ArrayEmpty(self)
     }
 }

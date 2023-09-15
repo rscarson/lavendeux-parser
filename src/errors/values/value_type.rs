@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to use a value of the wrong type in a calculation
@@ -34,16 +33,9 @@ impl ValueTypeError {
     }
 }
 
-impl Error for ValueTypeError {}
 impl Display for ValueTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid type for value, expected {} {}", self.expected, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ValueTypeError {
-    fn into(self) -> ParserError {
-        ParserError::ValueType(self)
     }
 }

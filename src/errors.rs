@@ -29,6 +29,15 @@ mod error_macro {
             }
 
             impl Error for ParserError {}
+
+            $(
+                impl Error for $struct {}
+                impl From<$struct> for ParserError {
+                    fn from(val: $struct) -> Self {
+                        ParserError::$name(val)
+                    }
+                }
+            )+
         };
     }
 }
@@ -60,7 +69,7 @@ impl ParserErrorSource {
 }
 impl Display for ParserErrorSource {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let mut token_text = self.src.text().split("\n").next().unwrap_or("").to_string();
+        let mut token_text = self.src.text().split('\n').next().unwrap_or("").to_string();
         if token_text.len() > MAX_DISPLAY_SRC {
             token_text = token_text[0..MAX_DISPLAY_SRC].to_string();
         }

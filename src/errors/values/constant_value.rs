@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to overwrite a constant
@@ -34,16 +33,9 @@ impl ConstantValueError {
     }
 }
 
-impl Error for ConstantValueError {}
 impl Display for ConstantValueError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "could not overwrite constant value {} {}", self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ConstantValueError {
-    fn into(self) -> ParserError {
-        ParserError::ConstantValue(self)
     }
 }

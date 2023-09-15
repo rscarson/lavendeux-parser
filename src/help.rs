@@ -57,7 +57,10 @@ impl Help {
     pub fn add_std(&mut self, state: &mut ParserState) {
         self.add_std_functions(state);
         self.add_std_decorators(state);
+        
+        #[cfg(feature = "extensions")]
         self.add_extensions(state);
+        
         self.add_user_functions(state);
         self.add_variables(state);
     }
@@ -131,7 +134,7 @@ impl Help {
 impl fmt::Display for Help {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut blocks: Vec<&HelpBlock> = self.blocks.values().collect();
-        blocks.sort_by(|f1, f2| f1.order().cmp(&f2.order()));
+        blocks.sort_by_key(|f| f.order());
 
         let text = blocks.iter()
             .map(|b| format!("{}\n{}\n{}\n", b.title(), get_divider(b.title()), b))

@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a calculation that resulted in an underflow
@@ -26,16 +25,9 @@ impl UnderflowError {
     }
 }
 
-impl Error for UnderflowError {}
 impl Display for UnderflowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "arithmetic underflow {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for UnderflowError {
-    fn into(self) -> ParserError {
-        ParserError::Underflow(self)
     }
 }

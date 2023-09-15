@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to use arrays of different lengths
@@ -26,16 +25,9 @@ impl ArrayLengthError {
     }
 }
 
-impl Error for ArrayLengthError {}
 impl Display for ArrayLengthError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "array lengths incompatible {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ArrayLengthError {
-    fn into(self) -> ParserError {
-        ParserError::ArrayLength(self)
     }
 }

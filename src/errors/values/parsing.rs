@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting to parse an invalid string into a given format
@@ -42,16 +41,9 @@ impl ParsingError {
     }
 }
 
-impl Error for ParsingError {}
 impl Display for ParsingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} parsing error: {} {}", self.format, self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for ParsingError {
-    fn into(self) -> ParserError {
-        ParserError::Parsing(self)
     }
 }

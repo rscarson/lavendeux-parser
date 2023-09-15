@@ -1,7 +1,6 @@
 use crate::{Value, Token};
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by attempting use an out of range value
@@ -34,16 +33,9 @@ impl RangeError {
     }
 }
 
-impl Error for RangeError {}
 impl Display for RangeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "value out of range: {} {}", self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for RangeError {
-    fn into(self) -> ParserError {
-        ParserError::Range(self)
     }
 }

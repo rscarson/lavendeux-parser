@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by using a postfix operator without an operand
@@ -26,16 +25,9 @@ impl UnexpectedPostfixError {
     }
 }
 
-impl Error for UnexpectedPostfixError {}
 impl Display for UnexpectedPostfixError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "missing operand before factorial operator {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for UnexpectedPostfixError {
-    fn into(self) -> ParserError {
-        ParserError::UnexpectedPostfix(self)
     }
 }

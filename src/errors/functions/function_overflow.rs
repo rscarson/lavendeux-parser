@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a function argument overflowing a pre-determined limit
@@ -42,16 +41,9 @@ impl FunctionOverflowError {
     }
 }
 
-impl Error for FunctionOverflowError {}
 impl Display for FunctionOverflowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: overflow in argument {} {}", self.signature, self.arg, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for FunctionOverflowError {
-    fn into(self) -> ParserError {
-        ParserError::FunctionOverflow(self)
     }
 }

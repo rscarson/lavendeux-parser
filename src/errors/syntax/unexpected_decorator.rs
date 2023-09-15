@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by using a decorator in the wrong place
@@ -26,16 +25,9 @@ impl UnexpectedDecoratorError {
     }
 }
 
-impl Error for UnexpectedDecoratorError {}
 impl Display for UnexpectedDecoratorError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "@decorators must be at the end of a statement {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for UnexpectedDecoratorError {
-    fn into(self) -> ParserError {
-        ParserError::UnexpectedDecorator(self)
     }
 }

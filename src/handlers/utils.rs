@@ -58,7 +58,7 @@ pub fn perform_int_calculation(expression: &Token, l: Value, r: Value, handler: 
     } else {
         // Perform datatype conversions
         let lv = l.as_int(); let rv = r.as_int();
-        if matches!(lv, None) || matches!(rv, None) {
+        if lv.is_none() || rv.is_none() {
             Err(ValueTypeError::new(expression, ExpectedTypes::IntOrFloat).into())
         } else {
             // Detect overflow and return resulting value
@@ -119,7 +119,7 @@ pub fn perform_float_calculation(expression: &Token, l: Value, r: Value, handler
     } else {
         // Perform datatype conversions
         let lv = l.as_float(); let rv = r.as_float();
-        if matches!(lv, None) || matches!(rv, None) { 
+        if lv.is_none() || rv.is_none() { 
             return Err(ValueTypeError::new(expression, ExpectedTypes::IntOrFloat).into())
         }
         

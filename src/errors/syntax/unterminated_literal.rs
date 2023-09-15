@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a missing quote
@@ -26,16 +25,9 @@ impl UnterminatedLiteralError {
     }
 }
 
-impl Error for UnterminatedLiteralError {}
 impl Display for UnterminatedLiteralError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "unterminated string literal {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for UnterminatedLiteralError {
-    fn into(self) -> ParserError {
-        ParserError::UnterminatedLiteral(self)
     }
 }

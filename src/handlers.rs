@@ -159,7 +159,7 @@ fn rule_line(token: &mut Token, state: &mut ParserState) -> Option<ParserError> 
             // Extension decorators
             #[cfg(feature = "extensions")]
             if state.extensions.has_decorator(decorator_name) {
-                match state.extensions.call_decorator(decorator_name, &token, &mut state.variables) {
+                match state.extensions.call_decorator(decorator_name, token, &mut state.variables) {
                     Ok(s) => {
                         token.set_text(&s);
                         return None;

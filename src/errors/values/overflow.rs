@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a calculation that resulted in an overflow
@@ -26,16 +25,9 @@ impl OverflowError {
     }
 }
 
-impl Error for OverflowError {}
 impl Display for OverflowError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "arithmetic overflow {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for OverflowError {
-    fn into(self) -> ParserError {
-        ParserError::Overflow(self)
     }
 }

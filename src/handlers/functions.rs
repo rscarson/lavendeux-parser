@@ -115,6 +115,7 @@ mod test_token {
     }
 
     #[test]
+    #[cfg(feature = "extensions")]
     fn test_extension_function_call() {
         let mut state: ParserState = ParserState::new();
         state.extensions.load("example_extensions/colour_utils.js").ok();

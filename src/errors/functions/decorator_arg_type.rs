@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by calling a decorator using an argument of the wrong type
@@ -42,16 +41,9 @@ impl DecoratorArgTypeError {
     }
 }
 
-impl Error for DecoratorArgTypeError {}
 impl Display for DecoratorArgTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid type for decorator {} (expected {}) {}", self.signature, self.expected, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for DecoratorArgTypeError {
-    fn into(self) -> ParserError {
-        ParserError::DecoratorArgType(self)
     }
 }

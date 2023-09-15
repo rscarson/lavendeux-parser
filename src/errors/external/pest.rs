@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by a problem in parsing the syntax of an expression
@@ -26,16 +25,9 @@ impl PestError {
     }
 }
 
-impl Error for PestError {}
 impl Display for PestError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "invalid syntax {}", self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for PestError {
-    fn into(self) -> ParserError {
-        ParserError::Pest(self)
     }
 }

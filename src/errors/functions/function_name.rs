@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by calling a function that does not exist
@@ -34,16 +33,9 @@ impl FunctionNameError {
     }
 }
 
-impl Error for FunctionNameError {}
 impl Display for FunctionNameError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "unrecognized function {}() {}", self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for FunctionNameError {
-    fn into(self) -> ParserError {
-        ParserError::FunctionName(self)
     }
 }

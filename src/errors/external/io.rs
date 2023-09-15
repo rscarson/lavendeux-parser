@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by filesystem issues
@@ -43,16 +42,9 @@ impl IOError {
     }
 }
 
-impl Error for IOError {}
 impl Display for IOError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "IO error: {} {}", self.cause, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for IOError {
-    fn into(self) -> ParserError {
-        ParserError::IO(self)
     }
 }

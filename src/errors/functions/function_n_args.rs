@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by calling a function using the wrong number of arguments
@@ -48,17 +47,10 @@ impl FunctionNArgsError {
     }
 }
 
-impl Error for FunctionNArgsError {}
 impl Display for FunctionNArgsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let n_args = if self.min == self.max {format!("{}", self.min)} else {format!("{}-{}", self.min, self.max)};
         write!(f, "{}: expected {} args {}", self.signature, n_args, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for FunctionNArgsError {
-    fn into(self) -> ParserError {
-        ParserError::FunctionNArgs(self)
     }
 }

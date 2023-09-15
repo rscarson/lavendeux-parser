@@ -249,7 +249,8 @@ impl Extension {
                 self.call_js_function(&mut script, "setState", token, (&variables,))?;
         
                 // Call function
-                let fname = self.functions.get(name).ok_or_else(|| FunctionNameError::new(token, name).into())?;
+                let e: ParserError = FunctionNameError::new(token, name).into();
+                let fname = self.functions.get(name).ok_or(e)?;
                 let result: Value = self.call_js_function(&mut script, fname, token, (&args.to_vec(),))?;
         
                 // Pull out modified state
@@ -285,7 +286,8 @@ impl Extension {
                 self.call_js_function(&mut script, "setState", token, (&variables,))?;
         
                 // Call decorator
-                let fname = self.decorators.get(name).ok_or_else(|| DecoratorNameError::new(token, name).into())?;
+                let e: ParserError = DecoratorNameError::new(token, name).into();
+                let fname = self.decorators.get(name).ok_or(e)?;
                 let result: String = self.call_js_function(&mut script, fname, token, (token.value(),))?;
         
                 // Pull out modified state

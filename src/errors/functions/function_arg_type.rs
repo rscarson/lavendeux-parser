@@ -1,7 +1,6 @@
 use crate::Token;
 use crate::errors::*;
 
-use std::error::Error;
 use std::fmt::{self, Display};
 
 /// An error caused by calling a function using an argument of the wrong type
@@ -50,16 +49,9 @@ impl FunctionArgTypeError {
     }
 }
 
-impl Error for FunctionArgTypeError {}
 impl Display for FunctionArgTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: invalid type for argument {} (expected {}) {}", self.signature, self.arg, self.expected, self.src)?;
         fmt::Result::Ok(())
-    }
-}
-
-impl Into<ParserError> for FunctionArgTypeError {
-    fn into(self) -> ParserError {
-        ParserError::FunctionArgType(self)
     }
 }
