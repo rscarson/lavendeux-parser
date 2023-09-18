@@ -23,7 +23,7 @@ pest_derive = "2.7.3"
 serde = { version = "1.0.160", features = ["derive"] }
 serde_json = "1.0.96"
 reqwest = { version = "0.11.20", features = ["blocking"] }
-chrono = "0.4.23"
+chrono = "0.4.31"
 rand = "0.8.5"
 
 # Feature deps
