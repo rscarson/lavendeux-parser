@@ -17,7 +17,7 @@ crypto-functions = ["md-5", "sha2"]
 encoding-functions = ["base64", "urlencoding"]
 
 [dependencies]
-regex = "1.9.4"
+regex = "1.9.5"
 pest = "2.5.6"
 pest_derive = "2.7.3"
 serde = { version = "1.0.160", features = ["derive"] }
