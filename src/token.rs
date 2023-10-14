@@ -1,4 +1,6 @@
-use crate::{ParserState, Value, errors::*};
+use std::fmt::Display;
+
+use crate::{Error, ParserState, Value};
 
 extern crate pest;
 extern crate pest_derive;
@@ -13,19 +15,22 @@ struct LavendeuxParser;
 pub enum OutputFormat {
     Unknown = 0,
     Default = 10,
-    Dollars = 20, Euros = 21, Pounds = 22, Yen = 23
+    Dollars = 20,
+    Euros = 21,
+    Pounds = 22,
+    Yen = 23,
 }
 
 /// Represents a token tree for a parsed expression
 /// The root contains the text result of parsing the expression,
 /// as well as one child per line being parsed
-/// 
+///
 /// So if you were to parse:
 /// ```text
 /// 5 + 5
 /// sqrt(5!)
 /// ```
-/// 
+///
 /// The token tree would look like this:
 /// ```text
 /// script: 5 + 5\nsqrt(5!)
@@ -40,7 +45,7 @@ pub enum OutputFormat {
 ///                 int: 5
 ///                 operator: !
 /// ```
-/// 
+///
 /// Each token in the tree stores the text and actual value representations of the result
 #[derive(Clone, Debug)]
 pub struct Token {
@@ -50,7 +55,7 @@ pub struct Token {
     format: OutputFormat,
     value: Value,
     index: usize,
-    children: Vec<Token>
+    children: Vec<Token>,
 }
 
 impl Default for Token {
@@ -62,26 +67,26 @@ impl Default for Token {
             value: Value::None,
             children: Vec::new(),
             index: 0,
-            rule: Rule::script
+            rule: Rule::script,
         }
     }
 }
 
 pub trait LavendeuxHandler {
-	fn handle_tree(&self, token: &mut Token, state: &mut ParserState) -> Result<(), ParserError>;
+    fn handle_tree(&self, token: &mut Token, state: &mut ParserState) -> Result<(), Error>;
 }
 
 impl Token {
     /// Parses an input string, and returns the resulting token tree
-    /// 
+    ///
     /// ```rust
-    /// use lavendeux_parser::{ParserState, ParserError, Token, Value};
-    /// 
-    /// fn main() -> Result<(), ParserError> {
+    /// use lavendeux_parser::{ParserState, Error, Token, Value};
+    ///
+    /// fn main() -> Result<(), Error> {
     ///     // Create a new parser, and tokenize 2 lines
     ///     let mut state : ParserState = ParserState::new();
     ///     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
-    /// 
+    ///
     ///     // The resulting token contains the resulting values and text
     ///     assert_eq!(lines.text(), "9\n0b11");
     ///     assert_eq!(lines.child(1).unwrap().value(), Value::Float(3.0));
@@ -89,17 +94,17 @@ impl Token {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Arguments
     /// * `input` - Source string
     /// * `state` - The current parser state
-    pub fn new(input: &str, state: &mut ParserState) -> Result<Token, ParserError> {
+    pub fn new(input: &str, state: &mut ParserState) -> Result<Token, Error> {
         Self::parse(input, crate::handlers::Handler::default(), state)
     }
 
     /// Convert one pair into a token
     /// Does not process child tokens
-    /// 
+    ///
     /// # Arguments
     /// * `input` - Source
     fn from_pair(input: pest::iterators::Pair<Rule>) -> Token {
@@ -110,14 +115,14 @@ impl Token {
             format: OutputFormat::Unknown,
             value: Value::None,
             index: input.as_span().start(),
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
     /// Convert raw input into a dummy Token
     /// Usually for error handling
     /// Does not process child tokens
-    /// 
+    ///
     /// # Arguments
     /// * `input` - Source input
     pub fn dummy(input: &str) -> Token {
@@ -128,54 +133,55 @@ impl Token {
             format: OutputFormat::Unknown,
             value: Value::None,
             index: 0,
-            children: Vec::new()
+            children: Vec::new(),
         }
     }
 
     /// Parses an input string, and returns the resulting token tree
-    /// 
+    ///
     /// # Arguments
     /// * `input` - Source string
     /// * `handler` - A LavendeuxHandler
     /// * `state` - The current parser state
-    fn parse<A>(input: &str, handler: A, state: &mut ParserState) -> Result<Self, ParserError>
-    where A: LavendeuxHandler {
+    fn parse<A>(input: &str, handler: A, state: &mut ParserState) -> Result<Self, Error>
+    where
+        A: LavendeuxHandler,
+    {
         let pairs = LavendeuxParser::parse(Rule::script, input);
         match pairs {
-            Ok(mut r) => {
-                match r.next() {
-                    None => Ok(Self::default()),
-                    Some(p) => {
-                        let mut token = Self::build_tree(p);
-                        handler.handle_tree(&mut token, state)?;
-                        Ok(token)
-                    },
+            Ok(mut r) => match r.next() {
+                None => Ok(Self::default()),
+                Some(p) => {
+                    let mut token = Self::build_tree(p);
+                    handler.handle_tree(&mut token, state)?;
+                    Ok(token)
                 }
-            },            
-            Err(_) => Err(PestError::new(&Token::dummy(input)).into())
+            },
+            Err(e) => Err(Error::Pest(e, Token::dummy(input)).into()),
         }
     }
 
     /// Build a token tree from a parser pair
-    /// 
+    ///
     /// # Arguments
     /// * `root` - Pair that will form the tree's root
     fn build_tree(root: pest::iterators::Pair<Rule>) -> Token {
         // Collapse tree
         let mut next_pair = root;
-        let mut children : Vec<_> = next_pair.clone().into_inner().collect();
-        while children.len() == 1 && next_pair.as_rule() != Rule::script && next_pair.as_rule() != Rule::line {
+        let mut children: Vec<_> = next_pair.clone().into_inner().collect();
+        while children.len() == 1
+            && next_pair.as_rule() != Rule::script
+            && next_pair.as_rule() != Rule::line
+        {
             next_pair = children[0].clone();
             children = next_pair.clone().into_inner().collect();
         }
 
         // Collect basic properties
         let mut token = Token::from_pair(next_pair);
-        
+
         for child in children {
-            token.children.push(
-                Self::build_tree(child)
-            );
+            token.children.push(Self::build_tree(child));
         }
 
         token
@@ -255,6 +261,12 @@ impl Token {
     }
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.text())
+    }
+}
+
 #[cfg(test)]
 mod test_token {
     use super::*;
@@ -269,7 +281,10 @@ mod test_token {
     #[test]
     fn test_from_input() {
         let mut state: ParserState = ParserState::new();
-        assert_eq!(Value::Integer(10), Token::new("5+5", &mut state).unwrap().value);
+        assert_eq!(
+            Value::Integer(10),
+            Token::new("5+5", &mut state).unwrap().value
+        );
     }
 
     #[test]
@@ -318,7 +333,10 @@ mod test_token {
 
         // String
         assert_token_value!("'test'", Value::String("test".to_string()));
-        assert_token_value!("       '  test   '       ", Value::String("  test   ".to_string()));
+        assert_token_value!(
+            "       '  test   '       ",
+            Value::String("  test   ".to_string())
+        );
         assert_token_value!("'test\"'", Value::String("test\"".to_string()));
         assert_token_value!("'test\\\"'", Value::String("test\"".to_string()));
         assert_token_value!("\"test\\\'\"", Value::String("test\'".to_string()));
@@ -326,7 +344,9 @@ mod test_token {
 
         // Identifier
         state.variables.insert("x".to_string(), Value::Integer(99));
-        state.variables.insert("x_9".to_string(), Value::Integer(99));
+        state
+            .variables
+            .insert("x_9".to_string(), Value::Integer(99));
         assert_token_value_stateful!("x", Value::Integer(99), &mut state);
         assert_token_value_stateful!("x_9", Value::Integer(99), &mut state);
     }
@@ -351,23 +371,35 @@ mod test_token {
         // Comments
         assert_token_value!("5 //test", Value::Integer(5));
         assert_token_value!("//test", Value::None);
-        
+
         // Assignment expression
         state = ParserState::new();
         assert_token_value_stateful!("x = 5", Value::Integer(5), &mut state);
         assert_eq!(1, state.variables.len());
-        
+
         // Indexed assignment expression
         state = ParserState::new();
-        state.variables.insert("x".to_string(), Value::Array(vec![Value::Integer(5)]));
+        state
+            .variables
+            .insert("x".to_string(), Value::Array(vec![Value::Integer(5)]));
         assert_token_value_stateful!("x[0] = 3", Value::Integer(3), &mut state);
-        assert_token_value_stateful!("x[1] = 'test'", Value::String("test".to_string()), &mut state);
-        assert_token_error_stateful!("x[-1] = 5", ArrayIndex, &mut state);
+        assert_token_value_stateful!(
+            "x[1] = 'test'",
+            Value::String("test".to_string()),
+            &mut state
+        );
+        assert_token_error_stateful!("x[-1] = 5", Index, &mut state);
         assert_token_error_stateful!("x['test'] = 5", ValueType, &mut state);
-        assert_token_error_stateful!("x[3] = 5", ArrayIndex, &mut state);
+        assert_token_error_stateful!("x[3] = 5", Index, &mut state);
         assert_eq!(1, state.variables.len());
-        assert_eq!(Value::Integer(3), state.variables.get("x").unwrap().as_array()[0]);
-        assert_eq!(Value::String("test".to_string()), state.variables.get("x").unwrap().as_array()[1]);
+        assert_eq!(
+            Value::Integer(3),
+            state.variables.get("x").unwrap().as_array()[0]
+        );
+        assert_eq!(
+            Value::String("test".to_string()),
+            state.variables.get("x").unwrap().as_array()[1]
+        );
 
         // Term
         assert_token_value!("(5)", Value::Integer(5));
@@ -390,8 +422,8 @@ mod test_token {
         // Overflows and errors
         assert_token_error!("1/0", Overflow);
         assert_token_error!("5+5\n 1/0", Overflow);
-        assert_token_error!("99999999999999999999999999999999999999999", ParseValue);
-        assert_token_error!("1+99999999999999999999999999999999999999999", ParseValue);
+        assert_token_error!("99999999999999999999999999999999999999999", ValueParsing);
+        assert_token_error!("1+99999999999999999999999999999999999999999", ValueParsing);
         assert_token_error!("999999999999999999*999999999999999999", Overflow);
         assert_token_error!("999!", Overflow);
 
@@ -401,8 +433,14 @@ mod test_token {
         assert_token_value!("false ? 1/0 : 2", Value::Integer(2));
 
         // arrays
-        assert_token_value!("[10, 12] + [1.2, 1.3]", Value::Array(vec![Value::Float(11.2), Value::Float(13.3)]));
-        assert_token_value!("2 * [10, 5]", Value::Array(vec![Value::Integer(20), Value::Integer(10)]));
+        assert_token_value!(
+            "[10, 12] + [1.2, 1.3]",
+            Value::Array(vec![Value::Float(11.2), Value::Float(13.3)])
+        );
+        assert_token_value!(
+            "2 * [10, 5]",
+            Value::Array(vec![Value::Integer(20), Value::Integer(10)])
+        );
         assert_token_value!("[false, 0, true] == true", Value::Boolean(true));
     }
 }

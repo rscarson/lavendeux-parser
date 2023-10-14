@@ -3,7 +3,7 @@
  * It must return an object similar to the one below.
  * @returns Object
  */
-function extension() {
+export function extension() {
     return {
         name: "HTML Colour Utilities",
         author: "@rscarson",
@@ -31,7 +31,7 @@ function extension() {
  * @param {Value} args 
  * @returns {Value} result
  */
-function function_colour(args) {
+export function function_colour(args) {
     if (args.length != 1) {
         throw "color(s): expected 1 argument";
     } else if (!args[0].String) {
@@ -60,7 +60,7 @@ function function_colour(args) {
  * @param {Value} args 
  * @returns {Value} result
  */
-function function_complement(args) {    
+export function function_complement(args) {    
     if (args.length != 1) {
         throw "complement(n): expected 1 argument";
     } else if (!args[0].Integer) {
@@ -89,7 +89,7 @@ function function_complement(args) {
  * @param {Value} args 
  * @returns {String} result
  */
-function decorator_colour(value) {
+export function decorator_colour(value) {
     if (value.Integer) {
         return '#'+value.Integer.toString(16).padEnd(6, '0');
     }
@@ -97,7 +97,7 @@ function decorator_colour(value) {
     throw "@color: expected an integer value";
 }
 
-function extract_rgb(int_val) {
+export function extract_rgb(int_val) {
     return {
         "b": int_val & 0xFF,
         "g": (int_val >> 8) & 0xFF,

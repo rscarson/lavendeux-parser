@@ -1,9 +1,9 @@
-use crate::{ParserState, Value, Token};
-use crate::errors::*;
+use crate::Error;
+use crate::{ParserState, Token, Value};
 use std::collections::HashMap;
 
-use super::FunctionDefinition;
 use super::builtins;
+use super::FunctionDefinition;
 
 /// Holds a set of callable functions
 #[derive(Clone)]
@@ -11,7 +11,7 @@ pub struct FunctionTable(HashMap<String, FunctionDefinition>);
 impl FunctionTable {
     /// Initialize a new function table, complete with default builtin functions
     pub fn new() -> FunctionTable {
-        let mut table : FunctionTable = FunctionTable(HashMap::new());
+        let mut table: FunctionTable = FunctionTable(HashMap::new());
         table.register_builtins();
         table
     }
@@ -30,7 +30,7 @@ impl FunctionTable {
     }
 
     /// Register a function in the table
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     /// * `handler` - Function handler
@@ -39,7 +39,7 @@ impl FunctionTable {
     }
 
     /// Remove a function from the table
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     pub fn remove(&mut self, name: &str) {
@@ -47,7 +47,7 @@ impl FunctionTable {
     }
 
     /// Check if the table contains a function by the given name
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     pub fn has(&self, name: &str) -> bool {
@@ -55,7 +55,7 @@ impl FunctionTable {
     }
 
     /// Return a given function
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     pub fn get(&self, name: &str) -> Option<&FunctionDefinition> {
@@ -64,8 +64,8 @@ impl FunctionTable {
 
     /// Get a collection of all included functions
     pub fn all(&self) -> Vec<&FunctionDefinition> {
-        let mut a: Vec<&FunctionDefinition>  = self.0.values().collect();
-        a.sort_by(|f1, f2|f1.name().cmp(f2.name()));
+        let mut a: Vec<&FunctionDefinition> = self.0.values().collect();
+        a.sort_by(|f1, f2| f1.name().cmp(f2.name()));
         a
     }
 
@@ -79,33 +79,47 @@ impl FunctionTable {
 
     /// Return all included functions sorted by category
     pub fn all_by_category(&self) -> HashMap<&str, Vec<&FunctionDefinition>> {
-        let f: Vec<(&str, Vec<&FunctionDefinition>)> = self.all_categories().iter().map(
-            |c| (*c, 
-                self.all()
-                .iter()
-                .filter(|f| f.category() == *c)
-                .copied()
-                .collect::<Vec<&FunctionDefinition>>()
-            )
-        ).collect();
+        let f: Vec<(&str, Vec<&FunctionDefinition>)> = self
+            .all_categories()
+            .iter()
+            .map(|c| {
+                (
+                    *c,
+                    self.all()
+                        .iter()
+                        .filter(|f| f.category() == *c)
+                        .copied()
+                        .collect::<Vec<&FunctionDefinition>>(),
+                )
+            })
+            .collect();
         let m: HashMap<_, _> = f.into_iter().collect();
         m
     }
 
     /// Call a function
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     /// * `args` - Function arguments
-    pub fn call(&self, name: &str, token: &Token, state: &mut ParserState, args: &[Value]) -> Result<Value, ParserError> {
+    pub fn call(
+        &self,
+        name: &str,
+        token: &Token,
+        state: &mut ParserState,
+        args: &[Value],
+    ) -> Result<Value, Error> {
         match self.0.get(name) {
             Some(f) => f.call(token, state, args),
-            None => Err(FunctionNameError::new(token, name).into())
+            None => Err(Error::FunctionName {
+                name: name.to_string(),
+                token: token.clone(),
+            }),
         }
     }
 
     /// Return a function's signature
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     pub fn signature(&self, name: &str) -> Option<String> {
@@ -113,7 +127,7 @@ impl FunctionTable {
     }
 
     /// Return a function's description
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     pub fn description(&self, name: &str) -> Option<String> {

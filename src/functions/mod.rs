@@ -1,8 +1,13 @@
-use crate::{Value, ParserState, Token};
-use super::errors::*;
+use super::Error;
+use crate::{ParserState, Token, Value};
 
 /// Handler for executing a builtin function
-pub type FunctionHandler = fn(&FunctionDefinition, &Token, state: &mut ParserState, FunctionArgumentCollection) -> Result<Value, ParserError>;
+pub type FunctionHandler = fn(
+    &FunctionDefinition,
+    &Token,
+    state: &mut ParserState,
+    FunctionArgumentCollection,
+) -> Result<Value, Error>;
 
 mod function_argument;
 pub use function_argument::*;
@@ -18,34 +23,37 @@ pub use builtins::*;
 
 #[cfg(test)]
 mod test_builtin_table {
+    use crate::ExpectedTypes;
+
     use super::*;
 
-    const EXAMPLE : FunctionDefinition = FunctionDefinition {
+    const EXAMPLE: FunctionDefinition = FunctionDefinition {
         name: "example",
         category: None,
         description: "Sample function",
-        arguments: || vec![
-            FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-        ],
-        handler: |_function, _token, _state, _args| {
-            Ok(Value::Integer(4))
-        }
+        arguments: || {
+            vec![FunctionArgument::new_required(
+                "n",
+                ExpectedTypes::IntOrFloat,
+            )]
+        },
+        handler: |_function, _token, _state, _args| Ok(Value::Integer(4)),
     };
-    
+
     #[test]
     fn test_register() {
         let mut table = FunctionTable::new();
         table.register(EXAMPLE);
         assert_eq!(true, table.has("example"));
     }
-    
+
     #[test]
     fn test_has() {
         let mut table = FunctionTable::new();
         table.register(EXAMPLE);
         assert_eq!(true, table.has("example"));
     }
-    
+
     #[test]
     fn test_call() {
         let mut state = ParserState::new();
@@ -55,7 +63,16 @@ mod test_builtin_table {
         let token = Token::dummy("");
 
         table.call("example", &token, &mut state, &[]).unwrap_err();
-        table.call("example", &token, &mut state, &[Value::String("".to_string())]).unwrap_err();
-        table.call("example", &token, &mut state, &[Value::Integer(4)]).unwrap();
+        table
+            .call(
+                "example",
+                &token,
+                &mut state,
+                &[Value::String("".to_string())],
+            )
+            .unwrap_err();
+        table
+            .call("example", &token, &mut state, &[Value::Integer(4)])
+            .unwrap();
     }
 }

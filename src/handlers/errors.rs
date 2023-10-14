@@ -2,56 +2,77 @@ use std::collections::HashMap;
 
 use super::RuleHandler;
 use crate::{
-    token::{Rule, Token},
     state::ParserState,
-    errors::*
+    token::{Rule, Token},
+    Error,
 };
 
 pub fn handler_table() -> HashMap<Rule, RuleHandler> {
     HashMap::from([
-        (Rule::error_unterminated_literal, rule_error_unterminated_literal as RuleHandler),
-        (Rule::error_unterminated_linebreak, rule_error_unterminated_linebreak as RuleHandler),
-        (Rule::error_unterminated_array, rule_error_unterminated_array as RuleHandler),
-        (Rule::error_unterminated_object, rule_error_unterminated_object as RuleHandler),
-        (Rule::error_unterminated_paren, rule_error_unterminated_paren as RuleHandler),
-        (Rule::error_unexpected_decorator, rule_error_unexpected_decorator as RuleHandler),
-        (Rule::error_unexpected_postfix, rule_error_unexpected_postfix as RuleHandler),
+        (
+            Rule::error_unterminated_literal,
+            rule_error_unterminated_literal as RuleHandler,
+        ),
+        (
+            Rule::error_unterminated_linebreak,
+            rule_error_unterminated_linebreak as RuleHandler,
+        ),
+        (
+            Rule::error_unterminated_array,
+            rule_error_unterminated_array as RuleHandler,
+        ),
+        (
+            Rule::error_unterminated_object,
+            rule_error_unterminated_object as RuleHandler,
+        ),
+        (
+            Rule::error_unterminated_paren,
+            rule_error_unterminated_paren as RuleHandler,
+        ),
+        (
+            Rule::error_unexpected_decorator,
+            rule_error_unexpected_decorator as RuleHandler,
+        ),
+        (
+            Rule::error_unexpected_postfix,
+            rule_error_unexpected_postfix as RuleHandler,
+        ),
     ])
 }
 
 /// Catches unterminated string literals
-fn rule_error_unterminated_literal(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnterminatedLiteralError::new(token).into())
+fn rule_error_unterminated_literal(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnterminatedLiteral(token.clone()).into())
 }
 
 /// Catches unterminated linebreaks
-fn rule_error_unterminated_linebreak(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnterminatedLinebreakError::new(token).into())
+fn rule_error_unterminated_linebreak(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnterminatedLinebreak(token.clone()).into())
 }
 
 /// Catches unterminated arrays
-fn rule_error_unterminated_array(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnterminatedArrayError::new(token).into())
+fn rule_error_unterminated_array(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnterminatedArray(token.clone()).into())
 }
 
 /// Catches unterminated objects
-fn rule_error_unterminated_object(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnterminatedObjectError::new(token).into())
+fn rule_error_unterminated_object(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnterminatedObject(token.clone()).into())
 }
 
 /// Catches unterminated parens
-fn rule_error_unterminated_paren(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnterminatedParenError::new(token).into())
+fn rule_error_unterminated_paren(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnterminatedParen(token.clone()).into())
 }
 
 /// Catches decorator errors
-fn rule_error_unexpected_decorator(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnexpectedDecoratorError::new(token).into())
+fn rule_error_unexpected_decorator(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnexpectedDecorator(token.clone()).into())
 }
 
 /// Catches postfix errors
-fn rule_error_unexpected_postfix(token: &mut Token, _state: &mut ParserState) -> Option<ParserError> {
-    Some(UnexpectedPostfixError::new(token).into())
+fn rule_error_unexpected_postfix(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    Some(Error::UnexpectedPostfix(token.clone()).into())
 }
 
 #[cfg(test)]

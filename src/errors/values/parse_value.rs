@@ -1,5 +1,6 @@
+use crate::Error;
+use crate::ExpectedTypes;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
@@ -8,11 +9,11 @@ use std::fmt::{self, Display};
 pub struct ParseValueError {
     cause: String,
     variant: ExpectedTypes,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl ParseValueError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `cause` - Reason for the error
@@ -21,7 +22,7 @@ impl ParseValueError {
         Self {
             cause: cause.to_string(),
             variant,
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -36,7 +37,7 @@ impl ParseValueError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }
@@ -44,8 +45,16 @@ impl ParseValueError {
 impl Display for ParseValueError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let variant = format!("{}", self.variant);
-        let suffix = if ['a','e','i','o','u'].contains(&variant.chars().next().unwrap()) {"n"} else {" "};
-        write!(f, "could not parse {} as a{suffix} {} {}", self.cause, self.variant, self.src)?;
+        let suffix = if ['a', 'e', 'i', 'o', 'u'].contains(&variant.chars().next().unwrap()) {
+            "n"
+        } else {
+            " "
+        };
+        write!(
+            f,
+            "could not parse {} as a{suffix} {} {}",
+            self.cause, self.variant, self.src
+        )?;
         fmt::Result::Ok(())
     }
 }

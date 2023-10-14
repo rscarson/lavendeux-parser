@@ -3,6 +3,7 @@
 use regex::Regex;
 use super::*;
 use crate::value::{Value, IntegerType};
+use crate::ExpectedTypes;
 
 const CONTAINS : FunctionDefinition = FunctionDefinition {
     name: "contains",
@@ -105,9 +106,17 @@ const SUBSTR : FunctionDefinition = FunctionDefinition {
         }.as_int().unwrap_or(default_len);
         
         if start >= s.len() as IntegerType || start < 0 {
-            return Err(FunctionOverflowError::new(token, &function.signature(), 2).into());
+            return Err(Error::FunctionArgumentOverflow { 
+                arg: 2, 
+                signature: function.signature(),
+                token: token.clone()
+            });
         } else if length < 0 || length > (s.len() - start as usize) as IntegerType {
-            return Err(FunctionOverflowError::new(token, &function.signature(), 3).into());
+            return Err(Error::FunctionArgumentOverflow { 
+                arg: 3, 
+                signature: function.signature(),
+                token: token.clone()
+            });
         }
 
         Ok(Value::String(s.chars().skip(start as usize).take(length as usize).collect()))
@@ -132,8 +141,8 @@ const REGEX : FunctionDefinition = FunctionDefinition {
         };
 
         let re = Regex::new(&pattern);
-        if let Err(e) = re {
-            return Err(ParsingError::new(token, "regex", &e.to_string()).into());
+        if let Err(_) = re {
+            return Err(Error::StringFormat { expected_format: "regex".to_string(), token: token.clone() });
         }
     
         if let Some(caps) = re.unwrap().captures(&subject) {

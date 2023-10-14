@@ -1,8 +1,8 @@
 use super::value::Value;
 use std::collections::HashMap;
 
-use super::functions;
 use super::decorators;
+use super::functions;
 
 use super::network::ApiInstance;
 
@@ -16,18 +16,20 @@ const MAX_STACK_DEPTH: usize = 50;
 pub struct UserFunction {
     name: String,
     arguments: Vec<String>,
-    definition: String
+    definition: String,
 }
 impl UserFunction {
     /// Return a new user function
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function name
     /// * `arguments` - Arguments expected by the function
     /// * `definition` - Function definition string
     pub fn new(name: String, arguments: Vec<String>, definition: String) -> Self {
         Self {
-            name, arguments, definition
+            name,
+            arguments,
+            definition,
         }
     }
 
@@ -35,12 +37,12 @@ impl UserFunction {
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     /// Return the function's expected arguments
     pub fn arguments(&self) -> &Vec<String> {
         &self.arguments
     }
-    
+
     /// Return the function's definition string
     pub fn definition(&self) -> &str {
         &self.definition
@@ -48,17 +50,21 @@ impl UserFunction {
 
     /// Return the function's signature
     pub fn signature(&self) -> String {
-        format!("{}({}) = {}", self.name(), self.arguments().join(", "), self.definition())
+        format!(
+            "{}({}) = {}",
+            self.name(),
+            self.arguments().join(", "),
+            self.definition()
+        )
     }
 }
-
 
 /// Represents the current state of the parser
 /// Holds the functions, decorators, variables and extensions
 /// available for expressions to use
 #[derive(Clone)]
 pub struct ParserState {
-    depth : usize,
+    depth: usize,
 
     /// The assigned variables usable in expressions
     pub variables: HashMap<String, Value>,
@@ -87,7 +93,7 @@ impl Default for ParserState {
     fn default() -> Self {
         Self::new()
     }
-} 
+}
 
 impl ParserState {
     /// Create a new parser state

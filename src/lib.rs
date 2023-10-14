@@ -2,25 +2,25 @@
 //! [![Crates.io](https://img.shields.io/crates/v/lavendeux-parser.svg)](https://crates.io/crates/lavendeux-parser)
 //! [![Build Status](https://github.com/rscarson/lavendeux-parser/workflows/Rust/badge.svg)](https://github.com/rscarson/lavendeux-parser/actions?workflow=Rust)
 //! [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/rscarson/lavendeux-parser/master/LICENSE)
-//! 
+//!
 //! lavendeux-parser is rust library that provides an extensible parsing engine for mathematical expressions.
 //! It enables the parsing of user-supplied expressions to operate on a variety of types of data.
 //! It supports variable and function assignments, a variety of datatypes, and can
 //! be extended easily at runtime through extensions written in javascript.
-//! 
+//!
 //! Extensions are run in a sandboxed environment with no host or network access.
 //! This project is the engine behind [Lavendeux](https://rscarson.github.io/lavendeux/).
-//! 
+//!
 //! ## Getting Started
 //! To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 //! ```rust
-//! use lavendeux_parser::{ParserState, ParserError, Token, Value};
-//! 
-//! fn main() -> Result<(), ParserError> {
+//! use lavendeux_parser::{ParserState, Error, Token, Value};
+//!
+//! fn main() -> Result<(), Error> {
 //!     // Create a new parser, and tokenize 2 lines
 //!     let mut state : ParserState = ParserState::new();
 //!     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
-//! 
+//!
 //!     // The resulting token contains the resulting values and text
 //!     assert_eq!(lines.text(), "9\n0b11");
 //!     assert_eq!(lines.child(1).unwrap().value(), Value::Float(3.0));
@@ -30,32 +30,31 @@
 //! ```
 //! The result will be a `Token` object:
 //! ```rust
-//! use lavendeux_parser::{ParserState, ParserError, Token, Value};
-//! 
-//! fn main() -> Result<(), ParserError> {
+//! use lavendeux_parser::{ParserState, Error, Token, Value};
+//!
+//! fn main() -> Result<(), Error> {
 //!     let mut state : ParserState = ParserState::new();
 //!     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
-//! 
+//!
 //!     // String representation of the full result
-//!     assert_eq!(lines.text(), "9\n0b11"); 
-//! 
+//!     assert_eq!(lines.text(), "9\n0b11");
+//!
 //!     // String representation of the first line's result
 //!     assert_eq!(lines.child(0).unwrap().text(), "9");
-//! 
+//!
 //!     // Actual value of the first line's result
 //!     // Values are integers, floats, booleans or strings
 //!     let value = lines.child(0).unwrap().value();
 //!     assert_eq!(value.as_int().unwrap(), 9);
 //!     assert_eq!(true, matches!(value, Value::Integer(_)));
-//! 
+//!
 //!     Ok(())
 //! }
 //! ```
-//! 
+//!
 //! A number of functions and @decorators are available for expressions to use - add more using the state:
 //! ```rust
-//! use lavendeux_parser::{ParserState, ParserError, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value};
-//! use lavendeux_parser::errors::*;
+//! use lavendeux_parser::{ParserState, Error, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value, ExpectedTypes};
 //!  
 //! let mut state : ParserState = ParserState::new();
 //! state.decorators.register(DecoratorDefinition {
@@ -64,7 +63,7 @@
 //!     argument: ExpectedTypes::Any,
 //!     handler: |_, _token, input| Ok(input.as_string().to_uppercase())
 //! });
-//! 
+//!
 //! // Functions take in an array of values, and return a single value
 //! state.functions.register(FunctionDefinition {
 //!     name: "echo",
@@ -77,14 +76,14 @@
 //!         Ok(Value::String(args.get("input").required().as_string()))
 //!     }
 //! });
-//! 
+//!
 //! // Expressions being parsed can now call new_function(), and use the @new_decorator
 //! ```
-//! 
+//!
 //! Javascript extensions give a flexible way of adding functionality at runtime.
 //! Extensions are run in a sandboxed environment, with no network or host access.  
 //! An extension must implement an extension() function taking no arguments and returning an object describing the extension - see example below
-//! 
+//!
 //! Extensions can also access parser variables through getState, and mutate the state with setState
 //! Always check if getState is defined prior to use, to maintain compatibility with older versions of the parser.
 //!
@@ -110,7 +109,7 @@
 //!         },
 //!     }
 //! }
-//! 
+//!
 //! /**
 //! * This function can be called from Lavendeux as callable_name(...)
 //! * args is an array of value objects with either the key Integer, Float or String
@@ -122,7 +121,7 @@
 //!         "Integer": 5,
 //!     };
 //! }
-//! 
+//!
 //! /**
 //! * Functions can also be stateful, gaining access to the parser's variables
 //! * It takes in arguments and a state, a hash of strings and values
@@ -132,7 +131,7 @@
 //!     state.foobar = {"Integer": 5};
 //!     return [state.foobar, state];
 //! }
-//! 
+//!
 //! /**
 //! * This decorator can be called from Lavendeux as @callable_name
 //! * arg is a value object with either the key Integer, Float or String
@@ -143,23 +142,23 @@
 //!     return "formatted value";
 //! }
 //! ```
-//! 
+//!
 //! ## Using Extensions
 //! Extensions are enabled by default, and can be excluded by disabling the crate's "extensions" feature
-//! 
+//!
 //! Extensions can be loaded as follows:
 //! ```rust
-//! use lavendeux_parser::{ParserState, ParserError, Value, Token};
-//! 
-//! fn main() -> Result<(), ParserError> {
+//! use lavendeux_parser::{ParserState, Error, Value, Token};
+//!
+//! fn main() -> Result<(), Error> {
 //!     let mut state : ParserState = ParserState::new();
-//! 
+//!
 //!     // Load one extension
 //!     state.extensions.load("example_extensions/colour_utils.js");
-//! 
+//!
 //!     // Load a whole directory - this will return a vec of Extension/Error results
 //!     state.extensions.load_all("./example_extensions");
-//! 
+//!
 //!     // Once loaded, functions and @decorators decribed in the extensions
 //!     // can be called in expressions being parsed
 //!     let token = Token::new("complement(0xFF0000) @colour", &mut state)?;
@@ -167,84 +166,84 @@
 //!     Ok(())
 //! }
 //! ```
-//! 
+//!
 //! ## Syntax
 //! Expressions can be composed of integers, floats, strings, as well as numbers of various bases:
 //! ```text
 //! // Integer, floating point or scientific notation numbers
 //! 5 + 5.56 + .2e+3
-//! 
+//!
 //! // Currency values
 //! // Note that no exchange rate is being applied automatically
 //! $1,000.00 == ¥1,000.00
-//! 
+//!
 //! // Scientific numbers can be represented a number of ways
 //! 5.6e+7 - .6E7 + .2e-3
-//! 
+//!
 //! // Booleans
 //! in_range = 5 > 3 && 5 < 10
 //! true || false
-//! 
+//!
 //! // Integers can also be represented in base 2, 8 or 16
 //! 0xFFA & 0b110 & 0777
-//! 
+//!
 //! // Strings are also supported
 //! concat("foo", "bar")
-//! 
+//!
 //! [1, 2, "test"] // Arrays can be composed of any combination of types
 //! [10, 12] + [1.2, 1.3] // Operations can be performed between arrays of the same size
 //! 2 * [10, 5] // Operations can also be applied between scalar values and arrays
 //! [false, 0, true] == true // An array evaluates to true if any element is true
 //! a = [1, 2, "test"]
 //! a[1] // You can use indexing on array elements
-//! 
+//!
 //! // Objects are also supported:
 //! b = {3: "test", "plumbus": true}
 //! b["plumbus"]
 //! ```
-//! 
+//!
 //! Beyond the simpler operators, the following operations are supported:
 //! ```text
 //! 5 ** 2 // Exponentiation
 //! 6 % 2 // Modulo
 //! 3! // Factorial
-//! 
+//!
 //! // Bitwise operators AND, OR, and XOR:
 //! 0xF & 0xA | 0x2 ^ 0xF
-//! 
+//!
 //! // Bitwise SHIFT, and NOT
 //! 0xF << 1
 //! 0x1 >> 2
 //! ~0xA
-//! 
+//!
 //! // Boolean operators
 //! true || false && true
 //! 1 < 2 > 5 // true
 //! ```
-//! 
+//!
 //! You can also assign values to variables to be used later:  
 //! They are case sensitive, and can be composed of underscores or alphanumeric characters
 //! ```text
 //! // You can also assign values to variables to be used later
 //! x = 0xFFA & 0xFF0
 //! x - 55 // The result will be 200
-//! 
+//!
 //! // A few constants are also pre-defined
 //! value = pi * e * tau
-//! 
+//!
 //! // You can also define functions
 //! f(x) = 2*x**2 + 3*x + 5
 //! f(2.3)
-//! 
+//!
 //! // Functions work well with arrays
 //! sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )
 //! sum([10, 10, 11])
-//! 
+//!
 //! // Recursive functions work too!
 //! factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
 //! factorial(5)
 //! ```
-//! 
+//!
 //! Decorators can be put at the end of a line to change the output format. Valid decorators include:
 //! ```text
 //! 255 @hex // The result will be 0xFF
@@ -253,7 +252,7 @@
 //! 5 @usd // Also works with @dollars @cad, @aud, @yen, @pounds, or @euros
 //! 1647950086 @utc // 2022-03-22 11:54:46
 //! ```
-//! 
+//!
 //! Full list of built-in types, operators and functions:
 //! ```text
 //! Operators
@@ -262,7 +261,7 @@
 //! Boolean: AND (true && false), OR (true || false), CMP (1 < 2, 4 >= 5), EQ (1 == 1, 2 != 5)
 //! Arithmetic: Add/Sub (+, -), Mul/Div (*, /), Exponentiation (**), Modulo (%), Implied Mul ((5)(5), 5x)
 //! Unary: Factorial (5!!), Negation (-1, -(1+1))
-//! 
+//!
 //! Data Types
 //! ==========
 //! String: Text delimited by 'quotes' or "double-quotes"
@@ -274,7 +273,7 @@
 //! Object: A comma separated list of key/value pairs in curly braces; {'test': 5}
 //! Variable: An identifier representing a value. Set it with x=5, then use it in an expression (5x)
 //! Contant: A preset read-only variable representing a common value, such as pi, e, and tau
-//! 
+//!
 //! Misc Functions
 //! ==============
 //! atob(input): Convert a string into a base64 encoded string
@@ -287,7 +286,7 @@
 //! time(): Returns a unix timestamp for the current system time
 //! urldecode(input): Decode urlencoded character escape sequences in a string
 //! urlencode(input): Escape characters in a string for use in a URL
-//! 
+//!
 //! Network Functions
 //! =================
 //! api(name, [endpoint]): Make a call to a registered API
@@ -297,7 +296,7 @@
 //! get(url, [headers]): Return the resulting text-format body of an HTTP GET call
 //! post(url, body, [headers]): Return the resulting text-format body of an HTTP POST call
 //! resolve(hostname): Returns the IP address associated to a given hostname
-//! 
+//!
 //! Arrays Functions
 //! ================
 //! dequeue(array): Remove the first element from an array
@@ -311,7 +310,7 @@
 //! push(array, element): Add an element to the end of an array
 //! remove(input, index): Removes an element from an array
 //! values(input): Get a list of values in the object or array
-//! 
+//!
 //! Strings Functions
 //! =================
 //! concat([s1, s2]): Concatenate a set of strings
@@ -322,14 +321,14 @@
 //! substr(s, start, [length]): Returns a substring from s, beginning at [start], and going to the end, or for [length] characters
 //! trim(s): Trim whitespace from a string
 //! uppercase(s): Converts the string s to uppercase
-//! 
+//!
 //! Cryptography Functions
 //! ======================
 //! choose(option1, option2): Returns any one of the provided arguments at random
 //! md5(input1, input2): Returns the MD5 hash of a given string
 //! rand([m], [n]): With no arguments, return a float from 0 to 1. Otherwise return an integer from 0 to m, or m to n
 //! sha256(input1, input2): Returns the SHA256 hash of a given string
-//! 
+//!
 //! Math Functions
 //! ==============
 //! abs(n): Returns the absolute value of n
@@ -358,7 +357,7 @@
 //! tanh(n): Calculate the hyperbolic tangent of n
 //! to_degrees(n): Convert the given radian value into degrees
 //! to_radians(n): Convert the given degree value into radians
-//! 
+//!
 //! Built-in Decorators
 //! ===================
 //! @array: Format a number as an array
@@ -392,11 +391,15 @@
 #![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.9.0")]
 #![warn(missing_docs)]
 
-mod help;
+mod errors;
 mod handlers;
+mod help;
+mod state;
 mod token;
 mod value;
-mod state;
+
+mod expected_types;
+pub use expected_types::ExpectedTypes;
 
 #[macro_use]
 pub mod test;
@@ -404,7 +407,9 @@ pub mod test;
 mod network;
 
 mod functions;
-pub use functions::{FunctionDefinition, FunctionArgument, FunctionArgumentCollection, FunctionHandler};
+pub use functions::{
+    FunctionArgument, FunctionArgumentCollection, FunctionDefinition, FunctionHandler,
+};
 
 mod decorators;
 pub use decorators::{DecoratorDefinition, DecoratorHandler};
@@ -416,14 +421,13 @@ mod extensions;
 pub use extensions::Extension;
 
 /// Module defining errors that can occur during parsing
-pub mod errors;
-pub use errors::ParserError;
-pub use token::Token;
+pub use errors::Error;
 pub use state::ParserState;
-pub use value::Value;
+pub use token::Token;
 pub use value::ArrayType;
-pub use value::IntegerType;
 pub use value::FloatType;
+pub use value::IntegerType;
+pub use value::Value;
 
 #[cfg(test)]
 mod test_token {

@@ -1,6 +1,6 @@
-use lavendeux_parser::{ParserState, ParserError, Token};
+use lavendeux_parser::{Error, ParserState, Token};
 
-fn main() -> Result<(), ParserError> {
+fn main() -> Result<(), Error> {
     let expression = "
 factorial(x) = x==0 ? 1 : (x * factorial(x - 1) )
 x = factorial(5)
@@ -14,9 +14,9 @@ true
     ";
 
     // Tokenize the expression
-    let mut state : ParserState = ParserState::new();
+    let mut state: ParserState = ParserState::new();
     let lines = Token::new(expression, &mut state)?;
-    
+
     assert_eq!(lines.text(), expected_result);
     assert_eq!(lines.child(1).unwrap().value(), 120);
 

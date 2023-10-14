@@ -1,5 +1,6 @@
+use crate::Error;
+use crate::ExpectedTypes;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
@@ -7,18 +8,18 @@ use std::fmt::{self, Display};
 #[derive(Debug, Clone)]
 pub struct ValueTypeError {
     expected: ExpectedTypes,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl ValueTypeError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `expected` - The type of value required
     pub fn new(src: &Token, expected: ExpectedTypes) -> Self {
         Self {
             expected,
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -28,14 +29,18 @@ impl ValueTypeError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }
 
 impl Display for ValueTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "invalid type for value, expected {} {}", self.expected, self.src)?;
+        write!(
+            f,
+            "invalid type for value, expected {} {}",
+            self.expected, self.src
+        )?;
         fmt::Result::Ok(())
     }
 }

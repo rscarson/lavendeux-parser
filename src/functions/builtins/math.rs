@@ -1,143 +1,195 @@
 //! Builtin functions for advanced mathematics
 
 use super::*;
-use crate::value::{Value, IntegerType};
+use crate::value::{IntegerType, Value};
+use crate::ExpectedTypes;
 
-const BOOL : FunctionDefinition = FunctionDefinition {
+const BOOL: FunctionDefinition = FunctionDefinition {
     name: "bool",
     category: Some("math"),
     description: "Returns a value as a boolean",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::Any),
-    ],
+    arguments: || vec![FunctionArgument::new_required("n", ExpectedTypes::Any)],
     handler: |_function, _token, _state, args| {
         Ok(Value::Boolean(args.get("n").required().as_bool()))
-    }
+    },
 };
 
-const ARRAY : FunctionDefinition = FunctionDefinition {
+const ARRAY: FunctionDefinition = FunctionDefinition {
     name: "array",
     category: Some("math"),
     description: "Returns a value as an array",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::Any),
-    ],
+    arguments: || vec![FunctionArgument::new_required("n", ExpectedTypes::Any)],
     handler: |_function, _token, _state, args| {
         Ok(Value::Array(args.get("n").required().as_array()))
-    }
+    },
 };
 
-const INT : FunctionDefinition = FunctionDefinition {
+const INT: FunctionDefinition = FunctionDefinition {
     name: "int",
     category: Some("math"),
     description: "Returns a value as an integer",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
         Ok(Value::Integer(args.get("n").required().as_int().unwrap()))
-    }
+    },
 };
 
-const FLOAT : FunctionDefinition = FunctionDefinition {
+const FLOAT: FunctionDefinition = FunctionDefinition {
     name: "float",
     category: Some("math"),
     description: "Returns a value as a float",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
         Ok(Value::Float(args.get("n").required().as_float().unwrap()))
-    }
+    },
 };
 
-const MIN : FunctionDefinition = FunctionDefinition {
+const MIN: FunctionDefinition = FunctionDefinition {
     name: "min",
     category: Some("math"),
     description: "Returns the smallest numeric value from the supplied arguments",
-    arguments: || vec![
-        FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_plural(
+            "n",
+            ExpectedTypes::IntOrFloat,
+            false,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        let mut valid_args = args.iter().filter(|a|!a.as_float().unwrap().is_nan()).cloned().collect::<Vec<Value>>();
-        valid_args.sort_by(|a,b| a.as_float().unwrap().partial_cmp(&b.as_float().unwrap()).unwrap());
+        let mut valid_args = args
+            .iter()
+            .filter(|a| !a.as_float().unwrap().is_nan())
+            .cloned()
+            .collect::<Vec<Value>>();
+        valid_args.sort_by(|a, b| {
+            a.as_float()
+                .unwrap()
+                .partial_cmp(&b.as_float().unwrap())
+                .unwrap()
+        });
         if valid_args.is_empty() {
             Ok(args.get("n").plural().first().cloned().unwrap())
         } else {
             Ok(valid_args[0].clone())
         }
-    }
+    },
 };
 
-const MAX : FunctionDefinition = FunctionDefinition {
+const MAX: FunctionDefinition = FunctionDefinition {
     name: "max",
     category: Some("math"),
     description: "Returns the largest numeric value from the supplied arguments",
-    arguments: || vec![
-        FunctionArgument::new_plural("n", ExpectedTypes::IntOrFloat, false),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_plural(
+            "n",
+            ExpectedTypes::IntOrFloat,
+            false,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        let mut valid_args = args.iter().filter(|a|!a.as_float().unwrap().is_nan()).cloned().collect::<Vec<Value>>();
-        valid_args.sort_by(|a,b| b.as_float().unwrap().partial_cmp(&a.as_float().unwrap()).unwrap());
+        let mut valid_args = args
+            .iter()
+            .filter(|a| !a.as_float().unwrap().is_nan())
+            .cloned()
+            .collect::<Vec<Value>>();
+        valid_args.sort_by(|a, b| {
+            b.as_float()
+                .unwrap()
+                .partial_cmp(&a.as_float().unwrap())
+                .unwrap()
+        });
         if valid_args.is_empty() {
             Ok(args.get("n").plural().first().cloned().unwrap())
         } else {
             Ok(valid_args[0].clone())
         }
-    }
+    },
 };
 
-const CEIL : FunctionDefinition = FunctionDefinition {
+const CEIL: FunctionDefinition = FunctionDefinition {
     name: "ceil",
     category: Some("math"),
     description: "Returns the nearest whole integer larger than n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        Ok(Value::Integer(args.get("n").required().as_float().unwrap().ceil() as IntegerType))
-    }
+        Ok(Value::Integer(
+            args.get("n").required().as_float().unwrap().ceil() as IntegerType,
+        ))
+    },
 };
 
-const FLOOR : FunctionDefinition = FunctionDefinition {
+const FLOOR: FunctionDefinition = FunctionDefinition {
     name: "floor",
     category: Some("math"),
     description: "Returns the nearest whole integer smaller than n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        Ok(Value::Integer(args.get("n").required().as_float().unwrap().floor() as IntegerType))
-    }
+        Ok(Value::Integer(
+            args.get("n").required().as_float().unwrap().floor() as IntegerType,
+        ))
+    },
 };
 
-const ROUND : FunctionDefinition = FunctionDefinition {
+const ROUND: FunctionDefinition = FunctionDefinition {
     name: "round",
     category: Some("math"),
     description: "Returns n, rounded to [precision] decimal places",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-        FunctionArgument::new_optional("precision", ExpectedTypes::Int),
-    ],
-    handler: |_function, token, _state, args| {
-        let precision = args.get("precision").optional_or(Value::Integer(0)).as_int().unwrap_or(0);
-        if precision > u32::MAX as IntegerType { 
-            return Err(FunctionOverflowError::new(token, "round(n, precision=0)", 2).into()); 
+    arguments: || {
+        vec![
+            FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+            FunctionArgument::new_optional("precision", ExpectedTypes::Int),
+        ]
+    },
+    handler: |function, token, _state, args| {
+        let precision = args
+            .get("precision")
+            .optional_or(Value::Integer(0))
+            .as_int()
+            .unwrap_or(0);
+        if precision > u32::MAX as IntegerType {
+            return Err(Error::FunctionArgumentOverflow {
+                arg: 2,
+                signature: function.signature(),
+                token: token.clone(),
+            });
         }
-    
+
         let multiplier = f64::powi(10.0, precision as i32);
         let n = args.get("n").required().as_float().unwrap();
         Ok(Value::Float((n * multiplier).round() / multiplier))
-    }
+    },
 };
 
-const ABS : FunctionDefinition = FunctionDefinition {
+const ABS: FunctionDefinition = FunctionDefinition {
     name: "abs",
     category: Some("math"),
     description: "Returns the absolute value of n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat)
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
         let n = args.get("n").required();
         if n.is_int() {
@@ -145,71 +197,98 @@ const ABS : FunctionDefinition = FunctionDefinition {
         } else {
             Ok(Value::Float(n.as_float().unwrap().abs()))
         }
-    }
+    },
 };
 
-const LOG10 : FunctionDefinition = FunctionDefinition {
+const LOG10: FunctionDefinition = FunctionDefinition {
     name: "log10",
     category: Some("math"),
     description: "Returns the base 10 log of n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        Ok(Value::Float(args.get("n").required().as_float().unwrap().log10()))
-    }
+        Ok(Value::Float(
+            args.get("n").required().as_float().unwrap().log10(),
+        ))
+    },
 };
 
-const LN : FunctionDefinition = FunctionDefinition {
+const LN: FunctionDefinition = FunctionDefinition {
     name: "ln",
     category: Some("math"),
     description: "Returns the natural log of n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        Ok(Value::Float(args.get("n").required().as_float().unwrap().ln()))
-    }
+        Ok(Value::Float(
+            args.get("n").required().as_float().unwrap().ln(),
+        ))
+    },
 };
 
-const LOG : FunctionDefinition = FunctionDefinition {
+const LOG: FunctionDefinition = FunctionDefinition {
     name: "log",
     category: Some("math"),
     description: "Returns the logarithm of n in any base",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-        FunctionArgument::new_required("base", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![
+            FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+            FunctionArgument::new_required("base", ExpectedTypes::IntOrFloat),
+        ]
+    },
     handler: |_function, _token, _state, args| {
         let base = args.get("base").required().as_float().unwrap();
-        Ok(Value::Float(args.get("n").required().as_float().unwrap().log(base)))
-    }
+        Ok(Value::Float(
+            args.get("n").required().as_float().unwrap().log(base),
+        ))
+    },
 };
 
-const SQRT : FunctionDefinition = FunctionDefinition {
+const SQRT: FunctionDefinition = FunctionDefinition {
     name: "sqrt",
     category: Some("math"),
     description: "Returns the square root of n",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![FunctionArgument::new_required(
+            "n",
+            ExpectedTypes::IntOrFloat,
+        )]
+    },
     handler: |_function, _token, _state, args| {
-        Ok(Value::Float(args.get("n").required().as_float().unwrap().sqrt()))
-    }
+        Ok(Value::Float(
+            args.get("n").required().as_float().unwrap().sqrt(),
+        ))
+    },
 };
 
-const ROOT : FunctionDefinition = FunctionDefinition {
+const ROOT: FunctionDefinition = FunctionDefinition {
     name: "root",
     category: Some("math"),
     description: "Returns a root of n of any base",
-    arguments: || vec![
-        FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
-        FunctionArgument::new_required("base", ExpectedTypes::IntOrFloat),
-    ],
+    arguments: || {
+        vec![
+            FunctionArgument::new_required("n", ExpectedTypes::IntOrFloat),
+            FunctionArgument::new_required("base", ExpectedTypes::IntOrFloat),
+        ]
+    },
     handler: |_function, _token, _state, args| {
         let base = args.get("base").required().as_float().unwrap();
-        Ok(Value::Float(args.get("n").required().as_float().unwrap().powf(1.0 / base)))
-    }
+        Ok(Value::Float(
+            args.get("n")
+                .required()
+                .as_float()
+                .unwrap()
+                .powf(1.0 / base),
+        ))
+    },
 };
 
 /// Register string functions
@@ -227,122 +306,234 @@ pub fn register_functions(table: &mut FunctionTable) {
     table.register(FLOOR);
     table.register(ROUND);
     table.register(ABS);
-    
+
     // Roots and logs
     table.register(LOG10);
     table.register(LN);
     table.register(LOG);
     table.register(SQRT);
     table.register(ROOT);
-    
 }
 
 #[cfg(test)]
 mod test_builtin_functions {
-    use crate::value::{FloatType};
     use super::*;
-    
+    use crate::value::FloatType;
+
     #[test]
     fn test_min() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(3), MIN.call(&Token::dummy(""), &mut state, &[
-            Value::Float(3.5),
+        assert_eq!(
             Value::Integer(3),
-            Value::Integer(7),
-            Value::Float(FloatType::NAN)
-        ]).unwrap());
-        assert_eq!(Value::Float(3.1), MIN.call(&Token::dummy(""), &mut state, &[
-            Value::Float(3.5),
+            MIN.call(
+                &Token::dummy(""),
+                &mut state,
+                &[
+                    Value::Float(3.5),
+                    Value::Integer(3),
+                    Value::Integer(7),
+                    Value::Float(FloatType::NAN)
+                ]
+            )
+            .unwrap()
+        );
+        assert_eq!(
             Value::Float(3.1),
-            Value::Integer(7),
-            Value::Float(FloatType::NAN)
-        ]).unwrap());
+            MIN.call(
+                &Token::dummy(""),
+                &mut state,
+                &[
+                    Value::Float(3.5),
+                    Value::Float(3.1),
+                    Value::Integer(7),
+                    Value::Float(FloatType::NAN)
+                ]
+            )
+            .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_max() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(7), MAX.call(&Token::dummy(""), &mut state, &[
-            Value::Float(3.5),
-            Value::Integer(3),
+        assert_eq!(
             Value::Integer(7),
-            Value::Float(FloatType::NAN)
-        ]).unwrap());
-        assert_eq!(Value::Float(7.1), MAX.call(&Token::dummy(""), &mut state, &[
-            Value::Float(3.5),
-            Value::Integer(3),
+            MAX.call(
+                &Token::dummy(""),
+                &mut state,
+                &[
+                    Value::Float(3.5),
+                    Value::Integer(3),
+                    Value::Integer(7),
+                    Value::Float(FloatType::NAN)
+                ]
+            )
+            .unwrap()
+        );
+        assert_eq!(
             Value::Float(7.1),
-            Value::Float(FloatType::NAN)
-        ]).unwrap());
+            MAX.call(
+                &Token::dummy(""),
+                &mut state,
+                &[
+                    Value::Float(3.5),
+                    Value::Integer(3),
+                    Value::Float(7.1),
+                    Value::Float(FloatType::NAN)
+                ]
+            )
+            .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_ceil() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(4), CEIL.call(&Token::dummy(""), &mut state, &[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), CEIL.call(&Token::dummy(""), &mut state, &[Value::Integer(4)]).unwrap());
+        assert_eq!(
+            Value::Integer(4),
+            CEIL.call(&Token::dummy(""), &mut state, &[Value::Float(3.5)])
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Integer(4),
+            CEIL.call(&Token::dummy(""), &mut state, &[Value::Integer(4)])
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_floor() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(3), FLOOR.call(&Token::dummy(""), &mut state, &[Value::Float(3.5)]).unwrap());
-        assert_eq!(Value::Integer(4), FLOOR.call(&Token::dummy(""), &mut state, &[Value::Integer(4)]).unwrap());
+        assert_eq!(
+            Value::Integer(3),
+            FLOOR
+                .call(&Token::dummy(""), &mut state, &[Value::Float(3.5)])
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Integer(4),
+            FLOOR
+                .call(&Token::dummy(""), &mut state, &[Value::Integer(4)])
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_round() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(3.56), ROUND.call(&Token::dummy(""), &mut state, &[Value::Float(3.555), Value::Integer(2)]).unwrap());
-        assert_eq!(Value::Float(4.0), ROUND.call(&Token::dummy(""), &mut state, &[Value::Integer(4), Value::Integer(2)]).unwrap());
+        assert_eq!(
+            Value::Float(3.56),
+            ROUND
+                .call(
+                    &Token::dummy(""),
+                    &mut state,
+                    &[Value::Float(3.555), Value::Integer(2)]
+                )
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Float(4.0),
+            ROUND
+                .call(
+                    &Token::dummy(""),
+                    &mut state,
+                    &[Value::Integer(4), Value::Integer(2)]
+                )
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_abs() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Integer(3), ABS.call(&Token::dummy(""), &mut state, &[Value::Integer(3)]).unwrap());
-        assert_eq!(Value::Integer(3), ABS.call(&Token::dummy(""), &mut state, &[Value::Integer(-3)]).unwrap());
-        assert_eq!(Value::Float(4.0), ABS.call(&Token::dummy(""), &mut state, &[Value::Float(-4.0)]).unwrap());
+        assert_eq!(
+            Value::Integer(3),
+            ABS.call(&Token::dummy(""), &mut state, &[Value::Integer(3)])
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Integer(3),
+            ABS.call(&Token::dummy(""), &mut state, &[Value::Integer(-3)])
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Float(4.0),
+            ABS.call(&Token::dummy(""), &mut state, &[Value::Float(-4.0)])
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_ln() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(1.0), LN.call(&Token::dummy(""), &mut state, &[Value::Float(std::f64::consts::E)]).unwrap());
+        assert_eq!(
+            Value::Float(1.0),
+            LN.call(
+                &Token::dummy(""),
+                &mut state,
+                &[Value::Float(std::f64::consts::E)]
+            )
+            .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_log10() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(2.0), LOG10.call(&Token::dummy(""), &mut state, &[Value::Float(100.0)]).unwrap());
+        assert_eq!(
+            Value::Float(2.0),
+            LOG10
+                .call(&Token::dummy(""), &mut state, &[Value::Float(100.0)])
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_log() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(2.0), LOG.call(&Token::dummy(""), &mut state, &[Value::Float(100.0), Value::Integer(10)]).unwrap());
+        assert_eq!(
+            Value::Float(2.0),
+            LOG.call(
+                &Token::dummy(""),
+                &mut state,
+                &[Value::Float(100.0), Value::Integer(10)]
+            )
+            .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_sqrt() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(3.0), SQRT.call(&Token::dummy(""), &mut state, &[Value::Float(9.0)]).unwrap());
+        assert_eq!(
+            Value::Float(3.0),
+            SQRT.call(&Token::dummy(""), &mut state, &[Value::Float(9.0)])
+                .unwrap()
+        );
     }
-    
+
     #[test]
     fn test_root() {
         let mut state = ParserState::new();
 
-        assert_eq!(Value::Float(3.0), ROOT.call(&Token::dummy(""), &mut state, &[Value::Float(27.0), Value::Integer(3)]).unwrap());
+        assert_eq!(
+            Value::Float(3.0),
+            ROOT.call(
+                &Token::dummy(""),
+                &mut state,
+                &[Value::Float(27.0), Value::Integer(3)]
+            )
+            .unwrap()
+        );
     }
 }

@@ -1,5 +1,5 @@
-use crate::{Value, Token};
-use crate::errors::*;
+use crate::Error;
+use crate::{Token, Value};
 
 use std::fmt::{self, Display};
 
@@ -7,18 +7,18 @@ use std::fmt::{self, Display};
 #[derive(Debug, Clone)]
 pub struct RangeError {
     cause: Value,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl RangeError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `cause` - Reason for the error
     pub fn new(src: &Token, cause: &Value) -> Self {
         Self {
             cause: cause.clone(),
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -28,7 +28,7 @@ impl RangeError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }

@@ -1,5 +1,5 @@
+use crate::Error;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
@@ -8,11 +8,11 @@ use std::fmt::{self, Display};
 pub struct AmbiguousFunctionError {
     function: String,
     cause: String,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl AmbiguousFunctionError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `function` - name of the ambiguous function
@@ -21,7 +21,7 @@ impl AmbiguousFunctionError {
         Self {
             function: function.to_string(),
             cause: cause.to_string(),
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -36,14 +36,18 @@ impl AmbiguousFunctionError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }
 
 impl Display for AmbiguousFunctionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ambiguous arguments in {}(): {} {}", self.function, self.cause, self.src)?;
+        write!(
+            f,
+            "ambiguous arguments in {}(): {} {}",
+            self.function, self.cause, self.src
+        )?;
         fmt::Result::Ok(())
     }
 }

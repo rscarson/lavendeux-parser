@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 const MAX_FLOAT_PRECISION: i32 = 8;
 
@@ -18,7 +18,7 @@ pub type ObjectType = HashMap<Value, Value>;
 
 /// Represents a single value resulting from a calculation
 /// Can take the form of an integer, float, boolean or string
-/// 
+///
 /// Some types are interchangeable:
 /// ```rust
 /// use lavendeux_parser::Value;
@@ -28,20 +28,20 @@ pub type ObjectType = HashMap<Value, Value>;
 #[derive(Debug)]
 pub enum Value {
     /// The lack of a value
-    None, 
+    None,
 
     /// An unresolved identifier
     Identifier(String),
-    
+
     /// A boolean value - all types can be expressed as booleans
-    Boolean(bool), 
-    
+    Boolean(bool),
+
     /// An integer value - floats can also be expressed as integers
-    Integer(IntegerType), 
-    
+    Integer(IntegerType),
+
     /// A floating point value - integers can also be expressed as floats
-    Float(FloatType), 
-    
+    Float(FloatType),
+
     /// A string value - all types can be expressed as strings
     String(String),
 
@@ -54,21 +54,22 @@ pub enum Value {
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where D: Deserializer<'de>, {
-        
+    where
+        D: Deserializer<'de>,
+    {
         #[derive(Deserialize)]
         enum IntermediateValue {
             /// The lack of a value
-            None, 
+            None,
             Identifier(String),
-            Boolean(bool), 
-            Integer(IntegerType), 
-            Float(FloatType), 
+            Boolean(bool),
+            Integer(IntegerType),
+            Float(FloatType),
             String(String),
             Array(ArrayType),
             Object(Vec<(Value, Value)>),
         }
-        
+
         let _value = IntermediateValue::deserialize(deserializer)?;
         match _value {
             IntermediateValue::None => Ok(Value::None),
@@ -88,10 +89,14 @@ impl<'de> Deserialize<'de> for Value {
 
 impl Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer, {
+    where
+        S: Serializer,
+    {
         match self {
             Value::None => serializer.serialize_newtype_variant("Value", 0, "None", &()),
-            Value::Identifier(id) => serializer.serialize_newtype_variant("Value", 1, "Identifier", id),
+            Value::Identifier(id) => {
+                serializer.serialize_newtype_variant("Value", 1, "Identifier", id)
+            }
             Value::Boolean(b) => serializer.serialize_newtype_variant("Value", 2, "Boolean", b),
             Value::Integer(i) => serializer.serialize_newtype_variant("Value", 3, "Integer", i),
             Value::Float(f) => serializer.serialize_newtype_variant("Value", 4, "Float", f),
@@ -135,46 +140,74 @@ impl Value {
     /// Return the value as a string
     pub fn as_string(&self) -> String {
         match self {
-            Value::Boolean(v) => (if *v {"true"} else {"false"}).to_string(),
-            Value::Integer(n) => {format!("{}", *n)},
+            Value::Boolean(v) => (if *v { "true" } else { "false" }).to_string(),
+            Value::Integer(n) => {
+                format!("{}", *n)
+            }
             Value::Float(n) => {
                 let multiplier = f64::powi(10.0, MAX_FLOAT_PRECISION);
                 let mut v = (*n * multiplier).round() / multiplier;
 
-                if v == -0.0 { v = 0.0; }
+                if v == -0.0 {
+                    v = 0.0;
+                }
                 let mut f = format!("{:}", v);
                 if !f.contains('.') {
                     f += ".0";
                 }
-                
+
                 f
-            },
+            }
             Value::String(s) => s.to_string(),
-            Value::Array(v) => format!("[{}]", v.iter().map(|e| e.as_string()).collect::<Vec<String>>().join(", ")),
-            Value::Object(v) => format!("{{{}}}", v.keys()
-                .map(|k| format!("{}:{}", 
-                    if k.is_string() {format!("\"{}\"", k.as_string()
-                        .replace('\'', "\\'")
-                        .replace('\"', "\\\"")
-                        .replace('\n', "\\n")
-                        .replace('\r', "\\r")
-                        .replace('\t', "\\t")
-                    )} else {k.to_string()}, 
-                    if v.get(k).unwrap().is_string() {format!("\"{}\"", v.get(k).unwrap().as_string()
-                        .replace('\'', "\\'")
-                        .replace('\"', "\\\"")
-                        .replace('\n', "\\n")
-                        .replace('\r', "\\r")
-                        .replace('\t', "\\t")
-                    )} else {v.get(k).unwrap().to_string()}))
-                .collect::<Vec<String>>()
-                .join(", ")
+            Value::Array(v) => format!(
+                "[{}]",
+                v.iter()
+                    .map(|e| e.as_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+            Value::Object(v) => format!(
+                "{{{}}}",
+                v.keys()
+                    .map(|k| format!(
+                        "{}:{}",
+                        if k.is_string() {
+                            format!(
+                                "\"{}\"",
+                                k.as_string()
+                                    .replace('\'', "\\'")
+                                    .replace('\"', "\\\"")
+                                    .replace('\n', "\\n")
+                                    .replace('\r', "\\r")
+                                    .replace('\t', "\\t")
+                            )
+                        } else {
+                            k.to_string()
+                        },
+                        if v.get(k).unwrap().is_string() {
+                            format!(
+                                "\"{}\"",
+                                v.get(k)
+                                    .unwrap()
+                                    .as_string()
+                                    .replace('\'', "\\'")
+                                    .replace('\"', "\\\"")
+                                    .replace('\n', "\\n")
+                                    .replace('\r', "\\r")
+                                    .replace('\t', "\\t")
+                            )
+                        } else {
+                            v.get(k).unwrap().to_string()
+                        }
+                    ))
+                    .collect::<Vec<String>>()
+                    .join(", ")
             ),
             Value::Identifier(s) => s.to_string(),
             Value::None => "".to_string(),
         }
     }
-    
+
     /// Return the value as a boolean
     pub fn as_bool(&self) -> bool {
         match self {
@@ -184,11 +217,11 @@ impl Value {
             Value::Integer(n) => *n != 0,
             Value::Float(n) => *n != 0.0,
             Value::String(s) => !s.is_empty(),
-            Value::Array(v) => v.iter().any(|e|e.as_bool()),
-            Value::Object(v) => v.values().any(|e|e.as_bool())
+            Value::Array(v) => v.iter().any(|e| e.as_bool()),
+            Value::Object(v) => v.values().any(|e| e.as_bool()),
         }
     }
-    
+
     /// Return the value as an integer, if possible
     pub fn as_int(&self) -> Option<IntegerType> {
         match self {
@@ -202,7 +235,7 @@ impl Value {
             Value::Object(_) => None,
         }
     }
-    
+
     /// Return the value as a float, if possible
     pub fn as_float(&self) -> Option<FloatType> {
         match self {
@@ -216,7 +249,7 @@ impl Value {
             Value::Object(_) => None,
         }
     }
-    
+
     /// Return the value as an array
     pub fn as_array(&self) -> ArrayType {
         match self {
@@ -230,12 +263,17 @@ impl Value {
             Value::Object(v) => v.values().cloned().collect(),
         }
     }
-    
+
     /// Return the value as an object
     pub fn as_object(&self) -> ObjectType {
         match self {
             Value::Object(v) => v.clone(),
-            _ => self.as_array().iter().enumerate().map(|(i, v)| (Value::Integer(i as IntegerType), v.clone())).collect()
+            _ => self
+                .as_array()
+                .iter()
+                .enumerate()
+                .map(|(i, v)| (Value::Integer(i as IntegerType), v.clone()))
+                .collect(),
         }
     }
 
@@ -321,17 +359,21 @@ impl PartialOrd for Value {
 
             // For objects, compare sorted values
             (Value::Object(obj1), _) => {
-                let mut v1: Vec<_> = obj1.values().collect(); v1.sort();
+                let mut v1: Vec<_> = obj1.values().collect();
+                v1.sort();
                 let obj2 = other.as_object();
-                let mut v2: Vec<_> = obj2.values().collect(); v2.sort();
+                let mut v2: Vec<_> = obj2.values().collect();
+                v2.sort();
                 v1.partial_cmp(&v2)
-            },
+            }
             (_, Value::Object(obj2)) => {
                 let obj1 = self.as_object();
-                let mut v1: Vec<_> = obj1.values().collect(); v1.sort();
-                let mut v2: Vec<_> = obj2.values().collect(); v2.sort();
+                let mut v1: Vec<_> = obj1.values().collect();
+                v1.sort();
+                let mut v2: Vec<_> = obj2.values().collect();
+                v2.sort();
                 v1.partial_cmp(&v2)
-            },
+            }
 
             // Array comparisons
             (Value::Array(a1), _) => a1.partial_cmp(&other.as_array()),
@@ -346,7 +388,9 @@ impl PartialOrd for Value {
             // String comparisons, If one is a string, both are strings
             (Value::String(s1), _) => s1.partial_cmp(&other.as_string()),
             (_, Value::String(s2)) => self.as_string().partial_cmp(s2),
-            (Value::Identifier(_), Value::Identifier(_)) => self.as_string().partial_cmp(&other.as_string()),
+            (Value::Identifier(_), Value::Identifier(_)) => {
+                self.as_string().partial_cmp(&other.as_string())
+            }
 
             // Treat identifiers and none as false
             (Value::Identifier(_), _) => Some(Ordering::Less),
@@ -357,7 +401,6 @@ impl PartialOrd for Value {
         }
     }
 }
-
 
 impl PartialEq<bool> for Value {
     fn eq(&self, other: &bool) -> bool {
@@ -399,8 +442,12 @@ impl PartialEq<&str> for Value {
 
 impl PartialEq<ArrayType> for Value {
     fn eq(&self, other: &ArrayType) -> bool {
-        self.as_array().len() == other.len() &&
-        self.as_array().iter().zip(other.iter()).all(|(a,b)| a == b) 
+        self.as_array().len() == other.len()
+            && self
+                .as_array()
+                .iter()
+                .zip(other.iter())
+                .all(|(a, b)| a == b)
     }
 }
 
@@ -456,8 +503,8 @@ impl From<&str> for Value {
 
 #[cfg(test)]
 mod test_atomic_value {
-    use std::hash::{Hash, Hasher};
     use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     use super::*;
 
@@ -469,14 +516,14 @@ mod test_atomic_value {
         assert_eq!("test", Value::String("test".to_string()).as_string());
         assert_eq!("", Value::None.as_string());
     }
-    
+
     #[test]
     fn test_as_bool() {
         assert_eq!(true, Value::Float(5.0).as_bool());
         assert_eq!(true, Value::Integer(5).as_bool());
         assert_eq!(true, Value::String("5.0".to_string()).as_bool());
     }
-    
+
     #[test]
     fn test_as_int() {
         assert_eq!(true, Value::Float(5.0).as_int().is_some());
@@ -487,7 +534,7 @@ mod test_atomic_value {
 
         assert_eq!(false, Value::String("".to_string()).as_int().is_some());
     }
-    
+
     #[test]
     fn test_as_float() {
         assert_eq!(true, Value::Float(5.0).as_float().is_some());
@@ -498,13 +545,18 @@ mod test_atomic_value {
 
         assert_eq!(false, Value::String("".to_string()).as_float().is_some());
     }
-    
+
     #[test]
     fn test_as_array() {
         assert_eq!(1, Value::Float(5.0).as_array().len());
-        assert_eq!(2, Value::Array(vec![Value::Integer(5), Value::Integer(5)]).as_array().len());
+        assert_eq!(
+            2,
+            Value::Array(vec![Value::Integer(5), Value::Integer(5)])
+                .as_array()
+                .len()
+        );
     }
-    
+
     #[test]
     fn test_hash() {
         let mut hasher = DefaultHasher::new();
@@ -527,7 +579,7 @@ mod test_atomic_value {
         assert_eq!(false, hint2 == hint);
         assert_eq!(true, hint2 == hint2b);
     }
-    
+
     #[test]
     fn test_object() {
         let object = Value::Object(HashMap::from([
@@ -536,35 +588,47 @@ mod test_atomic_value {
             (Value::Integer(2), Value::Integer(3)),
         ]));
 
-        assert_eq!(Value::Integer(2), *object.as_object().get(&Value::Integer(1)).unwrap());
-        assert_eq!(Value::Integer(1), *object.as_object().get(&Value::String("1".to_string())).unwrap());
-        assert_eq!(Value::Integer(3), *object.as_object().get(&Value::Integer(2)).unwrap());
+        assert_eq!(
+            Value::Integer(2),
+            *object.as_object().get(&Value::Integer(1)).unwrap()
+        );
+        assert_eq!(
+            Value::Integer(1),
+            *object
+                .as_object()
+                .get(&Value::String("1".to_string()))
+                .unwrap()
+        );
+        assert_eq!(
+            Value::Integer(3),
+            *object.as_object().get(&Value::Integer(2)).unwrap()
+        );
     }
-    
+
     #[test]
     fn test_is_float() {
         assert_eq!(true, Value::Float(5.0).is_float());
         assert_eq!(false, Value::Integer(5).is_float());
     }
-    
+
     #[test]
     fn test_is_string() {
         assert_eq!(true, Value::String("5.0".to_string()).is_string());
         assert_eq!(false, Value::Integer(5).is_string());
     }
-    
+
     #[test]
     fn test_is_array() {
         assert_eq!(true, Value::Array(vec![Value::Integer(5)]).is_array());
         assert_eq!(false, Value::Integer(5).is_array());
     }
-    
+
     #[test]
     fn test_is_identifier() {
         assert_eq!(false, Value::Array(vec![Value::Integer(5)]).is_identifier());
         assert_eq!(false, Value::Integer(5).is_array());
     }
-    
+
     #[test]
     fn test_eq() {
         assert_eq!(false, Value::Float(5.0) == Value::Float(5.1));
@@ -572,8 +636,14 @@ mod test_atomic_value {
         assert_eq!(true, Value::Integer(5) == Value::Integer(5));
         assert_eq!(false, Value::Integer(6) == Value::Integer(5));
         assert_eq!(true, Value::None == Value::None);
-        assert_eq!(true, Value::String("test".to_string()) == Value::String("test".to_string()));
-        assert_eq!(false, Value::String("test".to_string()) == Value::String("test2".to_string()));
+        assert_eq!(
+            true,
+            Value::String("test".to_string()) == Value::String("test".to_string())
+        );
+        assert_eq!(
+            false,
+            Value::String("test".to_string()) == Value::String("test2".to_string())
+        );
     }
 
     #[test]
@@ -627,11 +697,11 @@ mod test_atomic_value {
         assert!(Value::from(false) == Value::from(vec![]));
         assert!(Value::from(vec![]) == Value::from(false));
         //
-        assert!(Value::from(false) != Value::from(vec![ Value::from(1) ]));
-        assert!(Value::from(vec![ Value::from(1) ]) != Value::from(false));
+        assert!(Value::from(false) != Value::from(vec![Value::from(1)]));
+        assert!(Value::from(vec![Value::from(1)]) != Value::from(false));
         //
-        assert!(Value::from(false) < Value::from(vec![ Value::from(1) ]));
-        assert!(Value::from(vec![ Value::from(1) ]) > Value::from(false));
+        assert!(Value::from(false) < Value::from(vec![Value::from(1)]));
+        assert!(Value::from(vec![Value::from(1)]) > Value::from(false));
         //
         assert!(Value::from(true) > Value::from(vec![]));
         assert!(Value::from(vec![]) < Value::from(true));
@@ -640,11 +710,11 @@ mod test_atomic_value {
         assert!(Value::from(false) == Value::from(Value::from(vec![]).as_object()));
         assert!(Value::from(vec![]) == Value::from(false));
         //
-        assert!(Value::from(false) != Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) != Value::from(false));
+        assert!(Value::from(false) != Value::from(Value::from(vec![Value::from(1)]).as_object()));
+        assert!(Value::from(Value::from(vec![Value::from(1)]).as_object()) != Value::from(false));
         //
-        assert!(Value::from(false) < Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) > Value::from(false));
+        assert!(Value::from(false) < Value::from(Value::from(vec![Value::from(1)]).as_object()));
+        assert!(Value::from(Value::from(vec![Value::from(1)]).as_object()) > Value::from(false));
         //
         assert!(Value::from(true) > Value::from(Value::from(vec![]).as_object()));
         assert!(Value::from(vec![]) < Value::from(true));
@@ -683,7 +753,7 @@ mod test_atomic_value {
         assert!(Value::from(0) < Value::from("1"));
 
         // Integer - Array
-        assert!(Value::from(1) == Value::from(vec![ Value::from(1) ]));
+        assert!(Value::from(1) == Value::from(vec![Value::from(1)]));
         //
         assert!(Value::from(1) != Value::from(vec![]));
         assert!(Value::from(vec![]) != Value::from(1));
@@ -692,10 +762,10 @@ mod test_atomic_value {
         assert!(Value::from(vec![]) < Value::from(1));
 
         // Integer - Object
-        assert!(Value::from(1) == Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
+        assert!(Value::from(1) == Value::from(Value::from(vec![Value::from(1)]).as_object()));
         //
-        assert!(Value::from(1) != Value::from(Value::from(vec![ ]).as_object()));
-        assert!(Value::from(Value::from(vec![ ]).as_object()) != Value::from(1));
+        assert!(Value::from(1) != Value::from(Value::from(vec![]).as_object()));
+        assert!(Value::from(Value::from(vec![]).as_object()) != Value::from(1));
         //
         assert!(Value::from(1) > Value::from(Value::from(vec![]).as_object()));
         assert!(Value::from(Value::from(vec![]).as_object()) < Value::from(1));
@@ -724,8 +794,8 @@ mod test_atomic_value {
         assert!(Value::from("0.0") < Value::from(1.0));
 
         // Float - Array
-        assert!(Value::from(1.0) == Value::from(vec![ Value::from(1.0) ]));
-        assert!(Value::from(vec![ Value::from(1.0) ]) == Value::from(1.0));
+        assert!(Value::from(1.0) == Value::from(vec![Value::from(1.0)]));
+        assert!(Value::from(vec![Value::from(1.0)]) == Value::from(1.0));
         //
         assert!(Value::from(1.0) != Value::from(vec![]));
         assert!(Value::from(vec![]) != Value::from(1.0));
@@ -734,11 +804,11 @@ mod test_atomic_value {
         assert!(Value::from(vec![]) < Value::from(1.0));
 
         // Float - Object
-        assert!(Value::from(1.0) == Value::from(Value::from(vec![ Value::from(1.0) ]).as_object()));
-        assert!(Value::from(Value::from(vec![ Value::from(1.0) ]).as_object()) == Value::from(1.0));
+        assert!(Value::from(1.0) == Value::from(Value::from(vec![Value::from(1.0)]).as_object()));
+        assert!(Value::from(Value::from(vec![Value::from(1.0)]).as_object()) == Value::from(1.0));
         //
-        assert!(Value::from(1.0) != Value::from(Value::from(vec![ ]).as_object()));
-        assert!(Value::from(Value::from(vec![ ]).as_object()) != Value::from(1.0));
+        assert!(Value::from(1.0) != Value::from(Value::from(vec![]).as_object()));
+        assert!(Value::from(Value::from(vec![]).as_object()) != Value::from(1.0));
         //
         assert!(Value::from(1.0) > Value::from(Value::from(vec![]).as_object()));
         assert!(Value::from(Value::from(vec![]).as_object()) < Value::from(1.0));
@@ -756,8 +826,8 @@ mod test_atomic_value {
         assert!(Value::from("") < Value::from("test"));
 
         // String - Array
-        assert!(Value::from("1") == Value::from(vec![ Value::from(1) ]));
-        assert!(Value::from(vec![ Value::from(1) ]) == Value::from("1"));
+        assert!(Value::from("1") == Value::from(vec![Value::from(1)]));
+        assert!(Value::from(vec![Value::from(1)]) == Value::from("1"));
         //
         assert!(Value::from("test") != Value::from(vec![]));
         assert!(Value::from(vec![]) != Value::from("test"));
@@ -766,11 +836,11 @@ mod test_atomic_value {
         assert!(Value::from(vec![]) < Value::from("test"));
 
         // String - Object
-        assert!(Value::from("1") == Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) == Value::from("1"));
+        assert!(Value::from("1") == Value::from(Value::from(vec![Value::from(1)]).as_object()));
+        assert!(Value::from(Value::from(vec![Value::from(1)]).as_object()) == Value::from("1"));
         //
-        assert!(Value::from("test") != Value::from(Value::from(vec![ ]).as_object()));
-        assert!(Value::from(Value::from(vec![ ]).as_object()) != Value::from("test"));
+        assert!(Value::from("test") != Value::from(Value::from(vec![]).as_object()));
+        assert!(Value::from(Value::from(vec![]).as_object()) != Value::from("test"));
         //
         assert!(Value::from("test") > Value::from(Value::from(vec![]).as_object()));
         assert!(Value::from(Value::from(vec![]).as_object()) < Value::from("test"));
@@ -779,34 +849,52 @@ mod test_atomic_value {
     #[test]
     fn test_ord_array() {
         // Array - Array
-        assert!(Value::from(vec![ Value::from(1) ]) == Value::from(vec![ Value::from(1) ]));
+        assert!(Value::from(vec![Value::from(1)]) == Value::from(vec![Value::from(1)]));
         //
-        assert!(Value::from(vec![ Value::from(1) ])  != Value::from(vec![]));
-        assert!(Value::from(vec![]) != Value::from(vec![ Value::from(1) ]) );
+        assert!(Value::from(vec![Value::from(1)]) != Value::from(vec![]));
+        assert!(Value::from(vec![]) != Value::from(vec![Value::from(1)]));
         //
-        assert!(Value::from(vec![ Value::from(1) ])  > Value::from(vec![]));
-        assert!(Value::from(vec![]) < Value::from(vec![ Value::from(1) ]) );
+        assert!(Value::from(vec![Value::from(1)]) > Value::from(vec![]));
+        assert!(Value::from(vec![]) < Value::from(vec![Value::from(1)]));
 
         // Array - Object
-        assert!(Value::from(vec![ Value::from(1) ]) == Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
+        assert!(
+            Value::from(vec![Value::from(1)])
+                == Value::from(Value::from(vec![Value::from(1)]).as_object())
+        );
         assert!(Value::from(Value::from(vec![]).as_object()) == Value::from(vec![]));
         //
-        assert!(Value::from(vec![ Value::from(1) ]) != Value::from(Value::from(vec![ ]).as_object()));
-        assert!(Value::from(Value::from(vec![ ]).as_object()) != Value::from(vec![ Value::from(1) ]));
+        assert!(Value::from(vec![Value::from(1)]) != Value::from(Value::from(vec![]).as_object()));
+        assert!(Value::from(Value::from(vec![]).as_object()) != Value::from(vec![Value::from(1)]));
         //
-        assert!(Value::from(vec![ Value::from(1) ]) > Value::from(Value::from(vec![]).as_object()));
-        assert!(Value::from(Value::from(vec![]).as_object()) < Value::from(vec![ Value::from(1) ]));
+        assert!(Value::from(vec![Value::from(1)]) > Value::from(Value::from(vec![]).as_object()));
+        assert!(Value::from(Value::from(vec![]).as_object()) < Value::from(vec![Value::from(1)]));
     }
-    
+
     #[test]
     fn test_ord_obj() {
         // Object - Object
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) == Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
+        assert!(
+            Value::from(Value::from(vec![Value::from(1)]).as_object())
+                == Value::from(Value::from(vec![Value::from(1)]).as_object())
+        );
         //
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) != Value::from(Value::from(vec![]).as_object()));
-        assert!(Value::from(Value::from(vec![]).as_object()) != Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
+        assert!(
+            Value::from(Value::from(vec![Value::from(1)]).as_object())
+                != Value::from(Value::from(vec![]).as_object())
+        );
+        assert!(
+            Value::from(Value::from(vec![]).as_object())
+                != Value::from(Value::from(vec![Value::from(1)]).as_object())
+        );
         //
-        assert!(Value::from(Value::from(vec![ Value::from(1) ]).as_object()) > Value::from(Value::from(vec![]).as_object()));
-        assert!(Value::from(Value::from(vec![]).as_object()) < Value::from(Value::from(vec![ Value::from(1) ]).as_object()));
+        assert!(
+            Value::from(Value::from(vec![Value::from(1)]).as_object())
+                > Value::from(Value::from(vec![]).as_object())
+        );
+        assert!(
+            Value::from(Value::from(vec![]).as_object())
+                < Value::from(Value::from(vec![Value::from(1)]).as_object())
+        );
     }
 }

@@ -1,5 +1,5 @@
-use crate::{ParserState, state::UserFunction};
-use std::{fmt, collections::HashMap};
+use crate::{state::UserFunction, ParserState};
+use std::{collections::HashMap, fmt};
 
 fn get_divider(title: &str) -> String {
     (0..title.len()).map(|_| "=").collect::<String>()
@@ -13,7 +13,7 @@ fn noun_case(text: &str) -> String {
 pub struct HelpBlock {
     title: String,
     entries: Vec<String>,
-    order: usize
+    order: usize,
 }
 
 impl HelpBlock {
@@ -21,7 +21,7 @@ impl HelpBlock {
         Self {
             title: title.to_string(),
             entries: Vec::new(),
-            order: i
+            order: i,
         }
     }
 
@@ -46,25 +46,27 @@ impl fmt::Display for HelpBlock {
 }
 
 pub struct Help {
-    blocks: HashMap<String, HelpBlock>
+    blocks: HashMap<String, HelpBlock>,
 }
 
 impl Help {
     pub fn new() -> Self {
-        Self { blocks: HashMap::new() }
+        Self {
+            blocks: HashMap::new(),
+        }
     }
 
     pub fn add_std(&mut self, state: &mut ParserState) {
         self.add_std_functions(state);
         self.add_std_decorators(state);
-        
+
         #[cfg(feature = "extensions")]
         self.add_extensions(state);
-        
+
         self.add_user_functions(state);
         self.add_variables(state);
     }
-    
+
     /// Add the built-in functions to the help instance
     pub fn add_std_functions(&mut self, state: &ParserState) {
         for (category, functions) in state.functions.all_by_category() {
@@ -90,17 +92,21 @@ impl Help {
             let title = format!("{} v{}", extension.name(), extension.version());
             self.add_block(&title)
                 .add_entry(&format!("Author: {}", extension.author()))
-                .add_entry(&format!("Functions: {}", extension.functions().join(", ")))
-                .add_entry(&format!("Decorators: {}", extension.decorators().into_iter().map(|f|
-                    format!("@{}", f)
-                ).collect::<Vec<String>>().join(", ")));
+                .add_entry(&format!(
+                    "Functions:\n {}",
+                    extension.function_signatures().join("\n ")
+                ))
+                .add_entry(&format!(
+                    "Decorators:\n {}",
+                    extension.decorator_signatures().join("\n ")
+                ));
         }
     }
 
     pub fn add_user_functions(&mut self, state: &ParserState) {
         let block = self.add_block("User-defined Functions");
         let mut functions: Vec<&UserFunction> = state.user_functions.values().collect();
-        functions.sort_by(|f1, f2|f1.name().cmp(f2.name()));
+        functions.sort_by(|f1, f2| f1.name().cmp(f2.name()));
 
         if functions.is_empty() {
             block.add_entry(" -- None --");
@@ -122,7 +128,8 @@ impl Help {
     }
 
     pub fn add_block(&mut self, title: &str) -> &mut HelpBlock {
-        self.blocks.insert(title.to_string(), HelpBlock::new(title, self.blocks.len()));
+        self.blocks
+            .insert(title.to_string(), HelpBlock::new(title, self.blocks.len()));
         self.get_block(title).unwrap()
     }
 
@@ -136,9 +143,11 @@ impl fmt::Display for Help {
         let mut blocks: Vec<&HelpBlock> = self.blocks.values().collect();
         blocks.sort_by_key(|f| f.order());
 
-        let text = blocks.iter()
+        let text = blocks
+            .iter()
             .map(|b| format!("{}\n{}\n{}\n", b.title(), get_divider(b.title()), b))
-            .collect::<Vec<String>>().join("\n");
-        write!(f, "{}", text )
+            .collect::<Vec<String>>()
+            .join("\n");
+        write!(f, "{}", text)
     }
 }

@@ -16,9 +16,9 @@ This project is the engine behind [Lavendeux](https://rscarson.github.io/lavende
 ### Getting Started
 To use it, create a `ParserState` object, and use it to tokenize input with `Token::new`:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, Token, Value};
+use lavendeux_parser::{ParserState, Error, Token, Value};
 
-fn main() -> Result<(), ParserError> {
+fn main() -> Result<(), Error> {
     // Create a new parser, and tokenize 2 lines
     let mut state : ParserState = ParserState::new();
     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
@@ -32,9 +32,9 @@ fn main() -> Result<(), ParserError> {
 ```
 The result will be a `Token` object:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, Token, Value};
+use lavendeux_parser::{ParserState, Error, Token, Value};
 
-fn main() -> Result<(), ParserError> {
+fn main() -> Result<(), Error> {
     let mut state : ParserState = ParserState::new();
     let lines = Token::new("x=9\nsqrt(x) @bin", &mut state)?;
 
@@ -56,8 +56,8 @@ fn main() -> Result<(), ParserError> {
 
 A number of functions and @decorators are available for expressions to use - add more using the state:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value};
-use lavendeux_parser::errors::*;
+use lavendeux_parser::{ParserState, Error, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value};
+use lavendeux_parser::Error;
 
 let mut state : ParserState = ParserState::new();
 state.decorators.register(DecoratorDefinition {
@@ -151,9 +151,9 @@ Extensions are enabled by default, and can be excluded by disabling the crate's 
 
 Extensions can be loaded as follows:
 ```rust
-use lavendeux_parser::{ParserState, ParserError, Value, Token};
+use lavendeux_parser::{ParserState, Error, Value, Token};
 
-fn main() -> Result<(), ParserError> {
+fn main() -> Result<(), Error> {
     let mut state : ParserState = ParserState::new();
 
     // Load one extension

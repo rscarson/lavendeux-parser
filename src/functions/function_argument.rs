@@ -1,22 +1,37 @@
-use crate::value::{Value};
-use crate::errors::*;
+use crate::value::Value;
+use crate::ExpectedTypes;
 
-use std::ops::Index;
-use std::collections::HashMap;
 use core::slice::Iter;
+use std::collections::HashMap;
+use std::ops::Index;
 
 /// Describes an argument for a callable function
 #[derive(Clone)]
-pub struct FunctionArgument{ name: String, expected: ExpectedTypes, optional: bool, plural: bool }
+pub struct FunctionArgument {
+    name: String,
+    expected: ExpectedTypes,
+    optional: bool,
+    plural: bool,
+}
 impl FunctionArgument {
     /// Build a new function argument
     pub fn new(name: &str, expected: ExpectedTypes, optional: bool) -> Self {
-        Self {name: name.to_string(), expected, optional, plural: false}
+        Self {
+            name: name.to_string(),
+            expected,
+            optional,
+            plural: false,
+        }
     }
-    
+
     /// Build a new plural function argument
     pub fn new_plural(name: &str, expected: ExpectedTypes, optional: bool) -> Self {
-        Self {name: name.to_string(), expected, optional, plural: true}
+        Self {
+            name: name.to_string(),
+            expected,
+            optional,
+            plural: true,
+        }
     }
 
     /// Build a new required function argument
@@ -55,13 +70,13 @@ impl FunctionArgument {
             ExpectedTypes::Float => value.is_float(),
             ExpectedTypes::Int => value.is_int(),
             ExpectedTypes::IntOrFloat => value.is_float() || value.is_int(),
-            
+
             // These can be converted from any type
-            ExpectedTypes::String => true, 
-            ExpectedTypes::Boolean => true, 
-            ExpectedTypes::Array => true, 
-            ExpectedTypes::Object => true, 
-            ExpectedTypes::Any => true
+            ExpectedTypes::String => true,
+            ExpectedTypes::Boolean => true,
+            ExpectedTypes::Array => true,
+            ExpectedTypes::Object => true,
+            ExpectedTypes::Any => true,
         }
     }
 }
@@ -69,11 +84,15 @@ impl std::fmt::Display for FunctionArgument {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let name = if self.plural {
             format!("{}1, {}2", self.name, self.name)
-        } else {self.name().to_string()};
-        write!(f, "{}{}{}", 
-            if self.optional {"["} else {""},
+        } else {
+            self.name().to_string()
+        };
+        write!(
+            f,
+            "{}{}{}",
+            if self.optional { "[" } else { "" },
             name,
-            if self.optional {"]"} else {""},
+            if self.optional { "]" } else { "" },
         )
     }
 }
@@ -82,7 +101,7 @@ impl std::fmt::Display for FunctionArgument {
 pub struct FunctionArgumentValue(Vec<Value>);
 impl FunctionArgumentValue {
     /// Create a new argument value wrapper
-    /// 
+    ///
     /// # Arguments
     /// * `values` - Value array
     pub fn new(values: Vec<Value>) -> Self {
@@ -93,12 +112,12 @@ impl FunctionArgumentValue {
     pub fn required(&self) -> Value {
         self.0.first().cloned().unwrap()
     }
-    
+
     /// Return the value as an optional argument
     pub fn optional(&self) -> Option<Value> {
         self.0.first().cloned()
     }
-    
+
     /// Return the value as an argument or a default value
     pub fn optional_or(&self, default: Value) -> Value {
         self.0.first().cloned().unwrap_or(default)
@@ -115,21 +134,21 @@ pub struct FunctionArgumentCollection {
     values: Vec<Value>,
     map: HashMap<String, Vec<Value>>,
 
-    next_index: usize
+    next_index: usize,
 }
 
 impl FunctionArgumentCollection {
     /// Return a new empty collection
     pub fn new() -> Self {
-        Self{
+        Self {
             values: Vec::<Value>::new(),
             map: HashMap::new(),
-            next_index: 0
+            next_index: 0,
         }
     }
 
     /// Add a new value to the table
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function argument key
     /// * `value` - Function value
@@ -137,23 +156,23 @@ impl FunctionArgumentCollection {
         match self.map.get_mut(&name) {
             Some(v) => {
                 v.push(value.clone());
-            },
+            }
             None => {
                 self.map.insert(name.clone(), vec![value.clone()]);
             }
         }
-        
+
         self.values.push(value);
     }
 
     /// Get a value from the table
-    /// 
+    ///
     /// # Arguments
     /// * `name` - Function argument key
     pub fn get(&self, name: &str) -> FunctionArgumentValue {
         FunctionArgumentValue::new(match self.map.get(name).cloned() {
             Some(v) => v,
-            None => Vec::new()
+            None => Vec::new(),
         })
     }
 

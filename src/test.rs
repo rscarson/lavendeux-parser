@@ -1,5 +1,5 @@
 //! Contains macros to test the parser
-//! 
+//!
 
 /// Assert that a token parses succesfully into a given string
 /// assert_token_text_stateful!("input text", target_value)
@@ -8,7 +8,7 @@ macro_rules! assert_token_text_stateful {
     ($input:expr, $text:expr, $state:expr) => {
         match Token::new($input, $state) {
             Ok(result) => assert_eq!($text, result.text()),
-            Err(e) => panic!("{}", e)
+            Err(e) => panic!("{}", e),
         }
     };
 }
@@ -33,7 +33,7 @@ macro_rules! assert_token_value_stateful {
     ($input:expr, $value:expr, $state:expr) => {
         match Token::new($input, $state) {
             Ok(result) => assert_eq!($value, result.value()),
-            Err(e) => panic!("{}", e)
+            Err(e) => panic!("{}", e),
         }
     };
 }
@@ -58,8 +58,15 @@ macro_rules! assert_token_error_stateful {
     ($input:expr, $error:ident, $state:expr) => {
         match Token::new($input, $state) {
             Ok(result) => panic!("No error in {} (result was {})", $input, result.text()),
-            Err(e) => if !matches!(e, crate::ParserError::$error(_)) {
-                panic!("Error '{}' does not match {:?} for token {}", e, stringify!($error), $input)
+            Err(e) => {
+                if !matches!(e, $crate::Error::$error { .. }) {
+                    panic!(
+                        "Error '{}' does not match {:?} for token {}",
+                        e,
+                        stringify!($error),
+                        $input
+                    )
+                }
             }
         }
     };

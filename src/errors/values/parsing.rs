@@ -1,5 +1,5 @@
+use crate::Error;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
@@ -8,11 +8,11 @@ use std::fmt::{self, Display};
 pub struct ParsingError {
     format: String,
     cause: String,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl ParsingError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `format` - Type of formatting
@@ -21,7 +21,7 @@ impl ParsingError {
         Self {
             format: format.to_string(),
             cause: cause.to_string(),
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -36,14 +36,18 @@ impl ParsingError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }
 
 impl Display for ParsingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} parsing error: {} {}", self.format, self.cause, self.src)?;
+        write!(
+            f,
+            "{} parsing error: {} {}",
+            self.format, self.cause, self.src
+        )?;
         fmt::Result::Ok(())
     }
 }

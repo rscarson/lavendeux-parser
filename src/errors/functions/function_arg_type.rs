@@ -1,19 +1,20 @@
+use crate::Error;
+use crate::ExpectedTypes;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
 /// An error caused by calling a function using an argument of the wrong type
 #[derive(Debug, Clone)]
 pub struct FunctionArgTypeError {
-    arg: usize, 
-    expected: ExpectedTypes, 
+    arg: usize,
+    expected: ExpectedTypes,
     signature: String,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl FunctionArgTypeError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `signature` - Function signature
@@ -21,14 +22,14 @@ impl FunctionArgTypeError {
     /// * `expected` - Expected type of value for the argument
     pub fn new(src: &Token, signature: &str, arg: usize, expected: ExpectedTypes) -> Self {
         Self {
-            arg, 
-            expected, 
+            arg,
+            expected,
             signature: signature.to_string(),
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
-    /// Function call signature 
+    /// Function call signature
     pub fn signature(&self) -> &str {
         &self.signature
     }
@@ -44,14 +45,18 @@ impl FunctionArgTypeError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 }
 
 impl Display for FunctionArgTypeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: invalid type for argument {} (expected {}) {}", self.signature, self.arg, self.expected, self.src)?;
+        write!(
+            f,
+            "{}: invalid type for argument {} (expected {}) {}",
+            self.signature, self.arg, self.expected, self.src
+        )?;
         fmt::Result::Ok(())
     }
 }

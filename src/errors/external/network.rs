@@ -1,5 +1,5 @@
+use crate::Error;
 use crate::Token;
-use crate::errors::*;
 
 use std::fmt::{self, Display};
 
@@ -7,18 +7,18 @@ use std::fmt::{self, Display};
 #[derive(Debug, Clone)]
 pub struct NetworkError {
     cause: String,
-    src: ParserErrorSource
+    src: ErrorSource,
 }
 impl NetworkError {
     /// Create a new instance of this error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `cause` - Reason for the error
     pub fn new(src: &Token, cause: &str) -> Self {
         Self {
             cause: cause.to_string(),
-            src: ParserErrorSource::new(src)
+            src: ErrorSource::new(src),
         }
     }
 
@@ -28,12 +28,12 @@ impl NetworkError {
     }
 
     /// Describes the location and text of the bad token
-    pub fn source(&self) -> &ParserErrorSource {
+    pub fn source(&self) -> &ErrorSource {
         &self.src
     }
 
     /// Create a new instance of this error from an existing error
-    /// 
+    ///
     /// # Arguments
     /// * `src` - Token causing the error
     /// * `error`- source error
