@@ -3,7 +3,24 @@ use std::collections::HashMap;
 
 #[macro_use]
 pub mod decorator_macros {
-    /// Defines a function for registration as a builtin
+    /// Defines a decorator for registration as a builtin
+    ///
+    /// name = identifier for the new function, and the callable name,
+    /// category = Optional string category for the help menu
+    /// description = String describing the function
+    /// arguments = Set of arguments defined with function_arg!
+    /// handler = closure taking in |function, token, state, args|
+    ///
+    /// Example:
+    /// ```ignore
+    /// define_decorator!(
+    ///     name = upper
+    ///     aliases = ["uppercase"],
+    ///     description = "Outputs an uppercase version of the input",
+    ///     input = ExpectedTypes::Any,
+    ///     handler = |decorator, token, input| Ok(input.as_string().to_uppercase())
+    /// );
+    /// ```
     #[macro_export]
     macro_rules! define_decorator {
         (

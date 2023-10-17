@@ -18,26 +18,52 @@ pub mod function_macros {
     }
 
     /// Describes the requirements of an argument to a builtin function
+    ///
+    /// Examples:
+    /// ```ignore
+    /// function_arg!("name_of_variable")
+    /// function_arg!("plural", "name_of_variable_array")
+    /// function_arg!("optional", "name_of__optional_variable")
+    /// function_arg!("plural+optional", "name_of__optional_variable_array")
+    /// ```
     #[macro_export]
     macro_rules! function_arg {
         ($name:literal:$type:ident) => {
-            FunctionArgument::new($name, crate::ExpectedTypes::$type, false)
+            $crate::FunctionArgument::new($name, crate::ExpectedTypes::$type, false)
         };
 
         ("plural", $name:literal:$type:ident) => {
-            FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, false)
+            $crate::FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, false)
         };
 
         ("optional", $name:literal:$type:ident) => {
-            FunctionArgument::new($name, crate::ExpectedTypes::$type, true)
+            $crate::FunctionArgument::new($name, crate::ExpectedTypes::$type, true)
         };
 
         ("plural+optional", $name:literal:$type:ident) => {
-            FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, true)
+            $crate::FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, true)
         };
     }
 
     /// Defines a function for registration as a builtin
+    ///
+    /// name = identifier for the new function, and the callable name,
+    /// category = Optional string category for the help menu
+    /// description = String describing the function
+    /// arguments = Set of arguments defined with function_arg!
+    /// handler = closure taking in |function, token, state, args|
+    ///
+    /// Example:
+    /// ```ignore
+    /// define_function!(
+    ///     name = echo,
+    ///     description = "Echo back the provided input",
+    ///     arguments = [function_arg!("input":String)],
+    ///     handler = |function, token, state, args| {
+    ///         Ok(Value::String(args.get("input").required().as_string()))
+    ///     }
+    /// );
+    /// ```
     #[macro_export]
     macro_rules! define_function {
         (
@@ -52,14 +78,14 @@ pub mod function_macros {
             #[doc = stringify!($function_name)]
             /// );
             #[allow(non_upper_case_globals, unused_variables)]
-            const $function_name: FunctionDefinition = FunctionDefinition {
+            const $function_name: $crate::FunctionDefinition = $crate::FunctionDefinition {
                 name: stringify!($function_name),
                 category: $crate::_define_function_category!($($function_cat)?),
                 description: "Returns the SHA256 hash of a given string",
                 arguments: || {
-                    vec![FunctionArgument::new_plural(
+                    vec![$crate::FunctionArgument::new_plural(
                         "input",
-                        crate::ExpectedTypes::Any,
+                        $crate::ExpectedTypes::Any,
                         false,
                     )]
                 },
