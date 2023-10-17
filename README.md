@@ -56,28 +56,28 @@ fn main() -> Result<(), Error> {
 
 A number of functions and @decorators are available for expressions to use - add more using the state:
 ```rust
-use lavendeux_parser::{ParserState, Error, DecoratorDefinition, FunctionDefinition, FunctionArgument, Value, ExpectedTypes};
+use lavendeux_parser::{ParserState, Error, define_function, define_decorator, Value, ExpectedTypes};
 
-let mut state : ParserState = ParserState::new();
-state.decorators.register(DecoratorDefinition {
-    name: &["upper", "uppercase"],
-    description: "Outputs an uppercase version of the input",
-    argument: ExpectedTypes::Any,
-    handler: |_, _token, input| Ok(input.as_string().to_uppercase())
-});
-
-// Functions take in an array of values, and return a single value
-state.functions.register(FunctionDefinition {
-    name: "echo",
-    category: None,
-    description: "Echo back the provided input",
-    arguments: || vec![
-        FunctionArgument::new_required("input", ExpectedTypes::String),
-    ],
-    handler: |_function, _token, _state, args| {
+define_function!(
+    name = echo,
+    description = "Echo back the provided input",
+    arguments = [function_arg!("input":String)],
+    handler = |function, token, state, args| {
         Ok(Value::String(args.get("input").required().as_string()))
     }
-});
+);
+
+define_decorator!(
+    name = upper,
+    aliases = ["uppercase"],
+    description = "Outputs an uppercase version of the input",
+    input = ExpectedTypes::Any,
+    handler = |decorator, token, input| Ok(input.as_string().to_uppercase())
+);
+
+let mut state : ParserState = ParserState::new();
+state.decorators.register(upper);
+state.functions.register(echo);
 
 // Expressions being parsed can now call new_function(), and use the @new_decorator
 ```
