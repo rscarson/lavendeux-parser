@@ -41,7 +41,7 @@ fn rule_bool_cmp_expression(token: &mut Token, _state: &mut ParserState) -> Opti
             Rule::ne => l.ne(&r),
             Rule::ge => l.ge(&r),
             Rule::le => l.le(&r),
-            _ => return Some(Error::Internal(token.clone()).into()),
+            _ => return Some(Error::Internal(token.clone())),
         }));
 
         i += 2;

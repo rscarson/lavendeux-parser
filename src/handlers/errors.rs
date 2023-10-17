@@ -42,37 +42,37 @@ pub fn handler_table() -> HashMap<Rule, RuleHandler> {
 
 /// Catches unterminated string literals
 fn rule_error_unterminated_literal(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnterminatedLiteral(token.clone()).into())
+    Some(Error::UnterminatedLiteral(token.clone()))
 }
 
 /// Catches unterminated linebreaks
 fn rule_error_unterminated_linebreak(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnterminatedLinebreak(token.clone()).into())
+    Some(Error::UnterminatedLinebreak(token.clone()))
 }
 
 /// Catches unterminated arrays
 fn rule_error_unterminated_array(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnterminatedArray(token.clone()).into())
+    Some(Error::UnterminatedArray(token.clone()))
 }
 
 /// Catches unterminated objects
 fn rule_error_unterminated_object(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnterminatedObject(token.clone()).into())
+    Some(Error::UnterminatedObject(token.clone()))
 }
 
 /// Catches unterminated parens
 fn rule_error_unterminated_paren(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnterminatedParen(token.clone()).into())
+    Some(Error::UnterminatedParen(token.clone()))
 }
 
 /// Catches decorator errors
 fn rule_error_unexpected_decorator(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnexpectedDecorator(token.clone()).into())
+    Some(Error::UnexpectedDecorator(token.clone()))
 }
 
 /// Catches postfix errors
 fn rule_error_unexpected_postfix(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
-    Some(Error::UnexpectedPostfix(token.clone()).into())
+    Some(Error::UnexpectedPostfix(token.clone()))
 }
 
 #[cfg(test)]

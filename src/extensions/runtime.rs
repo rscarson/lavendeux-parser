@@ -66,7 +66,7 @@ impl ExtensionsRuntime {
     where
         T: serde::de::DeserializeOwned,
     {
-        self.0.call_function(&context, function, args)
+        self.0.call_function(context, function, args)
     }
 
     pub fn load_extension(path: &str) -> Result<Extension, rustyscript::Error> {

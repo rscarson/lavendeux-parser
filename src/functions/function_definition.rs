@@ -29,19 +29,19 @@ pub mod function_macros {
     #[macro_export]
     macro_rules! function_arg {
         ($name:literal:$type:ident) => {
-            $crate::FunctionArgument::new($name, crate::ExpectedTypes::$type, false)
+            $crate::FunctionArgument::new($name, $crate::ExpectedTypes::$type, false)
         };
 
         ("plural", $name:literal:$type:ident) => {
-            $crate::FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, false)
+            $crate::FunctionArgument::new_plural($name, $crate::ExpectedTypes::$type, false)
         };
 
         ("optional", $name:literal:$type:ident) => {
-            $crate::FunctionArgument::new($name, crate::ExpectedTypes::$type, true)
+            $crate::FunctionArgument::new($name, $crate::ExpectedTypes::$type, true)
         };
 
         ("plural+optional", $name:literal:$type:ident) => {
-            $crate::FunctionArgument::new_plural($name, crate::ExpectedTypes::$type, true)
+            $crate::FunctionArgument::new_plural($name, $crate::ExpectedTypes::$type, true)
         };
     }
 

@@ -168,7 +168,7 @@ impl DecoratorDefinition {
 
     /// Return the decorator's argument type
     pub fn arg(&self) -> ExpectedTypes {
-        self.argument.clone()
+        self.argument
     }
 
     /// Return the decorator's signature

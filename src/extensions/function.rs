@@ -20,8 +20,7 @@ impl ExtensionFunction {
             "[{}] @{}",
             self.argument_types
                 .get(0)
-                .or(Some(&"Any".to_string().to_lowercase()))
-                .unwrap(),
+                .unwrap_or(&"Any".to_string().to_lowercase()),
             self.fname
         )
     }
@@ -55,7 +54,7 @@ impl ExtensionFunction {
         ExtensionsRuntime::with(|runtime| match runtime.load_module(module) {
             Ok(module_context) => {
                 let mut _args = serde_json::to_value(args)?;
-                runtime.call_function::<Value>(&module_context, &name, &[_args])
+                runtime.call_function::<Value>(&module_context, name, &[_args])
             }
             Err(e) => Err(e),
         })
@@ -69,7 +68,7 @@ impl ExtensionFunction {
         ExtensionsRuntime::with(|runtime| match runtime.load_module(module) {
             Ok(module_context) => {
                 let mut _arg = serde_json::to_value(arg.clone())?;
-                runtime.call_function::<String>(&module_context, &name, &[_arg])
+                runtime.call_function::<String>(&module_context, name, &[_arg])
             }
             Err(e) => Err(e),
         })

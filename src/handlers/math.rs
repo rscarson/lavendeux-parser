@@ -53,14 +53,14 @@ pub fn factorial(source: &Token, input: &Value) -> Result<Value, Error> {
                     if let Some(acc_) = acc.checked_mul(i as IntegerType) {
                         acc = acc_;
                     } else {
-                        return Err(Error::Overflow(source.clone()).into());
+                        return Err(Error::Overflow(source.clone()));
                     }
                 }
 
                 Ok(Value::Integer(acc))
             }
 
-            _ => Err(Error::Underflow(source.clone()).into()),
+            _ => Err(Error::Underflow(source.clone())),
         }
     } else if input.is_array() {
         let mut out = input.as_array();
@@ -121,7 +121,7 @@ fn unary_minus(expression: &Token, value: Value) -> Result<Value, Error> {
             Ok(Value::Array(ra))
         }
         _ => Err(Error::ValueType {
-            value: value,
+            value,
             expected_type: ExpectedTypes::IntOrFloat,
             token: expression.clone(),
         }),
@@ -139,7 +139,7 @@ fn unary_not(expression: &Token, value: Value) -> Result<Value, Error> {
         Value::Integer(n) => match trim_binary(Value::Integer(!n), n) {
             Some(v) => Ok(v),
             None => Err(Error::ValueType {
-                value: value,
+                value,
                 expected_type: ExpectedTypes::Int,
                 token: expression.clone(),
             }),
@@ -155,7 +155,7 @@ fn unary_not(expression: &Token, value: Value) -> Result<Value, Error> {
             Ok(Value::Array(ra))
         }
         _ => Err(Error::ValueType {
-            value: value,
+            value,
             expected_type: ExpectedTypes::Int,
             token: expression.clone(),
         }),

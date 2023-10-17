@@ -143,7 +143,7 @@ const REGEX: FunctionDefinition = FunctionDefinition {
         };
 
         let re = Regex::new(&pattern);
-        if let Err(_) = re {
+        if re.is_err() {
             return Err(Error::StringFormat {
                 expected_format: "regex".to_string(),
                 token: token.clone(),

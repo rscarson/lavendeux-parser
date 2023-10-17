@@ -157,7 +157,7 @@ impl Token {
                     Ok(token)
                 }
             },
-            Err(e) => Err(Error::Pest(e, Token::dummy(input)).into()),
+            Err(e) => Err(Error::Pest(e, Token::dummy(input))),
         }
     }
 

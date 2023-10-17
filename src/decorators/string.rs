@@ -46,7 +46,7 @@ pub const ROMAN: DecoratorDefinition = DecoratorDefinition {
         if decorator.arg().strict_matches(input) {
             let mut value = input.as_int().unwrap();
             if value > 3999 {
-                return Err(Error::Overflow(token.clone()).into());
+                return Err(Error::Overflow(token.clone()));
             }
 
             let roman_numerals = vec![
