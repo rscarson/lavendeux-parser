@@ -99,7 +99,7 @@ pub enum Error {
     ///////////////////////////////////////////////////////////////////////////
 
     /// An error caused by using a decorator in the wrong place
-    #[error("@{0} must be at the end of a statement")]
+    #[error("{0} must be at the end of a statement")]
     UnexpectedDecorator(Token),
 
     /// An error caused by using a postfix operator without an operand
@@ -279,5 +279,5 @@ pub enum Error {
 
     /// Error dealing with JS execution issues
     #[error("{0} at {1}")]
-    Javascript(js_playground::Error, Token),
+    Javascript(rustyscript::Error, Token),
 }

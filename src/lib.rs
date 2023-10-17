@@ -154,15 +154,15 @@
 //!     let mut state : ParserState = ParserState::new();
 //!
 //!     // Load one extension
-//!     state.extensions.load("example_extensions/colour_utils.js");
+//!     state.extensions.load("example_extensions/simple_extension.js");
 //!
-//!     // Load a whole directory - this will return a vec of Extension/Error results
+//!     // Load a whole directory - this will return a vec of Result<Extension, Error>
 //!     state.extensions.load_all("./example_extensions");
 //!
 //!     // Once loaded, functions and @decorators decribed in the extensions
 //!     // can be called in expressions being parsed
-//!     let token = Token::new("complement(0xFF0000) @colour", &mut state)?;
-//!     assert_eq!(token.text(), "#ffff00");
+//!     let token = Token::new("add(1, 2) @colour", &mut state)?;
+//!     assert_eq!(token.text(), "#300000");
 //!     Ok(())
 //! }
 //! ```

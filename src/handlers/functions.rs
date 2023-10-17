@@ -136,8 +136,8 @@ mod test_token {
         let mut state: ParserState = ParserState::new();
         state
             .extensions
-            .load("example_extensions/colour_utils.js")
+            .load("example_extensions/simple_extension.js")
             .ok();
-        assert_token_value_stateful!("complement(0xFFAA00)", Value::from(0x00FFFF), &mut state);
+        assert_token_value_stateful!("add(1,2)", Value::from(3), &mut state);
     }
 }

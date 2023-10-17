@@ -1,9 +1,11 @@
 import { LavendeuxFunction } from 'ext:lavendeux/function.js';
+import { Types } from 'ext:lavendeux/value.js';
 import { LavendeuxExtension } from 'ext:lavendeux/extension.js';
-import { applyToGlobal, nonEnumerable } from 'ext:js_playground/js_playground.js';
+import { applyToGlobal, nonEnumerable } from 'ext:rustyscript/rustyscript.js';
 
 class Lavendeux {
     constructor() {
+        this.Types = Types;
         this.state = {};
         this.functionCache = {
             'function': {},
@@ -33,11 +35,11 @@ class Lavendeux {
 
     register(extension) {
         globalThis._registered_lavendeux_extension = extension.export();
-        let functions = Object.values(extension.functions);
+        let functions = [...Object.values(extension.functions), ...Object.values(extension.decorators)];
         for (const entry of functions) {
             lavendeux.storeFunction(entry.properties.fname, entry.properties.ftype, entry.callback);
         }
-        js_playground.register_entrypoint(() => globalThis._registered_lavendeux_extension);
+        rustyscript.register_entrypoint(() => globalThis._registered_lavendeux_extension);
     }
 }
 

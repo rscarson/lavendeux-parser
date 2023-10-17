@@ -1,6 +1,6 @@
 use crate::Value;
 
-use js_playground::{json_args, Module};
+use rustyscript::{json_args, Module};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -51,7 +51,7 @@ impl ExtensionFunction {
         name: &str,
         module: &Module,
         args: &[Value],
-    ) -> Result<Value, js_playground::Error> {
+    ) -> Result<Value, rustyscript::Error> {
         ExtensionsRuntime::with(|runtime| match runtime.load_module(module) {
             Ok(module_context) => {
                 let mut _args = serde_json::to_value(args)?;
@@ -65,7 +65,7 @@ impl ExtensionFunction {
         name: &str,
         module: &Module,
         arg: Value,
-    ) -> Result<String, js_playground::Error> {
+    ) -> Result<String, rustyscript::Error> {
         ExtensionsRuntime::with(|runtime| match runtime.load_module(module) {
             Ok(module_context) => {
                 let mut _arg = serde_json::to_value(arg.clone())?;
@@ -80,7 +80,7 @@ impl ExtensionFunction {
         module: &Module,
         args: &[Value],
         variables: &mut HashMap<String, Value>,
-    ) -> Result<Value, js_playground::Error> {
+    ) -> Result<Value, rustyscript::Error> {
         ExtensionsRuntime::with(|runtime| {
             match runtime.load_module(module) {
                 Ok(module_context) => {

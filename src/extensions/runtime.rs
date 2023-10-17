@@ -1,7 +1,7 @@
 use core::time::Duration;
-use js_playground::deno_core::extension;
-use js_playground::{json_args, FunctionArguments, Module, ModuleHandle, Runtime, RuntimeOptions};
 use once_cell::sync::OnceCell;
+use rustyscript::deno_core::extension;
+use rustyscript::{json_args, FunctionArguments, Module, ModuleHandle, Runtime, RuntimeOptions};
 use std::cell::RefCell;
 
 use super::extension::Extension;
@@ -53,7 +53,7 @@ impl ExtensionsRuntime {
         self.0.reset()
     }
 
-    pub fn load_module(&mut self, module: &Module) -> Result<ModuleHandle, js_playground::Error> {
+    pub fn load_module(&mut self, module: &Module) -> Result<ModuleHandle, rustyscript::Error> {
         self.0.load_module(module)
     }
 
@@ -62,22 +62,22 @@ impl ExtensionsRuntime {
         context: &ModuleHandle,
         function: &str,
         args: &FunctionArguments,
-    ) -> Result<T, js_playground::Error>
+    ) -> Result<T, rustyscript::Error>
     where
         T: serde::de::DeserializeOwned,
     {
         self.0.call_function(&context, function, args)
     }
 
-    pub fn load_extension(path: &str) -> Result<Extension, js_playground::Error> {
+    pub fn load_extension(path: &str) -> Result<Extension, rustyscript::Error> {
         let module = Module::load(path)?;
         ExtensionsRuntime::with(|runtime| runtime.get_extension_from_module(&module))
     }
 
-    pub fn load_extensions(dir: &str) -> Vec<Result<Extension, js_playground::Error>> {
+    pub fn load_extensions(dir: &str) -> Vec<Result<Extension, rustyscript::Error>> {
         match Module::load_dir(dir) {
             Ok(modules) => {
-                let mut results: Vec<Result<Extension, js_playground::Error>> = Vec::new();
+                let mut results: Vec<Result<Extension, rustyscript::Error>> = Vec::new();
                 for module in modules {
                     let extension = ExtensionsRuntime::with(|runtime| {
                         runtime.get_extension_from_module(&module)
@@ -94,10 +94,51 @@ impl ExtensionsRuntime {
     fn get_extension_from_module(
         &mut self,
         module: &Module,
-    ) -> Result<Extension, js_playground::Error> {
+    ) -> Result<Extension, rustyscript::Error> {
         let context = self.0.load_module(module)?;
         let mut extension: Extension = self.0.call_entrypoint(&context, json_args!())?;
         extension.module = module.clone();
         Ok(extension)
+    }
+}
+
+#[cfg(test)]
+mod runtime_tests {
+    use super::*;
+    use std::time::Duration;
+    use std::{panic, thread};
+
+    #[test]
+    #[allow(unused_assignments, unused_variables)]
+    fn test_concurrency() {
+        let mut t = thread::spawn(|| {});
+        let mut panic_flg = false;
+        for _ in 1..50 {
+            if panic_flg {
+                break;
+            }
+            t = thread::spawn(move || {
+                let result = panic::catch_unwind(|| {
+                    for _ in 1..50 {
+                        ExtensionsRuntime::with(|runtime| {
+                            runtime.reset();
+                            thread::sleep(Duration::from_millis(75));
+                        })
+                    }
+                });
+
+                if result.is_err() {
+                    panic_flg = true;
+                }
+            });
+        }
+
+        thread::sleep(Duration::from_millis(75));
+        let _ = t.join();
+
+        if panic_flg {
+            println!("#\n#\n# CONCURRENCY FAILURE - THIS IS VERY BAD\n#\n#");
+            assert!(!panic_flg);
+        }
     }
 }

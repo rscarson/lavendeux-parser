@@ -11,8 +11,39 @@ export class LavendeuxFunction {
         };
     }
 
-    requireArgument(type = 'Any') {
+    requireArgument(type = Types.Any) {
         this.properties.argument_types.push(type);
+        return this;
+    }
+
+    requireStringArgument(type = Types.String) {
+        return this.requireArgument(type);
+    }
+
+    requireIntegerArgument(type = Types.Integer) {
+        return this.requireArgument(type);
+    }
+
+    requireFloatArgument(type = Types.Float) {
+        return this.requireArgument(type);
+    }
+
+    requireNumericArgument(type = Types.Numeric) {
+        return this.requireArgument(type);
+    }
+
+    requireArrayArgument(type = Types.Array) {
+        return this.requireArgument(type);
+    }
+
+    requireObjectArgument(type = Types.Array) {
+        return this.requireArgument(type);
+    }
+
+    requireArguments(...types) {
+        for (const type of types) {
+            this.requireArgument(type);
+        }
         return this;
     }
 
@@ -49,6 +80,7 @@ export class LavendeuxFunction {
 
         let js_args = LavendeuxFunction.unwrapLavendeuxFunctionArguments(functionProperties.argument_types, args);
         let callback = lavendeux.retrieveFunction(functionProperties.fname, functionProperties.ftype);
+        if (!callback) throw new Error(`Could not find a function named ${functionProperties.fname} to call`);
     
         let value = LavendeuxValue.wrap(
             callback(...js_args, state),

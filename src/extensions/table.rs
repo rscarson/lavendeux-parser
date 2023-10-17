@@ -28,14 +28,14 @@ impl ExtensionTable {
     ///
     /// # Arguments
     /// * `filename` - File name
-    pub fn load(&mut self, filename: &str) -> Result<Extension, js_playground::Error> {
+    pub fn load(&mut self, filename: &str) -> Result<Extension, rustyscript::Error> {
         let e = ExtensionsRuntime::load_extension(filename)?;
         self.0.insert(filename.to_string(), e.clone());
         Ok(e)
     }
 
     /// Attempt to load all extensions in a directory
-    pub fn load_all(&mut self, path: &str) -> Vec<Result<Extension, js_playground::Error>> {
+    pub fn load_all(&mut self, path: &str) -> Vec<Result<Extension, rustyscript::Error>> {
         let e = ExtensionsRuntime::load_extensions(path);
         self.0.clear();
         for extension in e.iter().flatten() {

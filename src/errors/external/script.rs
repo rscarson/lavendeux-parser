@@ -47,8 +47,8 @@ impl ScriptError {
     /// * `name` - File or function name
     /// * `error`- source error
     #[cfg(feature = "extensions")]
-    pub fn from_jserror(src: &Token, name: &str, error: js_playground::Error) -> Self {
-        if matches!(error, js_playground::Error::JsonDecode(_)) {
+    pub fn from_jserror(src: &Token, name: &str, error: rustyscript::Error) -> Self {
+        if matches!(error, rustyscript::Error::JsonDecode(_)) {
             Self::new(src, name, &format!("{}: {}", name, &error.to_string()))
         } else {
             Self::new(src, name, &error.to_string())

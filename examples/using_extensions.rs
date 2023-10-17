@@ -12,12 +12,12 @@ fn main() -> Result<(), Error> {
     }
 
     // Now we can use the new functions and @decorators
-    let command = "complement(0xFF0000) @colour";
+    let command = "add(1, 3) @colour";
     println!("Running: {}", command);
     let token = Token::new(command, &mut state)?;
 
     println!("Result: {}", token.text());
-    assert_eq!(token.text(), "#ffff00");
+    assert_eq!(token.text(), "#000004");
 
     Ok(())
 }

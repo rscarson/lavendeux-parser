@@ -1,6 +1,6 @@
 use crate::{Token, Value};
 
-use js_playground::Module;
+use rustyscript::Module;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -64,7 +64,7 @@ impl std::fmt::Display for Extension {
 
 impl Extension {
     /// Create a new extension object by loading it from a JS module
-    pub fn new(path: &str) -> Result<Self, js_playground::Error> {
+    pub fn new(path: &str) -> Result<Self, rustyscript::Error> {
         ExtensionsRuntime::load_extension(path)
     }
 
@@ -93,20 +93,20 @@ impl Extension {
         name: &str,
         args: &[Value],
         variables: &mut HashMap<String, Value>,
-    ) -> Result<Value, js_playground::Error> {
+    ) -> Result<Value, rustyscript::Error> {
         if let Some(functions) = &self.function_definitions {
             let function_properties = functions
                 .get(name)
-                .ok_or(js_playground::Error::ValueNotFound(name.to_string()))?;
+                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
             function_properties.call(&self.module, args, variables)
         } else if let Some(functions) = &self.functions {
             // Legacy function support
             let function_name = functions
                 .get(name)
-                .ok_or(js_playground::Error::ValueNotFound(name.to_string()))?;
+                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
             ExtensionFunction::call_legacy(function_name, &self.module, args)
         } else {
-            Err(js_playground::Error::JsonDecode(
+            Err(rustyscript::Error::JsonDecode(
                 "invalid extension definition".to_string(),
             ))
         }
@@ -117,7 +117,7 @@ impl Extension {
     /// # Arguments
     /// * `name` - Decorator name
     pub fn has_decorator(&self, name: &str) -> bool {
-        if let Some(decorators) = &self.function_definitions {
+        if let Some(decorators) = &self.decorator_definitions {
             decorators.contains_key(name)
         } else if let Some(decorators) = &self.decorators {
             // Legacy function support
@@ -137,11 +137,11 @@ impl Extension {
         name: &str,
         token: &Token,
         variables: &mut HashMap<String, Value>,
-    ) -> Result<String, js_playground::Error> {
+    ) -> Result<String, rustyscript::Error> {
         if let Some(decorator) = &self.decorator_definitions {
             let function_properties = decorator
                 .get(name)
-                .ok_or(js_playground::Error::ValueNotFound(name.to_string()))?;
+                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
             Ok(function_properties
                 .call(&self.module, &[token.value()], variables)?
                 .to_string())
@@ -149,10 +149,10 @@ impl Extension {
             // Legacy function support
             let function_name = decorator
                 .get(name)
-                .ok_or(js_playground::Error::ValueNotFound(name.to_string()))?;
+                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
             ExtensionFunction::call_legacy_decorator(function_name, &self.module, token.value())
         } else {
-            Err(js_playground::Error::JsonDecode(
+            Err(rustyscript::Error::JsonDecode(
                 "invalid extension definition".to_string(),
             ))
         }
@@ -241,26 +241,26 @@ mod test_extensions {
 
     #[test]
     fn test_new() {
-        let e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!("HTML Colour Utilities", e.name);
+        let e = Extension::new("example_extensions/simple_extension.js").unwrap();
+        assert_eq!("simple_extension", e.name);
     }
 
     #[test]
     fn test_to_string() {
-        let e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!("HTML Colour Utilities v0.2.0, by @rscarson", e.to_string());
+        let e = Extension::new("example_extensions/simple_extension.js").unwrap();
+        assert_eq!("simple_extension v1.0.0, by @rscarson", e.to_string());
     }
 
     #[test]
     fn test_has_function() {
-        let e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(true, e.has_function("complement"));
+        let e = Extension::new("example_extensions/simple_extension.js").unwrap();
+        assert_eq!(true, e.has_function("add"));
         assert_eq!(false, e.has_function("foobar"));
     }
 
     #[test]
     fn test_call_simple() {
-        let mut e = Extension::new("example_extensions/simple.js").unwrap();
+        let mut e = Extension::new("example_extensions/simple_extension.js").unwrap();
         assert_eq!(
             Value::Float(3.0),
             e.call_function(
@@ -274,21 +274,12 @@ mod test_extensions {
 
     #[test]
     fn test_call_function() {
-        let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
+        let mut e = Extension::new("example_extensions/simple_extension.js").unwrap();
         assert_eq!(
-            Value::Integer(0x00FFFF),
+            Value::Integer(3),
             e.call_function(
-                "complement",
-                &[Value::Integer(0xFFAA00)],
-                &mut HashMap::new()
-            )
-            .unwrap()
-        );
-        assert_eq!(
-            Value::Integer(0xFFF),
-            e.call_function(
-                "color",
-                &[Value::String("white".to_string())],
+                "add",
+                &[Value::Integer(1), Value::Integer(2)],
                 &mut HashMap::new()
             )
             .unwrap()
@@ -314,32 +305,29 @@ mod test_extensions {
 
     #[test]
     fn test_can_fail() {
-        let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
+        let mut e = Extension::new("example_extensions/simple_extension.js").unwrap();
         assert_eq!(
             true,
-            matches!(
-                e.call_function("complement", &[], &mut HashMap::new()),
-                Err(_)
-            )
+            matches!(e.call_function("add", &[], &mut HashMap::new()), Err(_))
         );
     }
 
     #[test]
     fn test_has_decorator() {
-        let e = Extension::new("example_extensions/colour_utils.js").unwrap();
-        assert_eq!(true, e.has_decorator("color"));
+        let e = Extension::new("example_extensions/simple_extension.js").unwrap();
+        assert_eq!(true, e.has_decorator("colour"));
         assert_eq!(false, e.has_decorator("foobar"));
     }
 
     #[test]
     fn test_call_decorator() {
-        let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
+        let mut e = Extension::new("example_extensions/simple_extension.js").unwrap();
         let mut state: HashMap<String, Value> = HashMap::new();
         let mut token = Token::dummy("");
         token.set_value(Value::Integer(0xFF));
         assert_eq!(
             "#ff0000",
-            e.call_decorator("color", &token, &mut state).unwrap()
+            e.call_decorator("colour", &token, &mut state).unwrap()
         );
     }
     /*
@@ -352,12 +340,12 @@ mod test_extensions {
     */
     #[test]
     fn test_color() {
-        let mut e = Extension::new("example_extensions/colour_utils.js").unwrap();
+        let mut e = Extension::new("example_extensions/simple_extension.js").unwrap();
         assert_eq!(
-            Value::Integer(0x00FFFF),
+            Value::Integer(3),
             e.call_function(
-                "complement",
-                &[Value::Integer(0xFFAA00)],
+                "add",
+                &[Value::Integer(1), Value::Integer(2)],
                 &mut HashMap::new()
             )
             .unwrap()

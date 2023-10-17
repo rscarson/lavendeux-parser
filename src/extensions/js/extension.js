@@ -19,9 +19,57 @@ export class LavendeuxExtension {
         return this.functions[name];
     }
 
-    addDecorator(name, callback, accepts = 'Any') {
+    addStringFunction(name, callback, returns = Types.String) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addIntegerFunction(name, callback, returns = Types.Integer) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addFloatFunction(name, callback, returns = Types.Float) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addNumericFunction(name, callback, returns = Types.Numeric) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addArrayFunction(name, callback, returns = Types.Array) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addObjectFunction(name, callback, returns = Types.Array) {
+        return this.addFunction(name, callback, returns);
+    }
+
+    addDecorator(name, callback, accepts = Types.Any) {
         this.decorators[name] = new LavendeuxFunction(name, 'decorator', callback, Types.String)
             .requireArgument(accepts);        
+    }
+
+    addStringDecorator(name, callback, accepts = Types.String) {
+        return this.addDecorator(name, callback, accepts);
+    }
+
+    addIntegerDecorator(name, callback, accepts = Types.Integer) {
+        return this.addDecorator(name, callback, accepts);
+    }
+
+    addFloatDecorator(name, callback, accepts = Types.Float) {
+        return this.addDecorator(name, callback, accepts);
+    }
+
+    addNumericDecorator(name, callback, accepts = Types.Numeric) {
+        return this.addDecorator(name, callback, accepts);
+    }
+
+    addArrayDecorator(name, callback, accepts = Types.Array) {
+        return this.addDecorator(name, callback, accepts);
+    }
+
+    addObjectDecorator(name, callback, accepts = Types.Array) {
+        return this.addDecorator(name, callback, accepts);
     }
 
     export() {
