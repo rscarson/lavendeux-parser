@@ -1,5 +1,5 @@
-use crate::value::Value;
 use crate::network::utils::*;
+use crate::value::Value;
 
 use std::collections::HashMap;
 use std::fmt;
@@ -15,15 +15,20 @@ pub struct ApiInstance {
 
 impl ApiInstance {
     /// Create a new API instance
-    /// 
+    ///
     /// # Arguments
     /// * `base_url` - base url for the API
     pub fn new(base_url: String) -> Self {
-        Self { base_url: base_url.trim_end_matches('/').to_string(), description: "".to_string(), examples: "".to_string(), key: None }
+        Self {
+            base_url: base_url.trim_end_matches('/').to_string(),
+            description: "".to_string(),
+            examples: "".to_string(),
+            key: None,
+        }
     }
 
     /// Create a new API instance with an API key
-    /// 
+    ///
     /// # Arguments
     /// * `base_url` - base url for the API
     /// * `key` - API key
@@ -34,7 +39,7 @@ impl ApiInstance {
     }
 
     /// Create a new API instance with a description
-    /// 
+    ///
     /// # Arguments
     /// * `base_url` - base url for the API
     /// * `description` - API description
@@ -52,7 +57,7 @@ impl ApiInstance {
     }
 
     /// Set the API key credential for the API
-    /// 
+    ///
     /// # Arguments
     /// * `key` - API key
     pub fn set_key(&mut self, key: String) -> &Self {
@@ -66,7 +71,7 @@ impl ApiInstance {
     }
 
     /// Set the examples for the API
-    /// 
+    ///
     /// # Arguments
     /// * `examples` - API examples
     pub fn set_examples(&mut self, examples: String) -> &Self {
@@ -80,7 +85,7 @@ impl ApiInstance {
     }
 
     /// Set the description for the API
-    /// 
+    ///
     /// # Arguments
     /// * `description` - API description
     pub fn set_description(&mut self, description: String) -> &Self {
@@ -94,12 +99,17 @@ impl ApiInstance {
     }
 
     /// Make a request to the API
-    /// 
+    ///
     /// # Arguments
     /// * `endpoint` - Endpoint to call
     /// * `body` - Supply a body for POST, or None for GET
     /// * `headers` - Vec of extra headers to supply to the API
-    pub fn request(&self, endpoint: &str, body: Option<String>, headers: HashMap<String, String>) -> Result<Value, reqwest::Error> {
+    pub fn request(
+        &self,
+        endpoint: &str,
+        body: Option<String>,
+        headers: HashMap<String, String>,
+    ) -> Result<Value, reqwest::Error> {
         let url = format!("{}/{}", self.base_url(), endpoint);
         request(&url, body, headers)
     }
@@ -108,8 +118,24 @@ impl ApiInstance {
 impl fmt::Display for ApiInstance {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let description = format!("{}{}", if self.description().is_empty() {""} else {"\n\t"}, self.description());
-        let examples = format!("{}{}", if self.examples().is_empty() {""} else {"\n\t"}, self.examples());
+        let description = format!(
+            "{}{}",
+            if self.description().is_empty() {
+                ""
+            } else {
+                "\n\t"
+            },
+            self.description()
+        );
+        let examples = format!(
+            "{}{}",
+            if self.examples().is_empty() {
+                ""
+            } else {
+                "\n\t"
+            },
+            self.examples()
+        );
 
         write!(f, "{}{}{}", self.base_url(), description, examples)
     }

@@ -1,11 +1,11 @@
-pub mod math;
 pub mod api;
-pub mod system;
-pub mod dev;
-pub mod network;
 pub mod array;
-pub mod str;
-pub mod trig;
 pub mod crypto;
+pub mod dev;
+pub mod math;
+pub mod network;
+pub mod str;
+pub mod system;
+pub mod trig;
 
 pub use super::*;
