@@ -40,20 +40,12 @@ pub struct Extension {
     pub version: String,
 
     #[serde(default)]
-    /// Defines all the functions provided by this extension
-    pub function_definitions: Option<HashMap<String, ExtensionFunction>>,
+    /// Functions supported by this extension
+    pub functions: HashMap<String, ExtensionFunction>,
 
     #[serde(default)]
-    /// Defines all the decorators provided by this extension
-    pub decorator_definitions: Option<HashMap<String, ExtensionFunction>>,
-
-    #[serde(default)]
-    /// Legacy extension support
-    pub functions: Option<HashMap<String, String>>,
-
-    #[serde(default)]
-    /// Legacy extension support
-    pub decorators: Option<HashMap<String, String>>,
+    /// Decorators supported by this extension
+    pub decorators: HashMap<String, ExtensionFunction>,
 }
 
 impl std::fmt::Display for Extension {
@@ -73,14 +65,7 @@ impl Extension {
     /// # Arguments
     /// * `name` - Function name
     pub fn has_function(&self, name: &str) -> bool {
-        if let Some(functions) = &self.function_definitions {
-            functions.contains_key(name)
-        } else if let Some(functions) = &self.functions {
-            // Legacy function support
-            functions.contains_key(name)
-        } else {
-            false
-        }
+        self.functions.contains_key(name)
     }
 
     /// Call a function from the extension
@@ -94,22 +79,11 @@ impl Extension {
         args: &[Value],
         variables: &mut HashMap<String, Value>,
     ) -> Result<Value, rustyscript::Error> {
-        if let Some(functions) = &self.function_definitions {
-            let function_properties = functions
-                .get(name)
-                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
-            function_properties.call(&self.module, args, variables)
-        } else if let Some(functions) = &self.functions {
-            // Legacy function support
-            let function_name = functions
-                .get(name)
-                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
-            ExtensionFunction::call_legacy(function_name, &self.module, args)
-        } else {
-            Err(rustyscript::Error::JsonDecode(
-                "invalid extension definition".to_string(),
-            ))
-        }
+        let function_properties = self
+            .functions
+            .get(name)
+            .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
+        function_properties.call(&self.module, args, variables)
     }
 
     /// Determine if a decorator exists in the extension
@@ -117,14 +91,7 @@ impl Extension {
     /// # Arguments
     /// * `name` - Decorator name
     pub fn has_decorator(&self, name: &str) -> bool {
-        if let Some(decorators) = &self.decorator_definitions {
-            decorators.contains_key(name)
-        } else if let Some(decorators) = &self.decorators {
-            // Legacy function support
-            decorators.contains_key(name)
-        } else {
-            false
-        }
+        self.decorators.contains_key(name)
     }
 
     /// Call a decorator from the extension
@@ -138,24 +105,13 @@ impl Extension {
         token: &Token,
         variables: &mut HashMap<String, Value>,
     ) -> Result<String, rustyscript::Error> {
-        if let Some(decorator) = &self.decorator_definitions {
-            let function_properties = decorator
-                .get(name)
-                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
-            Ok(function_properties
-                .call(&self.module, &[token.value()], variables)?
-                .to_string())
-        } else if let Some(decorator) = &self.decorators {
-            // Legacy function support
-            let function_name = decorator
-                .get(name)
-                .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
-            ExtensionFunction::call_legacy_decorator(function_name, &self.module, token.value())
-        } else {
-            Err(rustyscript::Error::JsonDecode(
-                "invalid extension definition".to_string(),
-            ))
-        }
+        let function_properties = self
+            .decorators
+            .get(name)
+            .ok_or(rustyscript::Error::ValueNotFound(name.to_string()))?;
+        function_properties
+            .call(&self.module, &[token.value()], variables)
+            .and_then(|v| Ok(v.to_string()))
     }
 
     /// Returns the file from which an extension was loaded
@@ -180,56 +136,36 @@ impl Extension {
 
     /// Return the list of all functions in the extension
     pub fn functions(&self) -> Vec<String> {
-        let mut function_keys = if let Some(functions) = &self.function_definitions {
-            functions.keys().cloned().collect()
-        } else if let Some(functions) = &self.functions {
-            functions.keys().cloned().collect()
-        } else {
-            vec![]
-        };
-
+        let mut function_keys: Vec<String> = self.functions.keys().cloned().collect();
         function_keys.sort();
         function_keys
     }
 
     /// Return the list of all functions, with complete signatures
     pub fn function_signatures(&self) -> Vec<String> {
-        let mut function_keys = if let Some(functions) = &self.function_definitions {
-            functions.values().map(|k| k.signature()).collect()
-        } else if let Some(functions) = &self.functions {
-            functions.keys().map(|k| format!("{}()", k)).collect()
-        } else {
-            vec![]
-        };
-
+        let mut function_keys: Vec<String> = self
+            .functions
+            .values()
+            .map(|k| k.function_signature())
+            .collect();
         function_keys.sort();
         function_keys
     }
 
     /// Return the list of all decorators in the extension
     pub fn decorators(&self) -> Vec<String> {
-        let mut decorator_keys = if let Some(decorators) = &self.decorator_definitions {
-            decorators.keys().cloned().collect()
-        } else if let Some(decorators) = &self.decorators {
-            decorators.keys().cloned().collect()
-        } else {
-            vec![]
-        };
-
+        let mut decorator_keys: Vec<String> = self.decorators.keys().cloned().collect();
         decorator_keys.sort();
         decorator_keys
     }
 
     /// Return the list of all decorators, with complete signatures
     pub fn decorator_signatures(&self) -> Vec<String> {
-        let mut decorator_keys = if let Some(decorators) = &self.decorator_definitions {
-            decorators.values().map(|k| k.signature()).collect()
-        } else if let Some(decorators) = &self.decorators {
-            decorators.keys().map(|k| format!("@{}", k)).collect()
-        } else {
-            vec![]
-        };
-
+        let mut decorator_keys: Vec<String> = self
+            .decorators
+            .values()
+            .map(|k| k.decorator_signature())
+            .collect();
         decorator_keys.sort();
         decorator_keys
     }

@@ -74,17 +74,17 @@ export class LavendeuxExtension {
 
     export() {
         let properties = {
-            'function_definitions': {},
-            'decorator_definitions': {}
+            'functions': {},
+            'decorators': {}
         };
         Object.assign(properties, this.properties);
 
         for (const name in this.functions) {
-            properties.function_definitions[name] = this.functions[name].properties;
+            properties.functions[name] = this.functions[name].properties;
         }
 
         for (const name in this.decorators) {
-            properties.decorator_definitions[name] = this.decorators[name].properties;
+            properties.decorators[name] = this.decorators[name].properties;
         }
 
         return properties;

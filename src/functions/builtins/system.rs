@@ -130,6 +130,7 @@ pub fn register_functions(table: &mut FunctionTable) {
 mod test_token {
     use super::*;
 
+    use crate::extensions::ExtensionFunction;
     #[cfg(feature = "extensions")]
     use crate::Extension;
 
@@ -213,11 +214,14 @@ mod test_token {
                 name: "Unnamed Extension".to_string(),
                 author: "@anon".to_string(),
                 version: "0.0.0".to_string(),
-                functions: Some(HashMap::from([("test".to_string(), "test2".to_string())])),
-                decorators: Some(HashMap::from([("test3".to_string(), "test4".to_string())])),
-
-                function_definitions: None,
-                decorator_definitions: None,
+                functions: HashMap::from([(
+                    "test".to_string(),
+                    ExtensionFunction::Legacy("test2".to_string()),
+                )]),
+                decorators: HashMap::from([(
+                    "test3".to_string(),
+                    ExtensionFunction::Legacy("test4".to_string()),
+                )]),
             },
         );
 
