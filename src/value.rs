@@ -327,19 +327,19 @@ impl Value {
         matches!(self, Value::None)
     }
 
-    // Attempt to convert the value from JSON
+    /// Attempt to convert the value from JSON
     pub fn from_json(value: serde_json::Value) -> Option<Self> {
-        if let Ok(v) = serde_json::from_value::<FloatType>(value) {
+        if let Ok(v) = serde_json::from_value::<FloatType>(value.clone()) {
             Some(v.into())
-        } else if let Ok(v) = serde_json::from_value::<IntegerType>(value) {
+        } else if let Ok(v) = serde_json::from_value::<IntegerType>(value.clone()) {
             Some(v.into())
-        } else if let Ok(v) = serde_json::from_value::<bool>(value) {
+        } else if let Ok(v) = serde_json::from_value::<bool>(value.clone()) {
             Some(v.into())
-        } else if let Ok(v) = serde_json::from_value::<&str>(value) {
+        } else if let Ok(v) = serde_json::from_value::<String>(value.clone()) {
             Some(v.into())
-        } else if let Ok(v) = serde_json::from_value::<ArrayType>(value) {
+        } else if let Ok(v) = serde_json::from_value::<ArrayType>(value.clone()) {
             Some(v.into())
-        } else if let Ok(v) = serde_json::from_value::<ObjectType>(value) {
+        } else if let Ok(v) = serde_json::from_value::<ObjectType>(value.clone()) {
             Some(v.into())
         } else {
             None
