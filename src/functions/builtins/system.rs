@@ -1,7 +1,27 @@
 //! Builtin functions for lower level ops
 
 use super::*;
-use crate::{help::Help, ExpectedTypes, Token};
+use crate::{define_function, extensions::ExtensionsRuntime, help::Help, ExpectedTypes, Token};
+
+#[cfg(feature = "extensions")]
+define_function!(
+    name = js,
+    description = "Run a javascript expression, and return the result",
+    arguments = [function_arg!("expression")],
+    handler = |function, token, state, args| {
+        ExtensionsRuntime::with(|runtime| {
+            let expression = args.get("input").required().as_string();
+            match runtime.evaluate::<serde_json::Value>(&expression) {
+                Ok(v) => Ok(Value::from_json(v).ok_or(Error::ValueParsing {
+                    input: expression,
+                    expected_type: ExpectedTypes::Any,
+                    token: token.clone(),
+                })),
+                Err(e) => Err(Error::Javascript(e, token.clone())),
+            }
+        })?
+    }
+);
 
 const HELP: FunctionDefinition = FunctionDefinition {
     name: "help",

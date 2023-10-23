@@ -326,6 +326,25 @@ impl Value {
     pub fn is_none(&self) -> bool {
         matches!(self, Value::None)
     }
+
+    // Attempt to convert the value from JSON
+    pub fn from_json(value: serde_json::Value) -> Option<Self> {
+        if let Ok(v) = serde_json::from_value::<FloatType>(value) {
+            Some(v.into())
+        } else if let Ok(v) = serde_json::from_value::<IntegerType>(value) {
+            Some(v.into())
+        } else if let Ok(v) = serde_json::from_value::<bool>(value) {
+            Some(v.into())
+        } else if let Ok(v) = serde_json::from_value::<&str>(value) {
+            Some(v.into())
+        } else if let Ok(v) = serde_json::from_value::<ArrayType>(value) {
+            Some(v.into())
+        } else if let Ok(v) = serde_json::from_value::<ObjectType>(value) {
+            Some(v.into())
+        } else {
+            None
+        }
+    }
 }
 
 impl Clone for Value {

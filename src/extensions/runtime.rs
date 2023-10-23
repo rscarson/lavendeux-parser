@@ -57,6 +57,26 @@ impl ExtensionsRuntime {
         self.0.load_module(module)
     }
 
+    pub fn evaluate<T>(&mut self, expression: &str) -> Result<T, rustyscript::Error>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let module = Module::new(
+            "js_eval.js",
+            &format!(
+                "
+            export function rustyscript_evaluate(){{
+                return ({expression});
+            }}
+        "
+            ),
+        );
+
+        let module = self.0.load_modules(&module, vec![])?;
+        self.0
+            .call_function(&module, "rustyscript_evaluate", Runtime::EMPTY_ARGS)
+    }
+
     pub fn call_function<T>(
         &mut self,
         context: &ModuleHandle,

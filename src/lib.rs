@@ -391,6 +391,7 @@
 #![doc(html_root_url = "https://docs.rs/lavendeux-parser/0.9.0")]
 #![warn(missing_docs)]
 
+#[cfg(feature = "extensions")]
 pub use rustyscript;
 
 mod errors;
