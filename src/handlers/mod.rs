@@ -109,6 +109,7 @@ impl LavendeuxHandler for Handler {
 type RuleHandler = fn(token: &mut Token, state: &mut ParserState) -> Option<Error>;
 fn handler_table() -> HashMap<Rule, RuleHandler> {
     HashMap::from([
+        (Rule::EOI, rule_eoi as RuleHandler),
         (Rule::script, rule_script as RuleHandler),
         (Rule::line, rule_line as RuleHandler),
         (Rule::term, rule_term as RuleHandler),
@@ -127,16 +128,25 @@ fn handler_table() -> HashMap<Rule, RuleHandler> {
     .collect()
 }
 
+fn rule_eoi(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
+    token.set_text("");
+    None
+}
+
 /// A series of lines
 fn rule_script(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
     // Concatenate output from all child tokens (lines)
+    println!("{:?}", token);
+
     token.set_text(
         &token
             .children()
             .iter()
             .map(|t| {
                 t.text().to_string()
-                    + if !t.children().is_empty() {
+                    + if !t.children().is_empty()
+                        && t.children().last().unwrap().rule() == Rule::eol
+                    {
                         t.children().last().unwrap().text()
                     } else {
                         ""
@@ -146,8 +156,8 @@ fn rule_script(token: &mut Token, _state: &mut ParserState) -> Option<Error> {
             .join(""),
     );
 
-    // Set script value if there is only one line
-    if token.children().len() == 1 {
+    // Set script value
+    if token.children().len() > 0 {
         token.set_value(token.child(0).unwrap().value());
     }
 

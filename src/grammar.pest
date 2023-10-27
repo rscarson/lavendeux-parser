@@ -77,10 +77,8 @@ term = {lparen ~ toplevel_expression ~ rparen | atomic_value}
 
 assignment_expression = {(assignment_prefix | index_assignment_prefix) ~ toplevel_expression}
 expression = {function_assignment|assignment_expression|toplevel_expression}
-comment = _{"//" ~ (!eol ~ ANY)*}
-eol = @{NEWLINE+|";"|EOI}
-line = {(comment | (expression ~ (decorator ~ identifier)? ~ comment?)) ~ eol}
-script = {eol? ~ line+ | eol}
+line = {WHITESPACE* ~ eol | WHITESPACE* ~  ((expression ~ (decorator ~ identifier)?)) ~ eol?}
+script = {line* ~ EOI}
 
 // Value errors
 errors = {
@@ -100,4 +98,6 @@ error_unterminated_paren = @{lparen ~ ANY*}
 error_unexpected_decorator = @{decorator ~ identifier ~ WHITESPACE* ~ (!WHITESPACE~!eol~ANY)+ | SOI ~ decorator ~ ANY*}
 error_unexpected_postfix =  @{(factorial ~ !"=") ~ ANY*}
 
-WHITESPACE = _{" " | "\t" | "\\\n"}
+WHITESPACE = _{" " | "\t" | "\\\n" | comment}
+comment = _{"//" ~ (!eol ~ ANY)* | "/*" ~ (!eol ~ !"*/" ~ ANY)* ~ "*/"}
+eol = @{NEWLINE|";"}

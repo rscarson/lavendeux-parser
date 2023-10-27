@@ -432,6 +432,11 @@ mod test_token {
         assert_token_value!("false ? 1 : 2", Value::Integer(2));
         assert_token_value!("false ? 1/0 : 2", Value::Integer(2));
 
+        // Comments
+        assert_token_value!("/* test */ true", Value::from(true));
+        assert_token_value!("/* test */ true // test", Value::from(true));
+        assert_token_text!("/* test */ 15 @hex// test", "0xf");
+
         // arrays
         assert_token_value!(
             "[10, 12] + [1.2, 1.3]",
