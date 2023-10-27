@@ -122,11 +122,7 @@ mod test_token {
             &mut state
         );
         assert_token_error!("f(x) = f(x)\nf(0)", StackOverflow);
-        assert_token_text_stateful!(
-            "sum(a) = element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )",
-            "element(a, 0) + ( len(a)>1 ? sum(dequeue(a)) : 0 )",
-            &mut state
-        );
+        Token::new("sum(a) = len(a) ? pop(a) + sum(a) : 0", &mut state).expect("could not parse");
         assert_token_value_stateful!("sum([10, 10, 11])", Value::Integer(31), &mut state);
     }
 

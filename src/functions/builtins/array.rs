@@ -42,6 +42,18 @@ const IS_EMPTY: FunctionDefinition = FunctionDefinition {
     },
 };
 
+fn manip_arrayarg(token: &Token, state: &mut ParserState, value: Value) {
+    if let Some(value_token) = token.child(2) {
+        if value_token.rule() == crate::token::Rule::variable
+            && state.variables.contains_key(value_token.text())
+        {
+            state
+                .variables
+                .insert(value_token.text().to_string(), value);
+        }
+    }
+}
+
 const POP: FunctionDefinition = FunctionDefinition {
     name: "pop",
     category: Some("arrays"),
@@ -52,13 +64,14 @@ const POP: FunctionDefinition = FunctionDefinition {
             ExpectedTypes::Array,
         )]
     },
-    handler: |_function, token, _state, args| {
-        let mut e = args.get("array").required().as_array();
-        if e.is_empty() {
-            Err(Error::ArrayEmpty(token.clone()))
+    handler: |_function, token, state, args| {
+        let mut array = args.get("array").required().as_array();
+
+        if let Some(element) = array.pop() {
+            manip_arrayarg(token, state, Value::from(array));
+            Ok(element)
         } else {
-            e.pop();
-            Ok(Value::Array(e))
+            Err(Error::ArrayEmpty(token.clone()))
         }
     },
 };
@@ -73,10 +86,13 @@ const PUSH: FunctionDefinition = FunctionDefinition {
             FunctionArgument::new_required("element", ExpectedTypes::Any),
         ]
     },
-    handler: |_function, _token, _state, args| {
-        let mut e = args.get("array").required().as_array();
-        e.push(args.get("element").required());
-        Ok(Value::Array(e))
+    handler: |_function, token, state, args| {
+        let mut array = args.get("array").required().as_array();
+        let element = args.get("element").required();
+
+        array.push(element);
+        manip_arrayarg(token, state, Value::from(array.clone()));
+        Ok(Value::from(array))
     },
 };
 
@@ -90,14 +106,9 @@ const DEQUEUE: FunctionDefinition = FunctionDefinition {
             ExpectedTypes::Array,
         )]
     },
-    handler: |_function, token, _state, args| {
-        let mut e = args.get("array").required().as_array();
-        if e.is_empty() {
-            Err(Error::ArrayEmpty(token.clone()))
-        } else {
-            e.remove(0);
-            Ok(Value::Array(e))
-        }
+    handler: |_function, token, state, args| {
+        let array = args.get("array").required();
+        REMOVE.call(token, state, &[array, Value::from(0)])
     },
 };
 
@@ -111,10 +122,10 @@ const ENQUEUE: FunctionDefinition = FunctionDefinition {
             FunctionArgument::new_required("element", ExpectedTypes::Any),
         ]
     },
-    handler: |_function, _token, _state, args| {
-        let mut e = args.get("array").required().as_array();
-        e.push(args.get("element").required());
-        Ok(Value::Array(e))
+    handler: |_function, token, state, args| {
+        let array = args.get("array").required();
+        let element = args.get("element").required();
+        PUSH.call(token, state, &[array, element])
     },
 };
 
@@ -128,28 +139,21 @@ const REMOVE: FunctionDefinition = FunctionDefinition {
             FunctionArgument::new_required("index", ExpectedTypes::Int),
         ]
     },
-    handler: |_function, token, _state, args| {
-        let input = args.get("input").required();
-        let index = args.get("index").required();
+    handler: |_function, token, state, args| {
+        let mut input = args.get("input").required().as_array();
+        let index = args.get("index").required().as_int().unwrap();
 
-        match input {
-            Value::Object(mut v) => {
-                v.remove(&index);
-                Ok(Value::from(v))
-            }
-            _ => {
-                let mut a = input.as_array();
-                let idx = index.as_int().unwrap();
-                if idx < 0 || idx >= a.len() as IntegerType {
-                    Err(Error::Index {
-                        key: index,
-                        token: token.clone(),
-                    })
-                } else {
-                    a.remove(idx as usize);
-                    Ok(Value::Array(a))
-                }
-            }
+        if input.is_empty() {
+            Err(Error::ArrayEmpty(token.clone()))
+        } else if index < 0 || index >= input.len() as i64 {
+            Err(Error::Index {
+                key: args.get("index").required(),
+                token: token.clone(),
+            })
+        } else {
+            let element = input.remove(index as usize);
+            manip_arrayarg(token, state, Value::from(input));
+            Ok(element)
         }
     },
 };
@@ -331,8 +335,12 @@ mod test_builtin_functions {
     fn test_pop() {
         let mut state = ParserState::new();
 
+        let token =
+            Token::new("x=[1,2]; pop(x)==2; len(x)==1", &mut state).expect("could not parse");
+        assert_eq!(token.text(), "[1, 2];true;true");
+
         assert_eq!(
-            Value::Array(vec![Value::Integer(5)]),
+            Value::Integer(3),
             POP.call(
                 &Token::dummy(""),
                 &mut state,
@@ -362,7 +370,7 @@ mod test_builtin_functions {
         let mut state = ParserState::new();
 
         assert_eq!(
-            Value::Array(vec![Value::Integer(3),]),
+            Value::Integer(5),
             DEQUEUE
                 .call(
                     &Token::dummy(""),
@@ -394,7 +402,7 @@ mod test_builtin_functions {
         let mut state = ParserState::new();
 
         assert_eq!(
-            Value::Array(vec![Value::Integer(3)]),
+            Value::Integer(5),
             REMOVE
                 .call(
                     &Token::dummy(""),
@@ -407,7 +415,7 @@ mod test_builtin_functions {
                 .unwrap()
         );
         assert_eq!(
-            Value::Array(vec![Value::Integer(5)]),
+            Value::Integer(3),
             REMOVE
                 .call(
                     &Token::dummy(""),
